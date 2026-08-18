@@ -40,7 +40,8 @@ test("keeps four modules equal and preserves personal exploration nodes", async 
   assert.match(planet, /stardust-fragment/);
   assert.match(planet, /onPointerMove=\{handleOrbitPointerMove\}/);
   assert.match(planet, /onWheel=\{handleWheel\}/);
-  assert.match(planet, /拖动星轨 · 滑动选择/);
+  assert.match(planet, /沿星轨缓慢环行 · 拖动选择/);
+  assert.match(planet, /requestAnimationFrame\(revolve\)/);
   assert.match(planet, /window\.location\.href=item\.url/);
   assert.match(page, /我的探索星图/);
 });

@@ -1,5 +1,5 @@
 "use client";
-import { lazy, Suspense, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { PLATFORM_MODULES as modules } from "../config/modules";
 const ThreeGlobe = lazy(() => import("./ThreeGlobe"));
 type PlatformView = "planet" | "works" | "timeline" | "report";
@@ -16,6 +16,19 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
   const dragState = useRef({x:0, y:0, rotation:0, moved:false});
   const ignoreClick = useRef(false);
   const baseAngles = [155, 270, 25];
+  useEffect(() => {
+    if (draggingOrbit || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let frame = 0;
+    let lastTime = performance.now();
+    const revolve = (time:number) => {
+      const elapsed = Math.min(time - lastTime, 48);
+      lastTime = time;
+      setOrbitRotation(value => (value + elapsed * .0024) % 360);
+      frame = requestAnimationFrame(revolve);
+    };
+    frame = requestAnimationFrame(revolve);
+    return () => cancelAnimationFrame(frame);
+  }, [draggingOrbit]);
   const normalizeDelta = (value:number) => ((value + 540) % 360) - 180;
   const snapToFront = (rotation:number) => {
     const delta = baseAngles.map(angle=>normalizeDelta(90-(angle+rotation))).sort((a,b)=>Math.abs(a)-Math.abs(b))[0];
@@ -69,9 +82,9 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
         const isFront=depth>.82;
         return <button key={node.view} data-front={isFront||undefined} className={`cosmic-node orbit-positioned-node ${x<50?"node-left":"node-right"}`} style={{left:`${x}%`,top:`${y}%`,opacity:.46+depth*.54,transform:`translate(-50%,-50%) scale(${.76+depth*.28})`,zIndex:12+Math.round(depth*8)}} onClick={()=>{if(ignoreClick.current){ignoreClick.current=false;return;}onNavigate(node.view);}}><i aria-hidden="true"/><span>{node.label}</span></button>;
       })}
-      <span className="orbit-control-hint" aria-hidden="true">拖动星轨 · 滑动选择</span>
+      <span className="orbit-control-hint" aria-hidden="true">沿星轨缓慢环行 · 拖动选择</span>
     </nav>
     <div className="three-stage"><Suspense fallback={<div className="globe-loading">正在点亮探索星球…</div>}><ThreeGlobe/></Suspense><div className="drag-tip"><span>✥</span> 上下左右拖动 · 360° 探索 · 点击大陆进入</div></div>
-    <div className="module-dock">{modules.map(item=><button key={item.id} onClick={()=>window.location.href=item.url}><i className={item.color}>{item.icon}</i><span><b>{item.module}</b><small>{item.name}</small></span></button>)}</div>
+    <div className="module-dock">{modules.map(item=><button key={item.id} onClick={()=>window.location.href=item.url}><i className={`module-icon ${item.color}`} aria-hidden="true"><img src={item.iconAsset} alt="" draggable={false}/></i><span><b>{item.module}</b><small>{item.name}</small></span></button>)}</div>
   </section>;
 }
