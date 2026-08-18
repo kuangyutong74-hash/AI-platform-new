@@ -1,0 +1,9 @@
+.platform-return {
+  position: fixed; top: 18px; left: 18px; z-index: 10000;
+  padding: 10px 16px; border: 1px solid rgb(255 255 255 / 70%);
+  border-radius: 999px; color: #443566; background: rgb(255 255 255 / 88%);
+  box-shadow: 0 8px 24px rgb(55 43 89 / 14%); backdrop-filter: blur(12px);
+  font: 600 14px/1.2 system-ui, sans-serif; text-decoration: none;
+  transition: transform 160ms ease, background 160ms ease;
+}
+.platform-return:hover { transform: translateY(-1px); background: #fff; }
