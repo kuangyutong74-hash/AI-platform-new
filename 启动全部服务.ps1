@@ -1,4 +1,4 @@
-param([switch]$NoOpen)
+﻿param([switch]$NoOpen)
 . "$PSScriptRoot\scripts\服务工具.ps1"
 
 $runtime = Get-RuntimeDirectory

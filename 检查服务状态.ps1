@@ -1,4 +1,4 @@
-. "$PSScriptRoot\scripts\服务工具.ps1"
+﻿. "$PSScriptRoot\scripts\服务工具.ps1"
 
 Write-Host "`nAI伯乐服务状态" -ForegroundColor Cyan
 foreach ($service in Get-ServiceDefinitions) {

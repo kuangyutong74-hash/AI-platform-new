@@ -1,4 +1,4 @@
-@{
+﻿@{
   Services = @(
     @{ Name='聊天观察'; Port=3000; WorkingDirectory='modules\chat'; Command='node'; Arguments=@('app.js'); Url='http://localhost:3000/chat.html?from=ai-bole' },
     @{ Name='故事共创后端'; Port=8010; WorkingDirectory='modules\story\backend'; Command='python'; Arguments=@('-m','uvicorn','app.main:app','--host','0.0.0.0','--port','8010'); Url='http://localhost:8010/api/health' },

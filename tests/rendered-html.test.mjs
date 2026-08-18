@@ -25,7 +25,7 @@ test("server renders AI伯乐探索星球", async () => {
   assert.doesNotMatch(html, /codex-preview|SkeletonPreview|react-loading-skeleton/);
 });
 
-test("keeps four modules equal and preserves report entry", async () => {
+test("keeps four modules equal and preserves personal exploration nodes", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   const moduleConfig = await readFile(new URL("../app/config/modules.ts", import.meta.url), "utf8");
   const planet = await readFile(new URL("../app/components/PlanetHome.tsx", import.meta.url), "utf8");
@@ -33,7 +33,14 @@ test("keeps four modules equal and preserves report entry", async () => {
     assert.match(moduleConfig, new RegExp(name));
   }
   assert.equal((moduleConfig.match(/\{ id: "/g) ?? []).length, 4);
-  assert.match(planet, /星光档案站/);
+  for (const label of ["我的作品", "成长足迹", "天赋报告"]) {
+    assert.match(planet, new RegExp(label));
+  }
+  assert.match(planet, /deep-space-nebula-bg-v1|nebula-background/);
+  assert.match(planet, /stardust-fragment/);
+  assert.match(planet, /onPointerMove=\{handleOrbitPointerMove\}/);
+  assert.match(planet, /onWheel=\{handleWheel\}/);
+  assert.match(planet, /拖动星轨 · 滑动选择/);
   assert.match(planet, /window\.location\.href=item\.url/);
   assert.match(page, /我的探索星图/);
 });

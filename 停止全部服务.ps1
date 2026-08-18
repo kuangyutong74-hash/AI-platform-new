@@ -1,4 +1,4 @@
-. "$PSScriptRoot\scripts\服务工具.ps1"
+﻿. "$PSScriptRoot\scripts\服务工具.ps1"
 
 $runtime = Get-RuntimeDirectory
 $registry = Join-Path $runtime 'services.json'

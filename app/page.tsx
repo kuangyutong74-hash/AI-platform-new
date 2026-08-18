@@ -13,7 +13,7 @@ export default function Home() {
   if (loggedIn === null) return <main className="session-loading" />;
   if (!loggedIn) return <LoginPage onLogin={login} />;
   return <main className="app-shell"><Header view={view} onNavigate={setView} onLogout={logout}/>
-    {view === "planet" && <PlanetHome onReport={() => setView("report")}/>} 
+    {view === "planet" && <PlanetHome onNavigate={setView}/>} 
     {view === "works" && <SimplePage title="我的作品" subtitle="四块大陆上的创造，都收藏在这里。" cards={[["故事书","云朵城堡的最后一扇门","来自故事共创"],["设计图","深海能源站重建方案","来自基地重建"],["发现卡","我对动物行为特别好奇","来自聊天观察"],["角色卡","儿童记者的一天","来自职业模拟器"]]}/>} 
     {view === "timeline" && <SimplePage title="成长足迹" subtitle="不比较快慢，只记录每一次尝试。" cards={[["今天","体验了儿童记者，主动追问了三个问题","职业模拟器"],["昨天","完成深海能源站第二版布局","基地重建"],["8月15日","创造了一个会改变天气的故事角色","故事共创"],["8月14日","聊到了喜欢观察昆虫和云朵","聊天观察"]]}/>} 
     {view === "report" && <ReportPage onBack={() => setView("planet")}/>}</main>;
