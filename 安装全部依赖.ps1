@@ -12,11 +12,13 @@ $nodeProjects = @(
   (Join-Path $platform 'modules\chat')
   (Join-Path $platform 'modules\story\frontend')
   (Join-Path $platform 'modules\deep-sea')
+  (Join-Path $platform 'modules\talent-report')
 )
 $pythonProjects = @(
   @{ WorkingDirectory=(Join-Path $platform 'modules\story\backend'); Requirements='requirements.txt' }
   @{ WorkingDirectory=(Join-Path $platform 'modules\deep-sea'); Requirements='server\requirements.txt' }
   @{ WorkingDirectory=(Join-Path $platform 'modules\career\backend'); Requirements='requirements.txt' }
+  @{ WorkingDirectory=(Join-Path $platform 'modules\platform-core'); Requirements='requirements.txt' }
 )
 
 $npm = Get-Command npm.cmd -ErrorAction SilentlyContinue

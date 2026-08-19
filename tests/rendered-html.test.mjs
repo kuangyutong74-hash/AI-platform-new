@@ -21,7 +21,8 @@ test("server renders AI伯乐探索星球", async () => {
   assert.match(html, /<title>AI伯乐 · 探索星球<\/title>/i);
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /欢迎来到探索星球/);
-  assert.match(page, /每一种好奇/);
+  assert.match(page, /一个账号连接四块大陆/);
+  assert.match(page, /http:\/\/localhost:8020/);
   assert.doesNotMatch(html, /codex-preview|SkeletonPreview|react-loading-skeleton/);
 });
 
@@ -43,5 +44,6 @@ test("keeps four modules equal and preserves personal exploration nodes", async 
   assert.match(planet, /沿星轨缓慢环行 · 拖动选择/);
   assert.match(planet, /requestAnimationFrame\(revolve\)/);
   assert.match(planet, /window\.location\.href=item\.url/);
-  assert.match(page, /我的探索星图/);
+  assert.match(page, /http:\/\/localhost:5175/);
+  assert.match(page, /天赋报告/);
 });

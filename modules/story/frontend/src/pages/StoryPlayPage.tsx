@@ -125,6 +125,15 @@ export default function StoryPlayPage() {
     // Send child's ending as final message, then mark complete
     dispatch({ type: 'ADD_CHILD_MESSAGE', content: childEnding.trim() });
     await updateStory(id, { status: 'completed' });
+    // 只上报完成作品所需的最小行为证据，不上传故事全文。
+    void (window as any).AIBole?.emitEvidence({
+      module: 'story', event_type: 'story_contribution',
+      evidence_level: childEnding.trim().length >= 40 ? 'strong' : 'reference',
+      intelligence_candidates: ['linguistic', 'intrapersonal'],
+      behavior_summary: '孩子为共创故事独立写下结尾，并完成了一次完整作品。',
+      raw_evidence: { ending_length: childEnding.trim().length, turn_number: state.turnNumber + 1, completed: true },
+      context: { story_id: id },
+    }).catch(() => undefined);
     dispatch({ type: 'FINISH_TURN', turnNumber: state.turnNumber + 1, isEnding: true });
     setShowEndModal(false);
     setChildEnding('');
