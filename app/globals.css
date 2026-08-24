@@ -289,17 +289,6 @@
 @media(max-width:850px){.three-scene-page .orbit-positioned-node i{width:126px!important;height:108px!important}.three-scene-page .orbit-positioned-node>span{margin-top:-15px!important}}
 @media(max-width:520px){.three-scene-page .orbit-positioned-node i{width:82px!important;height:70px!important}.three-scene-page .orbit-positioned-node>span{margin-top:-10px!important;padding:6px 9px!important}}
 
-/* Standalone landmarks v6: no sprite slicing, so every painted edge remains visible. */
-.three-scene-page .orbit-positioned-node i{width:174px!important;height:156px!important;background:none!important;display:grid!important;place-items:center!important;overflow:visible!important}
-.three-scene-page .orbit-positioned-node i img{content:normal!important;display:block!important;width:auto!important;height:auto!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important}
-.three-scene-page .orbit-positioned-node[data-node-index="0"] i img{content:normal!important;max-width:96%!important;max-height:94%!important}
-.three-scene-page .orbit-positioned-node[data-node-index="1"] i img{content:normal!important;max-width:100%!important;max-height:92%!important}
-.three-scene-page .orbit-positioned-node[data-node-index="2"] i img{content:normal!important;max-width:88%!important;max-height:100%!important}
-.three-scene-page .orbit-positioned-node>span{margin-top:-14px!important}
-@media(max-width:850px){.three-scene-page .orbit-positioned-node i{width:142px!important;height:128px!important}}
-@media(max-width:520px){.three-scene-page .orbit-positioned-node i{width:88px!important;height:82px!important}}
-
-
 /* Match the child treasure-map typography across the exploration experience. */
 :root{--child-report-font:"LXGW WenKai","STKaiti","KaiTi","Microsoft YaHei","PingFang SC",sans-serif}
 body,.app-shell,.login-page,.content-page,.topbar button,.three-scene-page button{font-family:var(--child-report-font)}
