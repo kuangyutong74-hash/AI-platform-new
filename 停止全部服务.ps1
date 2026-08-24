@@ -7,7 +7,8 @@ if (-not (Test-Path -LiteralPath $registry)) {
   exit 0
 }
 
-$records = @(Get-Content -Raw -LiteralPath $registry | ConvertFrom-Json)
+$saved = Get-Content -Raw -LiteralPath $registry | ConvertFrom-Json
+$records = @(Convert-ServiceRegistryEntries -Entries @($saved))
 foreach ($record in $records) {
   $process = Get-Process -Id $record.Pid -ErrorAction SilentlyContinue
   if ($process) {

@@ -38,12 +38,60 @@ test("keeps four modules equal and preserves personal exploration nodes", async 
     assert.match(planet, new RegExp(label));
   }
   assert.match(planet, /deep-space-nebula-bg-v1|nebula-background/);
-  assert.match(planet, /stardust-fragment/);
-  assert.match(planet, /onPointerMove=\{handleOrbitPointerMove\}/);
+  assert.match(planet, /space-dust/);
+  assert.match(planet, /window\.addEventListener\("pointermove",onPointerMove\)/);
   assert.match(planet, /onWheel=\{handleWheel\}/);
   assert.match(planet, /沿星轨缓慢环行 · 拖动选择/);
   assert.match(planet, /requestAnimationFrame\(revolve\)/);
   assert.match(planet, /window\.location\.href=item\.url/);
   assert.match(page, /http:\/\/localhost:5175/);
   assert.match(page, /天赋报告/);
+});
+
+test("keeps the glowing growth star on the illustrated SVG trail", async () => {
+  const growth = await readFile(
+    new URL("../app/components/GrowthTrailPage.tsx", import.meta.url),
+    "utf8",
+  );
+  const styles = await readFile(
+    new URL("../app/styles/growth.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(growth, /getPointAtLength/);
+  assert.match(growth, /--trail-angle/);
+  assert.match(growth, /className="traveler-star"/);
+  assert.match(styles, /\.trail-paper-edge/);
+  assert.match(styles, /\.trail-stitches/);
+  assert.match(styles, /\.trail-progress-glow/);
+});
+
+test("keeps works as transparent highlight stickers and timeline as usage history", async () => {
+  const works = await readFile(
+    new URL("../app/components/WorksPage.tsx", import.meta.url),
+    "utf8",
+  );
+  const growth = await readFile(
+    new URL("../app/components/GrowthTrailPage.tsx", import.meta.url),
+    "utf8",
+  );
+  const data = await readFile(
+    new URL("../app/lib/explorer-data.mjs", import.meta.url),
+    "utf8",
+  );
+  const styles = await readFile(
+    new URL("../app/styles/works.css", import.meta.url),
+    "utf8",
+  );
+
+  for (const moduleName of ["story", "ocean", "career", "listening"]) {
+    assert.match(data, new RegExp(`highlight-${moduleName}-sticker-v1\\.webp`));
+  }
+  assert.match(works, /高光收藏册/);
+  assert.match(works, /metricValue/);
+  assert.match(styles, /\.sticker-picture[\s\S]*background:\s*transparent/);
+  assert.match(styles, /\.collection-art[\s\S]*background:\s*transparent/);
+  assert.match(growth, /注册起点/);
+  assert.match(growth, /timelineNotice/);
+  assert.match(growth, /item\.metricValue/);
 });

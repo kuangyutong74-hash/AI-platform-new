@@ -7,7 +7,8 @@ if (-not (Test-Path -LiteralPath $logDirectory)) { New-Item -ItemType Directory 
 $registryPath = Join-Path $runtime 'services.json'
 $started = @()
 if (Test-Path -LiteralPath $registryPath) {
-  $started += @(Get-Content -Raw -LiteralPath $registryPath | ConvertFrom-Json | Where-Object { Get-Process -Id $_.Pid -ErrorAction SilentlyContinue })
+  $saved = Get-Content -Raw -LiteralPath $registryPath | ConvertFrom-Json
+  $started += @(Convert-ServiceRegistryEntries -Entries @($saved) | Where-Object { Get-Process -Id $_.Pid -ErrorAction SilentlyContinue })
 }
 
 foreach ($service in Get-ServiceDefinitions) {

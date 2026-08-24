@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-24T00:00:00+08:00",
+  "title": "Design System: AI 伯乐儿童天赋探索星球",
+  "extensions": {
+    "colorMeta": {
+      "starry-indigo": { "role": "primary", "displayName": "星夜靛蓝", "canonical": "#21183d", "tonalRamp": ["#171129", "#21183d", "#35275f", "#594576", "#806e9a", "#afa2bd", "#d9d2df", "#f4f1f5"] },
+      "parchment-cream": { "role": "neutral", "displayName": "羊皮纸奶油", "canonical": "#fff8e8", "tonalRamp": ["#2b261d", "#4b4232", "#73664e", "#9f8e70", "#c9b995", "#eadbb9", "#fff0d5", "#fff8e8"] },
+      "starlight-gold": { "role": "secondary", "displayName": "星光金", "canonical": "#f0cb70", "tonalRamp": ["#2e250f", "#51421d", "#79642d", "#a68a43", "#d1ae57", "#f0cb70", "#f8e2a5", "#fff5da"] },
+      "ink-plum": { "role": "neutral", "displayName": "墨梅正文", "canonical": "#40374e", "tonalRamp": ["#19151e", "#292332", "#40374e", "#62576f", "#897c91", "#afa5b4", "#d5cfd8", "#f4f1f5"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "手写题签", "purpose": "页面主标题、作品名和章节题签。" },
+      "body": { "displayName": "温和手账正文", "purpose": "儿童可读的说明、故事和成长纸条。" },
+      "label": { "displayName": "清晰行动标签", "purpose": "按钮、状态和岛屿名。" }
+    },
+    "shadows": [
+      { "name": "paper-ambient", "value": "0 27px 52px rgba(13,20,46,.32)", "purpose": "抬起主要纸张面板。" },
+      { "name": "ticket-lift", "value": "0 15px 16px rgba(15,19,47,.28)", "purpose": "作品贴纸悬停反馈。" }
+    ],
+    "motion": [
+      { "name": "gentle-state", "value": "220ms ease", "purpose": "按钮、贴纸和链接状态变化。" },
+      { "name": "page-open", "value": "440ms cubic-bezier(.18,.83,.31,1)", "purpose": "宝藏书与成长手账打开。" }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "600px" },
+      { "name": "bottom-nav", "value": "850px" },
+      { "name": "compact-grid", "value": "860px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Starlight Gold Button",
+      "kind": "button",
+      "refersTo": "button-gold",
+      "description": "儿童页面的主要下一步操作。",
+      "html": "<button class=\"ds-btn-gold\">继续探索</button>",
+      "css": ".ds-btn-gold{min-height:48px;border:1px solid #d3a545;border-radius:999px;padding:10px 18px;background:#f0cb70;color:#40374e;font:700 16px 'LXGW WenKai',sans-serif;cursor:pointer;transition:transform .22s ease}.ds-btn-gold:hover{transform:translateY(-2px)}.ds-btn-gold:focus-visible{outline:3px solid #ffe795;outline-offset:3px}"
+    },
+    {
+      "name": "Paper Card",
+      "kind": "card",
+      "refersTo": "card-paper",
+      "description": "承载需要安静阅读的故事或成长内容。",
+      "html": "<article class=\"ds-paper-card\"><small>我的真实记录</small><h3>今天的新发现</h3><p>把认真尝试过的事情写在这里。</p></article>",
+      "css": ".ds-paper-card{max-width:360px;padding:28px;color:#40374e;background:#fff8e8;border-radius:48% 52% 49% 51%/8% 10% 9% 11%;box-shadow:0 20px 40px rgba(13,20,46,.25);font-family:'LXGW WenKai',sans-serif}.ds-paper-card h3{margin:8px 0;font:400 34px 'Ma Shan Zheng',cursive}.ds-paper-card p{margin:0;line-height:1.7}.ds-paper-card:focus-within{outline:3px solid #ffe795;outline-offset:3px}"
+    },
+    {
+      "name": "Personal Navigation",
+      "kind": "nav",
+      "description": "四个核心入口的深色导航。",
+      "html": "<nav class=\"ds-personal-nav\"><button>探索星球</button><button class=\"is-active\">我的作品</button><button>成长足迹</button><button>天赋报告</button></nav>",
+      "css": ".ds-personal-nav{display:flex;gap:24px;padding:14px 24px;background:#21183d}.ds-personal-nav button{border:0;border-bottom:2px solid transparent;padding:8px 2px;background:transparent;color:#dcd2e5;font:400 14px 'LXGW WenKai',sans-serif}.ds-personal-nav .is-active{color:#fff2b5;border-color:#f0cf76}.ds-personal-nav button:focus-visible{outline:3px solid #ffe795;outline-offset:3px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "水彩星球成长手账",
+    "overview": "界面像孩子亲手翻开的星空剪贴簿：深靛蓝水彩天空提供安静的想象空间，奶油纸张承载需要阅读和操作的内容，星光金只在行动、进度和鼓励时出现。真实记录优先；没有真实数据时，示例必须明确标注。",
+    "keyCharacteristics": ["水彩星空、纸张肌理与剪贴簿式层叠。", "低年级儿童能读懂的短句、大标题和大触控目标。", "四座探索大陆地位平等，以色调和插画区分。", "温和的漂浮、翻页和聚焦反馈，不用喧闹动画。"],
+    "rules": [
+      { "name": "The Paper Contrast Rule", "body": "长文本只放在浅色纸张上；星空背景只承载短标题、标签或带阴影的引导句。", "section": "colors" },
+      { "name": "The One-Sentence Rule", "body": "儿童第一眼看到的引导不超过一句；需要更多解释时分成卡片正文。", "section": "typography" },
+      { "name": "The Layered Paper Rule", "body": "阴影用于解释纸张层级和可点击性，而不是装饰所有元素。", "section": "elevation" }
+    ],
+    "dos": ["用真实数据生成作品与成长记录；空数据时明确写“示例”。", "保持四个探索模块同等视觉权重。", "为键盘操作、朗读、放大文字、对话框关闭和返回路径提供清晰反馈。", "优先使用压缩 WebP，并延迟加载首屏外插画。"],
+    "donts": ["使用通用后台表格、密集指标卡或排行榜来呈现儿童成长。", "用霓虹渐变、强玻璃拟态或快速闪烁替代温和的水彩手作感。", "把示例内容伪装成孩子的真实记录。", "让固定导航遮住正文、按钮或成长路径的起点。"]
+  }
+}

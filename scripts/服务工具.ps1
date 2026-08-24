@@ -53,3 +53,16 @@ function Get-RuntimeDirectory {
   if (-not (Test-Path -LiteralPath $directory)) { New-Item -ItemType Directory -Path $directory | Out-Null }
   return $directory
 }
+
+function Convert-ServiceRegistryEntries([object[]]$Entries) {
+  foreach ($entry in @($Entries)) {
+    if ($null -eq $entry) { continue }
+    if ($entry.PSObject.Properties['Pid'] -and $entry.PSObject.Properties['Name']) {
+      $entry
+      continue
+    }
+    if ($entry.PSObject.Properties['value']) {
+      Convert-ServiceRegistryEntries -Entries @($entry.value)
+    }
+  }
+}

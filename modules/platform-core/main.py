@@ -23,6 +23,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field, field_validator
 
+from explorer_collection import build_explorer_collection
+
 
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
@@ -115,7 +117,13 @@ def token_digest(token: str) -> str:
 
 
 def public_account(row: sqlite3.Row) -> dict:
-    return {"id": row["id"], "username": row["username"], "display_name": row["display_name"], "age": row["age"]}
+    return {
+        "id": row["id"],
+        "username": row["username"],
+        "display_name": row["display_name"],
+        "age": row["age"],
+        "created_at": row["created_at"],
+    }
 
 
 def require_account(token: str | None) -> sqlite3.Row:
@@ -293,6 +301,31 @@ def list_evidence(ai_bole_session: str | None = Cookie(default=None), limit: int
             "context": json.loads(row["context"]),
         })
     return {"account": public_account(account), "events": events}
+
+
+@app.get("/api/explorer/collection")
+def explorer_collection(ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    """分别提供模块高光与账号使用历程，避免两个页面职责重复。"""
+    account = require_account(ai_bole_session)
+    with connect() as db:
+        rows = db.execute(
+            "SELECT * FROM evidence_events WHERE account_id=? ORDER BY occurred_at DESC LIMIT 80",
+            (account["id"],),
+        ).fetchall()
+    events = [
+        {
+            "id": row["id"],
+            "module": row["module"],
+            "event_type": row["event_type"],
+            "occurred_at": row["occurred_at"],
+            "evidence_level": row["evidence_level"],
+            "behavior_summary": row["behavior_summary"],
+            "raw_evidence": json.loads(row["raw_evidence"]),
+            "context": json.loads(row["context"]),
+        }
+        for row in rows
+    ]
+    return build_explorer_collection(public_account(account), events)
 
 
 @app.get("/api/evidence/summary")
