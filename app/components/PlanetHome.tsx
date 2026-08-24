@@ -10,6 +10,10 @@ const cosmicNodes: {view: PlatformView; label: string}[] = [
   {view: "report", label: "天赋报告"},
 ];
 
+const starSpiritImg = "/assets/storybook/star-spirit.svg";
+const floatStarsImg = "/assets/storybook/float-stars.svg";
+const floatCloudImg = "/assets/storybook/float-cloud.svg";
+
 export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=>void}) {
   const [orbitRotation, setOrbitRotation] = useState(0);
   const [draggingOrbit, setDraggingOrbit] = useState(false);
@@ -34,22 +38,35 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     const delta = baseAngles.map(angle=>normalizeDelta(90-(angle+rotation))).sort((a,b)=>Math.abs(a)-Math.abs(b))[0];
     setOrbitRotation(rotation+delta);
   };
+  // 拖动星轨时不使用 setPointerCapture：指针捕获会把 click 事件重定向到轨道容器，
+  // 导致三颗星石按钮的 onClick 永远收不到点击。改为拖拽期间监听 window，
+  // 让松开后的 click 正常落在星石按钮上，点击星石即可跳转到对应页面。
+  useEffect(() => {
+    if (!draggingOrbit) return;
+    const onPointerMove = (event:PointerEvent) => {
+      const dx=event.clientX-dragState.current.x,dy=event.clientY-dragState.current.y;
+      if(Math.hypot(dx,dy)>5) dragState.current.moved=true;
+      setOrbitRotation(dragState.current.rotation+dx*.34-dy*.16);
+    };
+    const finishDrag = (event:PointerEvent) => {
+      const dx=event.clientX-dragState.current.x,dy=event.clientY-dragState.current.y;
+      setDraggingOrbit(false);
+      ignoreClick.current=dragState.current.moved;
+      if(dragState.current.moved) snapToFront(dragState.current.rotation+dx*.34-dy*.16);
+    };
+    window.addEventListener("pointermove",onPointerMove);
+    window.addEventListener("pointerup",finishDrag);
+    window.addEventListener("pointercancel",finishDrag);
+    return () => {
+      window.removeEventListener("pointermove",onPointerMove);
+      window.removeEventListener("pointerup",finishDrag);
+      window.removeEventListener("pointercancel",finishDrag);
+    };
+  }, [draggingOrbit]);
   const handleOrbitPointerDown = (event:ReactPointerEvent<HTMLElement>) => {
-    event.currentTarget.setPointerCapture(event.pointerId);
     dragState.current={x:event.clientX,y:event.clientY,rotation:orbitRotation,moved:false};
+    ignoreClick.current=false;
     setDraggingOrbit(true);
-  };
-  const handleOrbitPointerMove = (event:ReactPointerEvent<HTMLElement>) => {
-    if(!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-    const dx=event.clientX-dragState.current.x,dy=event.clientY-dragState.current.y;
-    if(Math.hypot(dx,dy)>5) dragState.current.moved=true;
-    setOrbitRotation(dragState.current.rotation+dx*.34-dy*.16);
-  };
-  const handleOrbitPointerUp = (event:ReactPointerEvent<HTMLElement>) => {
-    if(event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-    setDraggingOrbit(false);
-    ignoreClick.current=dragState.current.moved;
-    if(dragState.current.moved) snapToFront(orbitRotation);
   };
   const handleWheel = (event:ReactWheelEvent<HTMLElement>) => {
     event.preventDefault();
@@ -64,13 +81,14 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     <div className="nebula-background" aria-hidden="true"/>
     <div className="nebula-drift" aria-hidden="true"/>
     <div className="space-dust" aria-hidden="true"/>
-    <div className="stardust-fragment fragment-left" aria-hidden="true"/>
-    <div className="stardust-fragment fragment-right" aria-hidden="true"/>
     <div className="cosmic-cloud cosmic-cloud-back" aria-hidden="true"/>
     <div className="cosmic-cloud cosmic-cloud-front" aria-hidden="true"/>
+    <img className="planet-star-spirit" src={starSpiritImg} alt="" aria-hidden="true"/>
+    <img className="planet-float stars" src={floatStarsImg} alt="" aria-hidden="true"/>
+    <img className="planet-float cloud" src={floatCloudImg} alt="" aria-hidden="true"/>
     <div className="hero-copy"><p className="kicker">MY EXPLORATION PLANET</p><h1>转动星球，发现不一样的自己</h1><p>拖动观察梦幻星球，点击贴合球面的大陆即可直接开始探索。</p></div>
-    <nav className={`cosmic-node-system ${draggingOrbit?"orbit-dragging":""}`} aria-label="个人探索功能，可拖动星轨切换" tabIndex={0} onPointerDown={handleOrbitPointerDown} onPointerMove={handleOrbitPointerMove} onPointerUp={handleOrbitPointerUp} onPointerCancel={handleOrbitPointerUp} onWheel={handleWheel} onKeyDown={handleOrbitKey}>
-      <div className="cosmic-node-orbit" aria-hidden="true"/>
+    <nav className={`cosmic-node-system ${draggingOrbit?"orbit-dragging":""}`} aria-label="个人探索功能">
+      <button type="button" className="cosmic-node-orbit" aria-label="拖动或使用左右方向键旋转星轨" onPointerDown={handleOrbitPointerDown} onWheel={handleWheel} onKeyDown={handleOrbitKey}/>
       {cosmicNodes.map((node,index)=>{
         const angle=(baseAngles[index]+orbitRotation)*Math.PI/180;
         const tilt=-8*Math.PI/180;
@@ -80,7 +98,7 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
         const y=50+ellipseX*Math.sin(tilt)+ellipseY*Math.cos(tilt);
         const depth=(Math.sin(angle)+1)/2;
         const isFront=depth>.82;
-        return <button key={node.view} data-front={isFront||undefined} className={`cosmic-node orbit-positioned-node ${x<50?"node-left":"node-right"}`} style={{left:`${x}%`,top:`${y}%`,opacity:.46+depth*.54,transform:`translate(-50%,-50%) scale(${.76+depth*.28})`,zIndex:12+Math.round(depth*8)}} onClick={()=>{if(ignoreClick.current){ignoreClick.current=false;return;}onNavigate(node.view);}}><i aria-hidden="true"/><span>{node.label}</span></button>;
+        return <button key={node.view} data-front={isFront||undefined} className={`cosmic-node orbit-positioned-node node-art-${index} ${x<50?"node-left":"node-right"}`} data-node-index={index} style={{left:`${x}%`,top:`${y}%`,opacity:.46+depth*.54,transform:`translate(-50%,-50%) scale(${.76+depth*.28})`,zIndex:12+Math.round(depth*8)}} onClick={()=>{if(ignoreClick.current){ignoreClick.current=false;return;}onNavigate(node.view);}}><i aria-hidden="true"/><span>{node.label}</span></button>;
       })}
       <span className="orbit-control-hint" aria-hidden="true">沿星轨缓慢环行 · 拖动选择</span>
     </nav>

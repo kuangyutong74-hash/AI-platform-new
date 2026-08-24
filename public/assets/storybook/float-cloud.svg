@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" fill="none">
+  <defs>
+    <radialGradient id="cloudWash" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#eef0fa" stop-opacity=".7"/>
+      <stop offset="60%" stop-color="#c8d0e8" stop-opacity=".35"/>
+      <stop offset="100%" stop-color="#c8d0e8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="cloudStar" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff" stop-opacity=".9"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g opacity=".8">
+    <path d="M42 86c-12-2-20-13-17-25 2-8 9-14 17-15 3-13 15-22 28-19 10 2 17 10 19 20 10 1 18 9 18 19 0 11-9 20-20 20H42z" fill="url(#cloudWash)" stroke="#c8d0e8" stroke-width="1" stroke-linejoin="round"/>
+    <circle cx="70" cy="58" r="4" fill="url(#cloudStar)" opacity=".9"/>
+    <path d="M66 72c2 2 5 3 8 2" stroke="#a8b4d0" stroke-width="1" stroke-linecap="round" opacity=".6"/>
+    <circle cx="52" cy="66" r="1" fill="#d8deef" opacity=".8"/>
+    <circle cx="92" cy="70" r="1.2" fill="#d8deef" opacity=".7"/>
+  </g>
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <radialGradient id="spiritGlow" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#fff8e6" stop-opacity=".95"/>
+      <stop offset="40%" stop-color="#f0dca3" stop-opacity=".55"/>
+      <stop offset="100%" stop-color="#d4b8e8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="spiritTail" cx="50%" cy="0%" r="80%">
+      <stop offset="0%" stop-color="#f0dca3" stop-opacity=".6"/>
+      <stop offset="100%" stop-color="#d4b8e8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g opacity=".95">
+    <path d="M60 22l6 18h18l-14 10 5 17-15-10-15 10 5-17-14-10h18z" fill="url(#spiritGlow)" stroke="#e6d2a0" stroke-width="1"/>
+    <circle cx="52" cy="48" r="1.8" fill="#8a7a52"/>
+    <circle cx="64" cy="48" r="1.8" fill="#8a7a52"/>
+    <path d="M56 54c1 2 3 3 5 3" stroke="#a8946a" stroke-width="1.1" stroke-linecap="round"/>
+    <path d="M36 68c-4 12-2 26 8 34" stroke="url(#spiritTail)" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+    <circle cx="34" cy="72" r="2" fill="#e6d2a0" opacity=".6"/>
+    <circle cx="32" cy="84" r="1.4" fill="#d4b8e8" opacity=".5"/>
+    <path d="M72 60c8-2 14 4 14 11" stroke="#e6d2a0" stroke-width="1.2" stroke-linecap="round" fill="none" opacity=".7"/>
+  </g>
+</svg>

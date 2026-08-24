@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480" fill="none">
+  <defs>
+    <linearGradient id="gold" x1="75" y1="235" x2="1130" y2="270" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D7A846" stop-opacity=".34"/>
+      <stop offset=".24" stop-color="#E9BB59" stop-opacity=".9"/>
+      <stop offset=".52" stop-color="#F2C967" stop-opacity=".55"/>
+      <stop offset=".78" stop-color="#DDA94B" stop-opacity=".92"/>
+      <stop offset="1" stop-color="#C9953A" stop-opacity=".28"/>
+    </linearGradient>
+    <filter id="soft" x="-10%" y="-20%" width="120%" height="140%">
+      <feGaussianBlur stdDeviation="1.4"/>
+    </filter>
+  </defs>
+  <path d="M71 248C118 92 378 31 642 73c272 43 475 181 489 286 13 94-164 111-356 74-235-45-385-159-555-148-84 5-137 26-149-37Z" stroke="#FFF3C8" stroke-width="8" stroke-linecap="round" stroke-dasharray="1 22" opacity=".52" filter="url(#soft)"/>
+  <path d="M71 248C118 92 378 31 642 73c272 43 475 181 489 286 13 94-164 111-356 74-235-45-385-159-555-148-84 5-137 26-149-37Z" stroke="url(#gold)" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 16"/>
+  <path d="M190 300c96 82 269 141 466 153 173 10 347-19 433-80" stroke="#D59D38" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 13" opacity=".48"/>
+  <g fill="#E6B650">
+    <path d="m139 199 4 10 10 4-10 4-4 10-4-10-10-4 10-4 4-10Z" opacity=".78"/>
+    <path d="m1057 186 3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8Z" opacity=".72"/>
+    <circle cx="313" cy="88" r="3" opacity=".6"/><circle cx="942" cy="425" r="3" opacity=".6"/>
+  </g>
+</svg>
