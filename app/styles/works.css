@@ -40,26 +40,88 @@
   color: var(--works-ink);
   isolation: isolate;
 }
+.works-view:before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 185px;
+  left: -310px;
+  width: min(1040px, 88vw);
+  height: 350px;
+  border: 2px solid rgba(151, 125, 175, 0.2);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 9px rgba(255, 250, 232, 0.13),
+    0 18px 46px rgba(116, 94, 142, 0.08);
+  transform: rotate(-16deg);
+  pointer-events: none;
+}
+.works-view:after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 142px;
+  right: clamp(18px, 6vw, 88px);
+  width: 190px;
+  height: 145px;
+  background:
+    radial-gradient(circle at 12% 58%, rgba(184, 126, 155, 0.78) 0 2px, transparent 3px),
+    radial-gradient(circle at 35% 28%, rgba(205, 155, 79, 0.82) 0 3px, transparent 4px),
+    radial-gradient(circle at 62% 48%, rgba(127, 112, 171, 0.72) 0 2px, transparent 3px),
+    radial-gradient(circle at 84% 18%, rgba(205, 155, 79, 0.7) 0 2px, transparent 3px),
+    linear-gradient(28deg, transparent 25%, rgba(150, 121, 167, 0.2) 25.5% 26%, transparent 26.5% 49%, rgba(150, 121, 167, 0.2) 49.5% 50%, transparent 50.5% 72%, rgba(150, 121, 167, 0.18) 72.5% 73%, transparent 73.5%);
+  opacity: 0.74;
+  transform: rotate(7deg);
+  pointer-events: none;
+}
 .works-sky {
   position: absolute;
   z-index: -2;
   inset: 0;
-  background: #dcd8e8
-    url("/assets/collections/growth/watercolor-sky-scroll.webp") center top/cover
-    fixed;
-  background-blend-mode: soft-light;
+  background:
+    radial-gradient(ellipse at 13% 20%, rgba(225, 174, 194, 0.4), transparent 29%),
+    radial-gradient(ellipse at 88% 14%, rgba(214, 184, 117, 0.26), transparent 24%),
+    radial-gradient(ellipse at 72% 72%, rgba(151, 184, 206, 0.3), transparent 34%),
+    linear-gradient(rgba(248, 241, 249, 0.72), rgba(226, 230, 243, 0.78)),
+    #ded8e9 url("/assets/collections/growth/watercolor-sky-scroll.webp") center top/cover fixed;
+  background-blend-mode: normal, normal, normal, screen, soft-light;
+}
+.works-sky:before {
+  content: "";
+  position: absolute;
+  top: 245px;
+  left: -118px;
+  width: 330px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 250, 233, 0.72);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 247, 0.82), transparent 18%),
+    radial-gradient(ellipse at 64% 35%, rgba(221, 168, 186, 0.74) 0 12%, transparent 14%),
+    radial-gradient(ellipse at 39% 70%, rgba(129, 166, 187, 0.56) 0 16%, transparent 18%),
+    linear-gradient(145deg, #f3d8df 4%, #cbc2e4 54%, #a9c4d6 100%);
+  box-shadow:
+    inset -30px -24px 44px rgba(112, 91, 139, 0.2),
+    inset 22px 16px 28px rgba(255, 255, 246, 0.42),
+    0 28px 58px rgba(103, 84, 129, 0.16);
+  filter: saturate(0.82);
+  opacity: 0.76;
 }
 .works-sky:after {
   content: "";
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(rgba(250, 247, 251, 0.54), rgba(232, 237, 246, 0.7)),
-    radial-gradient(
-      circle at 50% 20%,
-      rgba(255, 239, 195, 0.18),
-      transparent 35%
-    );
+    radial-gradient(circle at 8% 12%, rgba(195, 144, 71, 0.72) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 27% 31%, rgba(126, 105, 164, 0.54) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 69% 18%, rgba(195, 144, 71, 0.62) 0 2px, transparent 3px),
+    radial-gradient(circle at 91% 42%, rgba(154, 102, 140, 0.5) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle, rgba(112, 97, 151, 0.25) 0 1px, transparent 1.6px),
+    linear-gradient(126deg, transparent 0 28%, rgba(236, 192, 202, 0.18) 37%, transparent 48% 72%, rgba(178, 203, 217, 0.2) 83%, transparent 94%);
+  background-size: auto, auto, auto, auto, 112px 112px, auto;
+  opacity: 0.72;
+  mix-blend-mode: multiply;
+  pointer-events: none;
 }
 .works-welcome {
   position: relative;
@@ -931,6 +993,24 @@
   }
 }
 @media (max-width: 560px) {
+  .works-view:before {
+    top: 250px;
+    left: -330px;
+    width: 670px;
+    height: 245px;
+  }
+  .works-view:after {
+    top: 160px;
+    right: -28px;
+    width: 135px;
+    height: 110px;
+  }
+  .works-sky:before {
+    top: 285px;
+    left: -112px;
+    width: 225px;
+    opacity: 0.62;
+  }
   .works-view {
     min-height: calc(100svh - 66px);
   }
