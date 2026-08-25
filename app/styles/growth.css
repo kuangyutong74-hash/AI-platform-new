@@ -14,95 +14,20 @@
   isolation: isolate;
   color: #40374e;
   background:
-    radial-gradient(ellipse at 8% 8%, rgba(242, 193, 177, 0.36), transparent 27%),
-    radial-gradient(ellipse at 92% 17%, rgba(137, 192, 201, 0.34), transparent 30%),
-    radial-gradient(ellipse at 20% 62%, rgba(190, 174, 214, 0.25), transparent 34%),
-    linear-gradient(rgba(242, 248, 247, 0.7), rgba(223, 235, 244, 0.8)),
-    #dce8ed url("/assets/collections/growth/watercolor-sky-scroll.webp") center top/cover;
-  background-blend-mode: normal, normal, normal, screen, soft-light;
+    linear-gradient(180deg, rgba(251, 248, 248, 0.42), rgba(242, 240, 247, 0.52)),
+    #d8dbea url("/assets/collections/growth/watercolor-sky-scroll.webp") center top/cover fixed;
+  background-blend-mode: screen, normal;
 }
 .growth-view:before {
   content: "";
   position: absolute;
   z-index: -1;
   inset: 0;
-  background:
-    radial-gradient(circle at 12% 9%, rgba(183, 129, 66, 0.68) 0 1.5px, transparent 2.5px),
-    radial-gradient(circle at 71% 14%, rgba(104, 142, 164, 0.58) 0 1.5px, transparent 2.5px),
-    radial-gradient(circle at 88% 38%, rgba(163, 112, 146, 0.46) 0 2px, transparent 3px),
-    radial-gradient(circle, rgba(103, 135, 158, 0.22) 0 1px, transparent 1.6px),
-    linear-gradient(118deg, transparent 12%, rgba(255, 247, 219, 0.18) 26%, transparent 39% 68%, rgba(160, 205, 204, 0.17) 82%, transparent 94%);
-  background-size: auto, auto, auto, 126px 126px, auto;
-  opacity: 0.82;
-  pointer-events: none;
-}
-.growth-view:after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  top: 190px;
-  right: -430px;
-  width: min(1040px, 94vw);
-  height: 360px;
-  border: 2px solid rgba(105, 157, 174, 0.2);
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 10px rgba(255, 248, 223, 0.12),
-    0 24px 56px rgba(87, 128, 154, 0.08);
-  transform: rotate(17deg);
+  background: linear-gradient(180deg, rgba(255, 250, 242, 0.06), rgba(238, 236, 246, 0.18));
   pointer-events: none;
 }
 .growth-cloud {
-  position: absolute;
-  z-index: -1;
-  width: 44rem;
-  aspect-ratio: 1.6;
-  border-radius: 48% 54% 44% 58%;
-  border: 1px solid rgba(255, 252, 235, 0.5);
-  filter: blur(7px) saturate(0.88);
-  opacity: 0.52;
-  pointer-events: none;
-}
-.growth-cloud:before {
-  content: "";
-  position: absolute;
-  inset: -20% -14%;
-  border: 2px solid rgba(117, 151, 169, 0.18);
-  border-radius: 50%;
-  transform: rotate(-11deg);
-}
-.growth-cloud:after {
-  content: "";
-  position: absolute;
-  inset: -18%;
-  border-radius: inherit;
-  background:
-    radial-gradient(circle at 18% 52%, rgba(182, 133, 64, 0.72) 0 3px, transparent 4px),
-    radial-gradient(circle at 42% 24%, rgba(115, 142, 166, 0.62) 0 2px, transparent 3px),
-    radial-gradient(circle at 76% 58%, rgba(154, 105, 141, 0.55) 0 2px, transparent 3px),
-    radial-gradient(circle at 88% 30%, rgba(182, 133, 64, 0.62) 0 2px, transparent 3px);
-}
-.growth-cloud-one {
-  top: 42rem;
-  right: -24rem;
-  background:
-    radial-gradient(circle at 33% 28%, rgba(255, 249, 232, 0.72), transparent 19%),
-    radial-gradient(ellipse at 70% 58%, rgba(175, 151, 205, 0.62), transparent 34%),
-    linear-gradient(142deg, rgba(238, 179, 179, 0.9), rgba(207, 190, 222, 0.74));
-  box-shadow:
-    inset -24px -22px 42px rgba(130, 101, 148, 0.16),
-    0 30px 60px rgba(120, 91, 135, 0.12);
-}
-.growth-cloud-two {
-  top: 150rem;
-  left: -25rem;
-  background:
-    radial-gradient(circle at 62% 32%, rgba(255, 249, 222, 0.72), transparent 18%),
-    radial-gradient(ellipse at 28% 66%, rgba(153, 190, 168, 0.66), transparent 36%),
-    linear-gradient(136deg, rgba(139, 196, 205, 0.88), rgba(184, 210, 202, 0.72));
-  box-shadow:
-    inset 26px -20px 42px rgba(75, 129, 145, 0.14),
-    0 30px 60px rgba(80, 132, 151, 0.12);
+  display: none;
 }
 .growth-hero {
   position: relative;
@@ -947,22 +872,10 @@
 @media (max-width: 600px) {
   .growth-view {
     min-height: calc(100svh - 66px);
-  }
-  .growth-view:after {
-    top: 290px;
-    right: -355px;
-    width: 610px;
-    height: 220px;
-  }
-  .growth-cloud {
-    width: 28rem;
-    opacity: 0.42;
-  }
-  .growth-cloud-one {
-    right: -21rem;
-  }
-  .growth-cloud-two {
-    left: -21rem;
+    background-position: center, center top;
+    background-size: auto, auto 100svh;
+    background-repeat: repeat, repeat-y;
+    background-attachment: scroll;
   }
   .growth-hero {
     width: calc(100% - 24px);
