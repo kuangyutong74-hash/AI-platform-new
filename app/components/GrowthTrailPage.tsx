@@ -360,8 +360,7 @@ export default function GrowthTrailPage({
         <div className="growth-hero-copy">
           <div>
             <h1 id="growth-title">
-              <span>{data.account.displayName}的星空</span>
-              <span>漫游足迹</span>
+              {data.account.displayName}的星空漫游足迹
             </h1>
             <ExplorerIcon name="spark" size={28} />
           </div>
@@ -391,9 +390,7 @@ export default function GrowthTrailPage({
         <div className="growth-intro">
           <ExplorerIcon name="spark" />
           <p>
-            第一站，是你来到探索星球的那一天。
-            <br />
-            往后每一站，都记录一座大陆陪你走了多久。
+            第一站，是你来到探索星球的那一天。往后每一站，都记录一座大陆陪你走了多久。
           </p>
         </div>
         <TrailLine />

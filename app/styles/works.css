@@ -5,10 +5,11 @@
   justify-items: center;
   gap: 8px;
   padding: 32px;
-  color: #fff8df;
+  color: #40374e;
   text-align: center;
-  background: #1f294d
+  background: #e6e1ee
     url("/assets/collections/growth/watercolor-sky-scroll.webp") center/cover;
+  background-blend-mode: soft-light;
 }
 .personal-loading .loading-star {
   display: grid;
@@ -20,13 +21,13 @@
 }
 .personal-loading h1 {
   margin: 0;
-  font-family: "Ma Shan Zheng", "ZCOOL KuaiLe", cursive;
-  font-size: clamp(2rem, 5vw, 3.6rem);
-  font-weight: 400;
+  font-family: var(--child-report-font);
+  font-size: clamp(27px, 3vw, 42px);
+  font-weight: 700;
 }
 .personal-loading p {
   margin: 0;
-  color: #e8e3ef;
+  color: #675d70;
 }
 .works-view {
   --works-night: #21183d;
@@ -43,16 +44,17 @@
   position: absolute;
   z-index: -2;
   inset: 0;
-  background: #251c47
+  background: #dcd8e8
     url("/assets/collections/growth/watercolor-sky-scroll.webp") center top/cover
     fixed;
+  background-blend-mode: soft-light;
 }
 .works-sky:after {
   content: "";
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(rgba(30, 25, 60, 0.14), rgba(23, 28, 60, 0.45)),
+    linear-gradient(rgba(250, 247, 251, 0.54), rgba(232, 237, 246, 0.7)),
     radial-gradient(
       circle at 50% 20%,
       rgba(255, 239, 195, 0.18),
@@ -68,23 +70,24 @@
   grid-template-columns: minmax(145px, 1fr) 2fr minmax(145px, 1fr);
   align-items: center;
   gap: 20px;
-  color: #fff8e7;
+  color: #40374e;
 }
 .works-welcome > div {
   text-align: center;
 }
 .works-welcome h1 {
   margin: 0;
-  font-family: "Ma Shan Zheng", "ZCOOL KuaiLe", cursive;
-  font-size: clamp(2rem, 3.5vw, 3.5rem);
-  line-height: 1.1;
-  font-weight: 400;
+  font-family: var(--child-report-font);
+  font-size: clamp(27px, 3vw, 42px);
+  line-height: 1.25;
+  font-weight: 700;
+  white-space: nowrap;
   text-wrap: balance;
-  text-shadow: 0 3px 14px rgba(12, 16, 43, 0.52);
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.72);
 }
 .works-welcome p {
   margin: 7px 0 0;
-  color: #f2e8f0;
+  color: #62586b;
   font-size: 14px;
 }
 .back-to-planet,
@@ -98,9 +101,10 @@
   border: 1px solid rgba(255, 255, 255, 0.36);
   border-radius: 999px;
   padding: 10px 16px;
-  color: #fff9e6;
-  background: rgba(34, 27, 66, 0.58);
-  box-shadow: 0 10px 24px rgba(16, 18, 44, 0.18);
+  color: #554766;
+  background: rgba(255, 252, 244, 0.82);
+  box-shadow: 0 10px 24px rgba(70, 60, 86, 0.12);
+  white-space: nowrap;
   cursor: pointer;
 }
 .back-to-planet {
@@ -200,10 +204,11 @@
 }
 .book-title h2 {
   margin: 0;
-  font-family: "Ma Shan Zheng", "ZCOOL KuaiLe", cursive;
-  font-size: clamp(1.8rem, 3.3vw, 3.45rem);
+  font-family: var(--child-report-font);
+  font-size: clamp(1.65rem, 2.6vw, 2.35rem);
   line-height: 1;
-  font-weight: 400;
+  font-weight: 700;
+  white-space: nowrap;
   color: #5b4265;
   text-shadow: 0 2px #fff6df;
 }
@@ -286,7 +291,7 @@
   color: #fff8dc;
   background: #b97976;
   box-shadow: 0 5px 10px rgba(74, 50, 63, 0.24);
-  font: 400 1.15rem/1 "Ma Shan Zheng", cursive;
+  font: 700 1rem/1 var(--child-report-font);
   transform: rotate(8deg);
 }
 .sticker-1 .sticker-picture > i { background: #5993a4; }
@@ -344,9 +349,9 @@
   white-space: nowrap;
 }
 .sticker-caption b {
-  font-family: "Ma Shan Zheng", "ZCOOL KuaiLe", cursive;
-  font-size: clamp(15px, 1.35vw, 22px);
-  font-weight: 400;
+  font-family: var(--child-report-font);
+  font-size: clamp(14px, 1.2vw, 17px);
+  font-weight: 700;
 }
 .sticker-caption small {
   margin-top: 2px;
@@ -408,10 +413,11 @@
 }
 .personal-page-header h1 {
   margin: 0;
-  font-family: "Ma Shan Zheng", "ZCOOL KuaiLe", cursive;
-  font-size: clamp(2rem, 3.4vw, 3.4rem);
-  line-height: 1;
-  font-weight: 400;
+  font-family: var(--child-report-font);
+  font-size: clamp(27px, 3vw, 42px);
+  line-height: 1.25;
+  font-weight: 700;
+  white-space: nowrap;
 }
 .personal-page-header p {
   margin: 6px 0 0;
@@ -423,12 +429,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: 2.1rem;
-  font-weight: 400;
+  font-family: var(--child-report-font);
+  font-size: 1.75rem;
+  font-weight: 700;
 }
 .personal-page-header > strong small {
-  font-family: "LXGW WenKai", "Microsoft YaHei", sans-serif;
+  font-family: var(--child-report-font);
   font-size: 10px;
 }
 .personal-page-header .paper-action {
@@ -556,8 +562,8 @@
   box-shadow: inset 0 0 0 4px #796087;
 }
 .ticket-number {
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: 1.7rem;
+  font-family: var(--child-report-font);
+  font-size: 1.45rem;
   color: #a77b4c;
   text-align: center;
 }
@@ -584,9 +590,9 @@
 }
 .work-ticket b {
   margin-top: 5px;
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: 1.65rem;
-  font-weight: 400;
+  font-family: var(--child-report-font);
+  font-size: 1.25rem;
+  font-weight: 700;
 }
 .work-ticket p {
   margin: 4px 0 0;
@@ -620,9 +626,9 @@
   color: #c78f34;
 }
 .collection-empty h2 {
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: 2.2rem;
-  font-weight: 400;
+  font-family: var(--child-report-font);
+  font-size: 1.75rem;
+  font-weight: 700;
 }
 .collection-empty p {
   line-height: 1.7;
@@ -718,13 +724,14 @@
   font-variant-numeric: tabular-nums;
 }
 .work-reader h2 {
-  max-width: 12ch;
+  max-width: none;
   margin: 8px 0 20px;
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: clamp(2.7rem, 4.5vw, 4.2rem);
-  line-height: 1.08;
-  font-weight: 400;
+  font-family: var(--child-report-font);
+  font-size: clamp(2rem, 3vw, 2.625rem);
+  line-height: 1.25;
+  font-weight: 700;
   text-wrap: balance;
+  white-space: nowrap;
 }
 .reader-body {
   font-size: 1.05rem;
@@ -762,8 +769,8 @@
   color: #6c4f6c;
   background: #f2e2e4;
   clip-path: polygon(2% 3%, 98% 0, 100% 94%, 0 100%);
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: 1.45rem;
+  font-family: var(--child-report-font);
+  font-size: 1.08rem;
   line-height: 1.6;
 }
 .reader-note {
@@ -931,7 +938,8 @@
     padding: 16px 14px;
   }
   .works-welcome h1 {
-    font-size: 2.35rem;
+    font-size: 1.625rem;
+    white-space: normal;
   }
   .works-welcome p {
     font-size: 12px;
@@ -958,7 +966,8 @@
     width: 88%;
   }
   .book-title h2 {
-    font-size: 2.3rem;
+    font-size: 1.75rem;
+    white-space: normal;
   }
   .treasure-stickers {
     grid-template-columns: 1fr;
@@ -995,7 +1004,8 @@
     width: 42px;
   }
   .personal-page-header h1 {
-    font-size: 2.15rem;
+    font-size: 1.625rem;
+    white-space: normal;
   }
   .personal-page-header p {
     font-size: 11px;
@@ -1041,7 +1051,8 @@
     justify-content: flex-start;
   }
   .work-reader h2 {
-    font-size: 3rem;
+    font-size: 1.75rem;
+    white-space: normal;
   }
   .reader-actions > * {
     width: 100%;

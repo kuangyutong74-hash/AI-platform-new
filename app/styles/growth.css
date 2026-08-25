@@ -12,17 +12,18 @@
   padding: 1px 0 70px;
   overflow: hidden;
   isolation: isolate;
-  color: #fff9e9;
-  background: #182443
+  color: #40374e;
+  background: #dce4ef
     url("/assets/collections/growth/watercolor-sky-scroll.webp") center
     top/cover;
+  background-blend-mode: soft-light;
 }
 .growth-view:before {
   content: "";
   position: absolute;
   z-index: -1;
   inset: 0;
-  background: linear-gradient(rgba(24, 35, 68, 0.24), rgba(18, 29, 57, 0.55));
+  background: linear-gradient(rgba(250, 247, 251, 0.5), rgba(226, 235, 245, 0.72));
 }
 .growth-cloud {
   position: absolute;
@@ -108,14 +109,12 @@
 }
 .growth-hero h1 {
   margin: 0;
-  font-family: "Ma Shan Zheng", "ZCOOL KuaiLe", cursive;
-  font-size: clamp(2.5rem, 5vw, 4.35rem);
-  line-height: 1.02;
-  font-weight: 400;
-  letter-spacing: -0.02em;
-}
-.growth-hero h1 span {
-  display: block;
+  font-family: var(--child-report-font);
+  font-size: clamp(27px, 3vw, 42px);
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 .growth-hero-copy > div > svg {
   color: #d79c3d;
@@ -176,18 +175,18 @@
   gap: 9px;
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 999px;
-  background: rgba(31, 41, 76, 0.72);
-  color: #fff3d3;
+  background: rgba(255, 250, 236, 0.88);
+  color: #5b4d62;
   font-size: 13px;
 }
 .growth-notice.is-error {
-  background: rgba(92, 55, 64, 0.78);
+  background: rgba(255, 238, 229, 0.94);
 }
 .growth-notice button {
   border: 0;
   border-bottom: 1px solid currentColor;
   background: none;
-  color: #fff3d3;
+  color: #765347;
   cursor: pointer;
 }
 .growth-trail {
@@ -209,14 +208,15 @@
 }
 .growth-intro svg {
   margin-top: 8px;
-  color: #ffe6a0;
+  color: #b5802d;
 }
 .growth-intro p {
   margin: 0;
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: 1.45rem;
+  font-family: var(--child-report-font);
+  font-size: 1.05rem;
+  color: #554c62;
   line-height: 1.65;
-  text-shadow: 0 2px 10px rgba(15, 24, 54, 0.5);
+  text-shadow: none;
 }
 .growth-trail-line {
   position: absolute;
@@ -441,8 +441,8 @@
   border-radius: 45% 55% 52% 48%;
   background: var(--paper);
   color: #5b4761;
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: 1.55rem;
+  font-family: var(--child-report-font);
+  font-size: 1.3rem;
   box-shadow: 0 7px 13px rgba(17, 27, 59, 0.25);
   transform: rotate(6deg);
 }
@@ -465,7 +465,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  text-shadow: 0 2px 9px rgba(18, 26, 57, 0.56);
+  text-shadow: none;
 }
 .milestone-island {
   width: fit-content;
@@ -489,17 +489,18 @@
   background: #f7e7bb;
 }
 .milestone-copy h2 {
-  max-width: 12ch;
+  max-width: none;
   margin: 0;
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: clamp(2.4rem, 4vw, 3.7rem);
-  line-height: 1.16;
-  font-weight: 400;
+  font-family: var(--child-report-font);
+  font-size: clamp(1.8rem, 2.8vw, 2.35rem);
+  line-height: 1.25;
+  font-weight: 700;
+  white-space: nowrap;
   text-wrap: balance;
 }
 .milestone-date {
   margin: 14px 0 5px;
-  color: #ede8e7;
+  color: #62596b;
   font-size: 0.95rem;
   font-variant-numeric: tabular-nums;
 }
@@ -537,7 +538,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #fff0b3;
+  color: #80613f;
   font-size: 0.92rem;
 }
 .milestone-open {
@@ -549,7 +550,7 @@
   border-bottom: 2px solid rgba(246, 210, 119, 0.7);
   padding: 10px 0 7px;
   background: none;
-  color: #fff6d6;
+  color: #654e5c;
   cursor: pointer;
   transition:
     gap 0.2s,
@@ -621,10 +622,10 @@
 .starlight-camp h2 {
   max-width: 15ch;
   margin: 0;
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: clamp(2.3rem, 4.2vw, 3.75rem);
-  line-height: 1.12;
-  font-weight: 400;
+  font-family: var(--child-report-font);
+  font-size: clamp(1.8rem, 2.8vw, 2.35rem);
+  line-height: 1.25;
+  font-weight: 700;
 }
 .starlight-camp p {
   max-width: 40rem;
@@ -741,8 +742,8 @@
 .memory-picture blockquote {
   margin: 15px 0 0;
   color: #5b5269;
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: 1.4rem;
+  font-family: var(--child-report-font);
+  font-size: 1.05rem;
   line-height: 1.6;
   text-align: center;
 }
@@ -769,10 +770,10 @@
 .trail-memory-book h2 {
   max-width: 12ch;
   margin: 0;
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: clamp(2.4rem, 4vw, 3.6rem);
-  line-height: 1.1;
-  font-weight: 400;
+  font-family: var(--child-report-font);
+  font-size: clamp(1.8rem, 2.8vw, 2.35rem);
+  line-height: 1.25;
+  font-weight: 700;
 }
 .memory-heading {
   margin: 26px 0 8px;
@@ -911,10 +912,12 @@
     justify-content: center;
   }
   .growth-hero h1 {
-    font-size: 2.75rem;
+    font-size: 1.7rem;
+    white-space: normal;
   }
   .growth-promise {
-    letter-spacing: 0.04em;
+    font-size: 0.96rem;
+    letter-spacing: 0;
   }
   .growth-source {
     margin: 14px auto 0;
@@ -926,7 +929,7 @@
     line-height: 1.45;
   }
   .growth-intro p {
-    font-size: 1.25rem;
+    font-size: 1rem;
   }
   .growth-trail-line {
     left: 18%;
@@ -989,7 +992,8 @@
   }
   .milestone-copy h2 {
     max-width: none;
-    font-size: 2.6rem;
+    font-size: 1.75rem;
+    white-space: normal;
   }
   .milestone-date {
     color: #6f6b7c;
@@ -1021,7 +1025,7 @@
   }
   .starlight-camp h2 {
     max-width: none;
-    font-size: 2.7rem;
+    font-size: 1.8rem;
   }
   .starlight-camp > div > div {
     justify-content: center;

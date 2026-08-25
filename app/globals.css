@@ -3555,3 +3555,49 @@ html {
   outline: 3px solid #ffe795;
   outline-offset: 3px;
 }
+
+/* “我的作品 / 成长足迹”沿用探索星球的明亮顶栏与排版节奏。 */
+.topbar.personal-topbar.view-works,
+.topbar.personal-topbar.view-timeline {
+  border-bottom-color: rgba(124, 108, 154, 0.16);
+  background: rgba(255, 252, 244, 0.96);
+  color: #40374e;
+  box-shadow: 0 8px 24px rgba(79, 67, 95, 0.1);
+}
+.personal-topbar.view-works .brand b,
+.personal-topbar.view-timeline .brand b {
+  color: #40374e;
+}
+.personal-topbar.view-works .brand small,
+.personal-topbar.view-works nav button,
+.personal-topbar.view-timeline .brand small,
+.personal-topbar.view-timeline nav button {
+  color: #6f6579;
+  white-space: nowrap;
+}
+.personal-topbar.view-works nav button.active,
+.personal-topbar.view-timeline nav button.active {
+  color: #594672;
+  border-color: #ba8daa;
+}
+.personal-topbar.view-works .profile > span,
+.personal-topbar.view-timeline .profile > span {
+  color: #51475c;
+}
+@media (max-width: 850px) {
+  .topbar.personal-topbar.view-works nav,
+  .topbar.personal-topbar.view-timeline nav {
+    border-top-color: rgba(124, 108, 154, 0.16);
+    background: rgba(255, 252, 244, 0.98);
+    box-shadow: 0 -8px 24px rgba(79, 67, 95, 0.1);
+  }
+  .personal-topbar.view-works nav button,
+  .personal-topbar.view-timeline nav button {
+    color: #6f6579;
+  }
+  .personal-topbar.view-works nav button.active,
+  .personal-topbar.view-timeline nav button.active {
+    color: #594672;
+    border-color: #ba8daa;
+  }
+}
