@@ -31,6 +31,8 @@ test("normalizes account-owned works and milestones without replacing them with 
         summary: "第一颗星",
         occurred_at: "2026-08-01T08:00:00+00:00",
         unlocked: true,
+        duration_seconds: 0,
+        duration_coverage: 0,
       },
     ],
   });
@@ -43,6 +45,8 @@ test("normalizes account-owned works and milestones without replacing them with 
   assert.equal(result.works[0].metricValue, "386 字");
   assert.equal(result.milestones.length, 1);
   assert.equal(result.milestones[0].module, "registration");
+  assert.equal(result.milestones[0].durationSeconds, 0);
+  assert.equal(result.milestones[0].durationCoverage, 0);
   assert.equal(result.worksAreDemo, false);
   assert.equal(result.timelineIsDemo, false);
 });

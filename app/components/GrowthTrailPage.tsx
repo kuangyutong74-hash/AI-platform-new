@@ -223,7 +223,7 @@ function TrailDialog({
           ref={closeRef}
           className="trail-dialog-close"
           onClick={onClose}
-          aria-label="合上使用历程手账"
+          aria-label="合上完成历程手账"
         >
           <ExplorerIcon name="close" />
         </button>
@@ -238,11 +238,17 @@ function TrailDialog({
         <div className="memory-seam" aria-hidden="true" />
         <article>
           <p className="memory-date">
-            {isDemo ? "示例使用历程" : "我的真实使用历程"} ·{" "}
+            {isDemo ? "示例完成历程" : "我的真实完成历程"} ·{" "}
             {formatDate(item.occurredAt)}
           </p>
           <h2 id="trail-dialog-title">{item.title}</h2>
-          <p className="memory-heading">这一站的使用小结</p>
+          {item.kind !== "registration" && item.firstUsedAt && (
+            <div className="memory-period" aria-label="完成时间范围">
+              <span><b>第一次完成</b>{formatDate(item.firstUsedAt)}</span>
+              <span><b>最近一次完成</b>{formatDate(item.lastUsedAt || item.occurredAt)}</span>
+            </div>
+          )}
+          <p className="memory-heading">这一站的完成小结</p>
           <p className="memory-note">{item.detail}</p>
           <button
             className="memory-listen"
@@ -291,8 +297,8 @@ export default function GrowthTrailPage({
         <span className="loading-star">
           <ExplorerIcon name="spark" size={38} />
         </span>
-        <h1>正在整理你的使用历程…</h1>
-        <p>从注册那天开始，每一次到访都在赶来和你见面。</p>
+        <h1>正在整理你的完成历程…</h1>
+        <p>从注册那天开始，每一次完成都在赶来和你见面。</p>
       </section>
     );
   const milestones = data.milestones.slice(0, 8);
@@ -371,8 +377,8 @@ export default function GrowthTrailPage({
           </p>
           <p className="growth-source">
             {data.timelineIsDemo
-              ? "示例使用历程 · 真实记录会从你的注册日开始"
-              : "账号注册与四个探索模块的真实使用小结"}
+              ? "示例完成历程 · 真实记录会从你的注册日开始"
+              : "账号注册与四个探索模块的真实完成小结"}
           </p>
         </div>
         <span className="growth-tape tape-one" aria-hidden="true" />
@@ -390,7 +396,7 @@ export default function GrowthTrailPage({
         <div className="growth-intro">
           <ExplorerIcon name="spark" />
           <p>
-            第一站，是你来到探索星球的那一天。往后每一站，都记录一座大陆陪你走了多久。
+            第一站，是你来到探索星球的那一天。往后每一站，都记录你在一座大陆完成了多少次探索。
           </p>
         </div>
         <TrailLine />
@@ -404,7 +410,7 @@ export default function GrowthTrailPage({
                 <button
                   className="milestone-visual"
                   onClick={(event) => open(item, event.currentTarget)}
-                  aria-label={`${item.island}：${item.title}${item.unlocked ? "，打开使用小结" : "，查看点亮提示"}`}
+                  aria-label={`${item.island}：${item.title}${item.unlocked ? "，打开完成小结" : "，查看点亮提示"}`}
                 >
                   <span className="milestone-halo" />
                   <img
@@ -422,7 +428,7 @@ export default function GrowthTrailPage({
                 <h2>{item.title}</h2>
                 <p className="milestone-date">
                   {item.unlocked
-                    ? `${item.kind === "registration" ? "注册于" : "最近使用"} ${formatDate(item.occurredAt)}`
+                    ? `${item.kind === "registration" ? "注册于" : "最近完成"} ${formatDate(item.occurredAt)}`
                     : "等待下一次出发"}
                 </p>
                 <p className="milestone-usage">
@@ -437,7 +443,7 @@ export default function GrowthTrailPage({
                   className="milestone-open"
                   onClick={(event) => open(item, event.currentTarget)}
                 >
-                  {item.unlocked ? "打开这页使用小结" : "看看怎样点亮"}
+                  {item.unlocked ? "打开这页完成小结" : "看看怎样点亮"}
                   <ExplorerIcon name="arrow" />
                 </button>
               </div>
@@ -467,9 +473,9 @@ export default function GrowthTrailPage({
           loading="lazy"
         />
         <div>
-          <h2>从第一颗星到今天，每一次到访都有自己的位置</h2>
+          <h2>从第一颗星到今天，每一次完成都有自己的位置</h2>
           <p>
-            这里从注册日开始，整理了 {usedModuleCount} 座已使用大陆的次数和时间。
+            这里从注册日开始，整理了 {usedModuleCount} 座已点亮大陆的完成次数和时间。
             新的探索会继续补进这本历程手账。
           </p>
           <div>

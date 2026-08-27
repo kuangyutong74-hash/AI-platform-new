@@ -36,6 +36,24 @@ export default function StoryPlayPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
   const storyStartedRef = useRef(false);
+  const storyActiveMsRef = useRef(0);
+  const storyActiveFromRef = useRef(0);
+
+  useEffect(() => {
+    storyActiveFromRef.current = Date.now();
+    const trackVisibility = () => {
+      if (document.hidden) {
+        if (storyActiveFromRef.current) {
+          storyActiveMsRef.current += Date.now() - storyActiveFromRef.current;
+          storyActiveFromRef.current = 0;
+        }
+      } else if (!storyActiveFromRef.current) {
+        storyActiveFromRef.current = Date.now();
+      }
+    };
+    document.addEventListener('visibilitychange', trackVisibility);
+    return () => document.removeEventListener('visibilitychange', trackVisibility);
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -109,11 +127,47 @@ export default function StoryPlayPage() {
   const [showPinyin, setShowPinyin] = useState(false);
   const [fontSize, setFontSize] = useState<'s' | 'm' | 'l'>('m');
 
+  function storyDurationSeconds() {
+    const activeMs = storyActiveMsRef.current
+      + (storyActiveFromRef.current ? Date.now() - storyActiveFromRef.current : 0);
+    return Math.max(1, Math.round(activeMs / 1000));
+  }
+
+  function emitStoryCompleted(completionMode: 'child' | 'director', ending = '') {
+    const activityId = `story-${id}`;
+    const endingText = ending.trim();
+    void (window as any).AIBole?.emitEvidence({
+      module: 'story',
+      event_type: 'story_contribution',
+      evidence_level: completionMode === 'child' && endingText.length >= 40 ? 'strong' : 'reference',
+      intelligence_candidates: ['linguistic', 'intrapersonal'],
+      behavior_summary: completionMode === 'child'
+        ? '孩子为共创故事独立写下结尾，并完成了一次完整作品。'
+        : '孩子持续参与故事共创，并和故事导演一起完成了结局。',
+      raw_evidence: {
+        completed: true,
+        completion_mode: completionMode,
+        duration_seconds: storyDurationSeconds(),
+        ending_length: endingText.length,
+        turn_number: state.turnNumber + 1,
+        title: storyTitle.trim().slice(0, 30),
+        child_words: endingText.slice(0, 60),
+      },
+      context: {
+        activity_id: activityId,
+        subject_id: String(id),
+        story_id: id,
+        idempotency_key: `${activityId}:completed`,
+      },
+    }).catch(() => undefined);
+  }
+
   async function handleAIEnding() {
     if (!id) return;
     setShowEndModal(false);
     // Keep the story active until the director has written and saved the ending.
     await startTurn(id, '请从刚才的情节继续，给这个故事写一个完整的大结局吧！', true);
+    emitStoryCompleted('director');
   }
 
   async function handleChildEnding() {
@@ -126,14 +180,7 @@ export default function StoryPlayPage() {
     dispatch({ type: 'ADD_CHILD_MESSAGE', content: childEnding.trim() });
     await updateStory(id, { status: 'completed' });
     // 只上报完成作品所需的最小行为证据，不上传故事全文。
-    void (window as any).AIBole?.emitEvidence({
-      module: 'story', event_type: 'story_contribution',
-      evidence_level: childEnding.trim().length >= 40 ? 'strong' : 'reference',
-      intelligence_candidates: ['linguistic', 'intrapersonal'],
-      behavior_summary: '孩子为共创故事独立写下结尾，并完成了一次完整作品。',
-      raw_evidence: { ending_length: childEnding.trim().length, turn_number: state.turnNumber + 1, completed: true },
-      context: { story_id: id },
-    }).catch(() => undefined);
+    emitStoryCompleted('child', childEnding);
     dispatch({ type: 'FINISH_TURN', turnNumber: state.turnNumber + 1, isEnding: true });
     setShowEndModal(false);
     setChildEnding('');

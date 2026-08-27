@@ -4,6 +4,11 @@
     <!-- 🌊 全场景海底 Canvas 背景（鱼群+光柱+海草+气泡） -->
     <OceanBackground :currentLevel="currentState" :bgOpacity="1" />
 
+    <div v-if="syncStatus !== 'idle'" class="evidence-sync-toast" :class="`is-${syncStatus}`" role="status" aria-live="polite">
+      <span>{{ syncMessage }}</span>
+      <button v-if="syncStatus === 'error'" @click="retryCompletionSync">重新保存</button>
+    </div>
+
     <!-- 主游戏面板：全透明玻璃容器，让海底 Canvas 完全透出 -->
     <div class="game-shell relative z-10 w-full max-w-[1600px] h-full mx-auto
                 rounded-2xl flex flex-col overflow-hidden"
@@ -160,8 +165,12 @@ const debugButtons = [
   { state: 'END_CEREMONY', label: '颁奖', iconSrc: guardianMedal, iconAlt: '守护者勋章' },
 ]
 
+function createRunId() {
+  return `stu_${globalThis.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`}`
+}
+
 const gameState = reactive({
-  studentId: 'stu_' + Date.now(),
+  studentId: createRunId(),
   age: '8',                          // 匿名评测使用固定常模，不向玩家收集年龄
   level1_duration: 0, level1_errors: 0,
   level2_duration: 0, level2_pipes_used: 0,
@@ -172,16 +181,86 @@ const gameState = reactive({
   level2_raw: null,
   level3_raw: null,
   level3_dialogue: [],              // 第三关对话完整记录
+  completedLevels: [],              // 本轮实际完成的关卡，用于完整重建口径
   // 📊 行为量化评分系统
   skipLevelCount: 0,                // 跳关次数统计
   skipLevelDetails: [],             // 🆕 被跳过的关卡名称列表，如 ['LEVEL_2', 'LEVEL_3']
 })
 
 const elapsed = ref(0)
+const syncStatus = ref('idle')
+const pendingCompletionEvidence = ref(null)
 let timerInterval = null
+let activeMs = 0
+let activeFrom = Date.now()
 
-onMounted(() => { timerInterval = setInterval(() => { elapsed.value++ }, 1000) })
-onUnmounted(() => { if (timerInterval) clearInterval(timerInterval) })
+function trackVisibility() {
+  if (document.hidden) {
+    if (activeFrom) {
+      activeMs += Date.now() - activeFrom
+      activeFrom = 0
+    }
+  } else if (!activeFrom) {
+    activeFrom = Date.now()
+  }
+}
+
+function activeDurationSeconds() {
+  const total = activeMs + (activeFrom ? Date.now() - activeFrom : 0)
+  return Math.max(1, Math.round(total / 1000))
+}
+
+const syncMessage = computed(() => ({
+  saving: '正在把这次完整重建保存到“我的作品”和“成长足迹”…',
+  saved: '已保存！返回探索星球就能看到新的深海高光与成长足迹。',
+  queued: '记录已暂存，账号服务恢复后会自动同步。',
+  error: '这次记录还没有保存成功，请重新保存。',
+})[syncStatus.value] || '')
+
+function waitForPlatformBridge(timeoutMs = 3000) {
+  if (window.AIBole) return Promise.resolve(window.AIBole)
+  return new Promise((resolve, reject) => {
+    const startedAt = Date.now()
+    const timer = window.setInterval(() => {
+      if (window.AIBole) {
+        window.clearInterval(timer)
+        resolve(window.AIBole)
+      } else if (Date.now() - startedAt >= timeoutMs) {
+        window.clearInterval(timer)
+        reject(new Error('platform bridge unavailable'))
+      }
+    }, 100)
+  })
+}
+
+async function sendEvidence(event) {
+  const bridge = await waitForPlatformBridge()
+  return bridge.emitEvidence(event)
+}
+
+async function syncCompletion(event) {
+  pendingCompletionEvidence.value = event
+  syncStatus.value = 'saving'
+  try {
+    const result = await sendEvidence(event)
+    syncStatus.value = result?.queued ? 'queued' : 'saved'
+  } catch (_) {
+    syncStatus.value = 'error'
+  }
+}
+
+function retryCompletionSync() {
+  if (pendingCompletionEvidence.value) void syncCompletion(pendingCompletionEvidence.value)
+}
+
+onMounted(() => {
+  timerInterval = setInterval(() => { elapsed.value++ }, 1000)
+  document.addEventListener('visibilitychange', trackVisibility)
+})
+onUnmounted(() => {
+  if (timerInterval) clearInterval(timerInterval)
+  document.removeEventListener('visibilitychange', trackVisibility)
+})
 
 function formatTime(seconds) {
   const m = String(Math.floor(seconds / 60)).padStart(2, '0')
@@ -198,9 +277,12 @@ function isGameLevel(state) {
 }
 
 function handleGoLevel(level) {
-  // 每次从封面进入第一关时创建新的匿名评测会话
-  if (currentState.value === 'START' && level === 'LEVEL_1') {
-    gameState.studentId = 'stu_' + Date.now()
+  // 每次从封面进入实际关卡时创建新的匿名评测会话。
+  if (currentState.value === 'START' && isGameLevel(level)) {
+    gameState.studentId = createRunId()
+    gameState.completedLevels.length = 0
+    activeMs = 0
+    activeFrom = document.hidden ? 0 : Date.now()
   }
 
   // 跳关检测：记录跳过的具体关卡名称
@@ -235,28 +317,37 @@ function handleGoLevel(level) {
 
 function handleLevelComplete(data) {
   if (data.level === 'LEVEL_1') {
+    if (!gameState.completedLevels.includes(1)) gameState.completedLevels.push(1)
     gameState.level1_duration = data.duration || 0
     gameState.level1_errors = data.errors || 0
     gameState.level1_raw = data.raw_metrics || null
     gameState.evidence.push(data.evidence || `第一关完成，用时${data.duration}秒`)
-    window.AIBole?.emitEvidence({ module: 'deep_sea', event_type: 'ecology_strategy', evidence_level: (data.raw_metrics?.check_attempts || 9) <= 2 ? 'strong' : 'reference', intelligence_candidates: ['naturalistic', 'logical_mathematical'], behavior_summary: '依据生态线索完成生物配对，并根据反馈修正判断。', raw_evidence: { successful_pairs: data.raw_metrics?.successful_pairs || 4, check_attempts: data.raw_metrics?.check_attempts || null, meaningful_adjustments: data.raw_metrics?.removal_count || 0 }, context: { level: 1 } }).catch(() => {})
+    void sendEvidence({ module: 'deep_sea', event_type: 'ecology_strategy', evidence_level: (data.raw_metrics?.check_attempts ?? 9) <= 2 ? 'strong' : 'reference', intelligence_candidates: ['naturalistic', 'logical_mathematical'], behavior_summary: '依据生态线索完成生物配对，并根据反馈修正判断。', raw_evidence: { completed: true, duration_seconds: data.duration ?? 0, title: '珊瑚公寓重建', successful_pairs: data.raw_metrics?.successful_pairs ?? 4, check_attempts: data.raw_metrics?.check_attempts ?? null, meaningful_adjustments: data.raw_metrics?.removal_count ?? 0 }, context: { activity_id: gameState.studentId, level: 1, idempotency_key: `${gameState.studentId}:level-1` } }).catch(() => {})
 
     currentState.value = 'LEVEL_2'
   } else if (data.level === 'LEVEL_2') {
+    if (!gameState.completedLevels.includes(2)) gameState.completedLevels.push(2)
     gameState.level2_duration = data.duration || 0
     gameState.level2_pipes_used = data.pipes_used || 0
     gameState.level2_raw = data.raw_metrics || null
     gameState.evidence.push(`第二关完成，用时${data.duration}秒，使用${data.pipes_used}根管道`)
-    window.AIBole?.emitEvidence({ module: 'deep_sea', event_type: 'spatial_solution', evidence_level: data.raw_metrics?.is_connected === false ? 'reference' : 'strong', intelligence_candidates: ['spatial', 'logical_mathematical'], behavior_summary: '通过旋转和调整管件完成能源线路布局。', raw_evidence: { pipes_used: data.pipes_used || 0, rotate_count: data.raw_metrics?.rotate_count || 0, check_attempts: data.raw_metrics?.check_attempts || null, connected: data.raw_metrics?.is_connected !== false }, context: { level: 2 } }).catch(() => {})
+    void sendEvidence({ module: 'deep_sea', event_type: 'spatial_solution', evidence_level: data.raw_metrics?.is_connected === false ? 'reference' : 'strong', intelligence_candidates: ['spatial', 'logical_mathematical'], behavior_summary: '通过旋转和调整管件完成能源线路布局。', raw_evidence: { completed: true, duration_seconds: data.duration ?? 0, title: '洋流电网重建', pipes_used: data.pipes_used ?? 0, rotate_count: data.raw_metrics?.rotate_count ?? 0, check_attempts: data.raw_metrics?.check_attempts ?? null, connected: data.raw_metrics?.is_connected !== false }, context: { activity_id: gameState.studentId, level: 2, idempotency_key: `${gameState.studentId}:level-2` } }).catch(() => {})
 
     currentState.value = 'LEVEL_3'
   } else if (data.level === 'LEVEL_3') {
+    if (!gameState.completedLevels.includes(3)) gameState.completedLevels.push(3)
     gameState.level3_duration = data.duration || 0
     gameState.level3_harmony_score = data.harmony_score || 0
     gameState.level3_raw = data.raw_metrics || null
     gameState.level3_dialogue = data.dialogue || []
     gameState.evidence.push(`第三关完成，用时${data.duration}秒，和解度${data.harmony_score}%`)
-    window.AIBole?.emitEvidence({ module: 'deep_sea', event_type: 'mediation_response', evidence_level: (data.harmony_score || 0) >= 80 ? 'strong' : 'reference', intelligence_candidates: ['interpersonal', 'linguistic'], behavior_summary: '在角色分歧中识别双方需要，并尝试提出协调方案。', raw_evidence: { harmony_band: (data.harmony_score || 0) >= 80 ? 'high' : 'developing', rounds_used: data.raw_metrics?.rounds_used || null, supportive_choices: data.raw_metrics?.supportive_choices || null }, context: { level: 3 } }).catch(() => {})
+    void sendEvidence({ module: 'deep_sea', event_type: 'mediation_response', evidence_level: (data.harmony_score ?? 0) >= 80 ? 'strong' : 'reference', intelligence_candidates: ['interpersonal', 'linguistic'], behavior_summary: '在角色分歧中识别双方需要，并尝试提出协调方案。', raw_evidence: { completed: true, duration_seconds: data.duration ?? 0, title: '海洋议事厅调解', harmony_band: (data.harmony_score ?? 0) >= 80 ? 'high' : 'developing', rounds_used: data.raw_metrics?.rounds_used ?? null, supportive_choices: data.raw_metrics?.supportive_choices ?? null }, context: { activity_id: gameState.studentId, level: 3, idempotency_key: `${gameState.studentId}:level-3` } }).catch(() => {})
+    const completedLevels = [...new Set(gameState.completedLevels)].sort()
+    if (completedLevels.join(',') === '1,2,3') {
+      const totalDuration = activeDurationSeconds()
+      const meaningfulAdjustments = (gameState.level1_raw?.removal_count ?? 0) + (gameState.level2_raw?.rotate_count ?? 0)
+      void syncCompletion({ module: 'deep_sea', event_type: 'deep_sea_session_completed', evidence_level: 'strong', intelligence_candidates: ['spatial', 'logical_mathematical', 'interpersonal'], behavior_summary: '完成珊瑚公寓、洋流电网和海洋议事厅三处基地任务。', raw_evidence: { completed: true, duration_seconds: totalDuration, completed_levels: completedLevels.length, total_levels: 3, meaningful_adjustments: meaningfulAdjustments, title: '深海基地完整重建' }, context: { activity_id: gameState.studentId, idempotency_key: `${gameState.studentId}:completed` } })
+    }
 
     currentState.value = 'END_CEREMONY'
   }
@@ -271,9 +362,12 @@ function handleBackStart() {
     evidence: [],
     level1_raw: null, level2_raw: null, level3_raw: null,
     level3_dialogue: [],
+    completedLevels: [],
     skipLevelCount: 0,
     skipLevelDetails: [],
   })
+  syncStatus.value = 'idle'
+  pendingCompletionEvidence.value = null
   elapsed.value = 0
   currentState.value = 'START'
 }
@@ -290,6 +384,38 @@ function handleBackStart() {
     0 0 0 1px rgba(103,232,249,.14),
     inset 0 1px rgba(255,255,255,.78);
   backdrop-filter: blur(7px) saturate(1.1);
+}
+.evidence-sync-toast {
+  position: fixed;
+  z-index: 10020;
+  left: 50%;
+  bottom: 22px;
+  width: min(620px, calc(100% - 32px));
+  min-height: 48px;
+  padding: 11px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px solid rgba(103, 232, 249, .55);
+  border-radius: 16px;
+  color: #0c4a6e;
+  background: rgba(240, 253, 250, .96);
+  box-shadow: 0 14px 34px rgba(8, 47, 73, .22);
+  transform: translateX(-50%);
+  backdrop-filter: blur(16px);
+  font-size: .86rem;
+  font-weight: 700;
+}
+.evidence-sync-toast.is-saved { border-color: rgba(20, 184, 166, .62); }
+.evidence-sync-toast.is-queued { background: rgba(255, 251, 235, .97); border-color: rgba(245, 158, 11, .5); }
+.evidence-sync-toast.is-error { background: rgba(255, 241, 242, .97); border-color: rgba(244, 63, 94, .42); }
+.evidence-sync-toast button {
+  flex: none;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  cursor: pointer;
 }
 .game-hud {
   position: relative;

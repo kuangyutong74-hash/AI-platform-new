@@ -16,6 +16,8 @@ export type ExplorerItem={
   usageCount:number;
   firstUsedAt:string;
   lastUsedAt:string;
+  durationSeconds:number;
+  durationCoverage:number;
   island:string;
   collection:string;
   scene:string;
