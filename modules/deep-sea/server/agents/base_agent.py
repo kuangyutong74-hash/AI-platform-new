@@ -9,6 +9,11 @@ import random
 import re
 from typing import Optional
 
+try:
+    from env_config import load_deepseek_config
+except ImportError:
+    from server.env_config import load_deepseek_config
+
 
 class BaseAgent:
     """AI 智能体基类
@@ -23,25 +28,8 @@ class BaseAgent:
         self.system_prompt = system_prompt
         self.fallback_responses = fallback_responses
 
-        # ── 读取 .env 配置 ──
-        api_key = ""
-        api_base = "https://api.deepseek.com/v1"
-        model = "deepseek-chat"
-
-        # 从 .env 文件加载
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        server_dir = os.path.dirname(current_dir)  # server/
-        env_path = os.path.join(server_dir, ".env")
-        if os.path.exists(env_path):
-            with open(env_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line.startswith("DEEPSEEK_API_KEY="):
-                        api_key = line.split("=", 1)[1].strip()
-                    elif line.startswith("DEEPSEEK_MODEL="):
-                        model = line.split("=", 1)[1].strip()
-                    elif line.startswith("DEEPSEEK_BASE_URL="):
-                        api_base = line.split("=", 1)[1].strip()
+        # ── 读取整合平台根目录的统一 .env 配置 ──
+        api_key, api_base, model = load_deepseek_config()
 
         self.api_key = api_key
         self.model = model

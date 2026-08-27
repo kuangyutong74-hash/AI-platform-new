@@ -530,20 +530,12 @@ def _init_ai():
     try:
         from openai import OpenAI
 
-        # 读取 .env
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        env_path = os.path.join(current_dir, ".env")
-        api_key = ""
-        api_base = "https://api.deepseek.com/v1"
+        try:
+            from env_config import load_deepseek_config
+        except ImportError:
+            from server.env_config import load_deepseek_config
 
-        if os.path.exists(env_path):
-            with open(env_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line.startswith("DEEPSEEK_API_KEY="):
-                        api_key = line.split("=", 1)[1].strip()
-                    elif line.startswith("DEEPSEEK_MODEL="):
-                        ai_model = line.split("=", 1)[1].strip()
+        api_key, api_base, ai_model = load_deepseek_config()
 
         if api_key and len(api_key) > 10:
             ai_client = OpenAI(api_key=api_key, base_url=api_base)

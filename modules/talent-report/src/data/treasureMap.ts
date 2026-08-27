@@ -19,6 +19,9 @@ export const mapCopy={
   revisit:"星星们都亮着，等你回来逛一逛",
   empty:"这张藏宝图还在路上，先去玩一会儿吧",
   collected:"收下它",
+  closeStory:"合上故事卡",
+  locked:(continent:string)=>`去${continent}玩一玩，就可能找到它`,
+  reset:"重置藏宝图",
   source:(continent:string)=>`来自${continent}`,
   order:(n:number)=>`第 ${n} 颗找到的星星`,
   visit:(continent:string)=>`去${continent}探险 →`,
@@ -60,7 +63,8 @@ export const continentRegions=[
 ] as const;
 
 export const starAria={
-  sealed:(name:string,continent:string)=>`找到「${name}」——${continent}的星星`,
+  sealed:(name:string,continent:string)=>`「${name}」还藏在${continent}`,
+  eligible:(name:string)=>`查看「${name}」并决定是否收下`,
   lit:(name:string)=>`查看「${name}」的故事`,
 };
 
@@ -75,3 +79,4 @@ export function loadStarState(validKeys:string[]):StarState{
 }
 
 export function saveStarState(state:StarState){localStorage.setItem(STAR_STATE_KEY,JSON.stringify(state))}
+export function resetStarState(){localStorage.removeItem(STAR_STATE_KEY)}

@@ -127,7 +127,7 @@ export default function StoryPlayPage() {
     await updateStory(id, { status: 'completed' });
     // 只上报完成作品所需的最小行为证据，不上传故事全文。
     void (window as any).AIBole?.emitEvidence({
-      module: 'story', event_type: 'story_contribution',
+      capture_selector: '#root', module: 'story', event_type: 'story_contribution',
       evidence_level: childEnding.trim().length >= 40 ? 'strong' : 'reference',
       intelligence_candidates: ['linguistic', 'intrapersonal'],
       behavior_summary: '孩子为共创故事独立写下结尾，并完成了一次完整作品。',

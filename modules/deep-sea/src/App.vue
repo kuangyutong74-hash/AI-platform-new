@@ -239,7 +239,7 @@ function handleLevelComplete(data) {
     gameState.level1_errors = data.errors || 0
     gameState.level1_raw = data.raw_metrics || null
     gameState.evidence.push(data.evidence || `第一关完成，用时${data.duration}秒`)
-    window.AIBole?.emitEvidence({ module: 'deep_sea', event_type: 'ecology_strategy', evidence_level: (data.raw_metrics?.check_attempts || 9) <= 2 ? 'strong' : 'reference', intelligence_candidates: ['naturalistic', 'logical_mathematical'], behavior_summary: '依据生态线索完成生物配对，并根据反馈修正判断。', raw_evidence: { successful_pairs: data.raw_metrics?.successful_pairs || 4, check_attempts: data.raw_metrics?.check_attempts || null, meaningful_adjustments: data.raw_metrics?.removal_count || 0 }, context: { level: 1 } }).catch(() => {})
+    window.AIBole?.emitEvidence({ capture_selector: '#app', module: 'deep_sea', event_type: 'ecology_strategy', evidence_level: (data.raw_metrics?.check_attempts || 9) <= 2 ? 'strong' : 'reference', intelligence_candidates: ['naturalistic', 'logical_mathematical'], behavior_summary: '依据生态线索完成生物配对，并根据反馈修正判断。', raw_evidence: { successful_pairs: data.raw_metrics?.successful_pairs || 4, check_attempts: data.raw_metrics?.check_attempts || null, meaningful_adjustments: data.raw_metrics?.removal_count || 0 }, context: { level: 1 } }).catch(() => {})
 
     currentState.value = 'LEVEL_2'
   } else if (data.level === 'LEVEL_2') {
@@ -247,7 +247,7 @@ function handleLevelComplete(data) {
     gameState.level2_pipes_used = data.pipes_used || 0
     gameState.level2_raw = data.raw_metrics || null
     gameState.evidence.push(`第二关完成，用时${data.duration}秒，使用${data.pipes_used}根管道`)
-    window.AIBole?.emitEvidence({ module: 'deep_sea', event_type: 'spatial_solution', evidence_level: data.raw_metrics?.is_connected === false ? 'reference' : 'strong', intelligence_candidates: ['spatial', 'logical_mathematical'], behavior_summary: '通过旋转和调整管件完成能源线路布局。', raw_evidence: { pipes_used: data.pipes_used || 0, rotate_count: data.raw_metrics?.rotate_count || 0, check_attempts: data.raw_metrics?.check_attempts || null, connected: data.raw_metrics?.is_connected !== false }, context: { level: 2 } }).catch(() => {})
+    window.AIBole?.emitEvidence({ capture_selector: '#app', module: 'deep_sea', event_type: 'spatial_solution', evidence_level: data.raw_metrics?.is_connected === false ? 'reference' : 'strong', intelligence_candidates: ['spatial', 'logical_mathematical'], behavior_summary: '通过旋转和调整管件完成能源线路布局。', raw_evidence: { pipes_used: data.pipes_used || 0, rotate_count: data.raw_metrics?.rotate_count || 0, check_attempts: data.raw_metrics?.check_attempts || null, connected: data.raw_metrics?.is_connected !== false }, context: { level: 2 } }).catch(() => {})
 
     currentState.value = 'LEVEL_3'
   } else if (data.level === 'LEVEL_3') {
@@ -256,7 +256,7 @@ function handleLevelComplete(data) {
     gameState.level3_raw = data.raw_metrics || null
     gameState.level3_dialogue = data.dialogue || []
     gameState.evidence.push(`第三关完成，用时${data.duration}秒，和解度${data.harmony_score}%`)
-    window.AIBole?.emitEvidence({ module: 'deep_sea', event_type: 'mediation_response', evidence_level: (data.harmony_score || 0) >= 80 ? 'strong' : 'reference', intelligence_candidates: ['interpersonal', 'linguistic'], behavior_summary: '在角色分歧中识别双方需要，并尝试提出协调方案。', raw_evidence: { harmony_band: (data.harmony_score || 0) >= 80 ? 'high' : 'developing', rounds_used: data.raw_metrics?.rounds_used || null, supportive_choices: data.raw_metrics?.supportive_choices || null }, context: { level: 3 } }).catch(() => {})
+    window.AIBole?.emitEvidence({ capture_selector: '#app', module: 'deep_sea', event_type: 'mediation_response', evidence_level: (data.harmony_score || 0) >= 80 ? 'strong' : 'reference', intelligence_candidates: ['interpersonal', 'linguistic'], behavior_summary: '在角色分歧中识别双方需要，并尝试提出协调方案。', raw_evidence: { harmony_band: (data.harmony_score || 0) >= 80 ? 'high' : 'developing', rounds_used: data.raw_metrics?.rounds_used || null, supportive_choices: data.raw_metrics?.supportive_choices || null }, context: { level: 3 } }).catch(() => {})
 
     currentState.value = 'END_CEREMONY'
   }

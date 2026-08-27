@@ -19,7 +19,29 @@ function Get-ServiceDefinitions {
 }
 
 function Test-ServicePort([int]$Port) {
-  return [bool](Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue)
+  $client = [System.Net.Sockets.TcpClient]::new()
+  try {
+    $task = $client.ConnectAsync('127.0.0.1', $Port)
+    return $task.Wait(700) -and $client.Connected
+  } catch {
+    return $false
+  } finally {
+    $client.Dispose()
+  }
+}
+
+function Test-ServiceEndpoint([string]$Url) {
+  try {
+    $response = Invoke-WebRequest -Uri $Url -Method Get -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+    return $response.StatusCode -ge 200 -and $response.StatusCode -lt 500
+  } catch {
+    $responseProperty = $_.Exception.PSObject.Properties['Response']
+    if ($responseProperty -and $responseProperty.Value) {
+      $statusProperty = $responseProperty.Value.PSObject.Properties['StatusCode']
+      if ($statusProperty -and [int]$statusProperty.Value -lt 500) { return $true }
+    }
+    return $false
+  }
 }
 
 function Stop-ServiceProcessTree([int]$ServiceProcessId) {

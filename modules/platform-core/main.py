@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import base64
 import secrets
 import sqlite3
 import uuid
@@ -20,7 +21,7 @@ from typing import Literal
 
 from fastapi import Cookie, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field, field_validator
 
 from explorer_collection import build_explorer_collection
@@ -29,6 +30,8 @@ from explorer_collection import build_explorer_collection
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
+SNAPSHOT_DIR = DATA_DIR / "evidence-snapshots"
+SNAPSHOT_DIR.mkdir(exist_ok=True)
 DB_PATH = DATA_DIR / "ai_bole_core.db"
 COOKIE_NAME = "ai_bole_session"
 SESSION_DAYS = 30
@@ -37,6 +40,19 @@ MODULES = {"chat", "story", "deep_sea", "career"}
 INTELLIGENCES = {
     "linguistic", "logical_mathematical", "spatial",
     "interpersonal", "intrapersonal", "naturalistic",
+}
+CANONICAL_INTELLIGENCES = {
+    "linguistic", "logical", "spatial",
+    "interpersonal", "intrapersonal", "naturalistic",
+}
+INTELLIGENCE_SYNONYMS = {"logical_mathematical": "logical"}
+INTELLIGENCE_NAMES = {
+    "linguistic": "语言智能",
+    "logical": "逻辑—数学智能",
+    "spatial": "空间智能",
+    "interpersonal": "人际智能",
+    "intrapersonal": "内省智能",
+    "naturalistic": "自然观察智能",
 }
 
 app = FastAPI(title="AI伯乐平台核心服务", version="1.0.0")
@@ -140,6 +156,44 @@ def require_account(token: str | None) -> sqlite3.Row:
     return row
 
 
+def build_talent_eligibility(rows: list[sqlite3.Row]) -> list[dict]:
+    """聚合可追溯证据，只判定是否具备收下资格，不换算分数或排名。"""
+    aggregates = {
+        key: {"strong": 0, "reference": 0, "modules": set(), "recent_id": None}
+        for key in CANONICAL_INTELLIGENCES
+    }
+    for row in rows:
+        try:
+            candidates = json.loads(row["intelligence_candidates"])
+        except (TypeError, json.JSONDecodeError):
+            candidates = []
+        normalized = {
+            INTELLIGENCE_SYNONYMS.get(candidate, candidate)
+            for candidate in candidates
+            if isinstance(candidate, str)
+        } & CANONICAL_INTELLIGENCES
+        for key in normalized:
+            item = aggregates[key]
+            item["modules"].add(row["module"])
+            if row["evidence_level"] == "strong":
+                item["strong"] += 1
+                item["recent_id"] = row["id"]
+            else:
+                item["reference"] += 1
+    return [
+        {
+            "key": key,
+            "name": INTELLIGENCE_NAMES[key],
+            "strong_count": values["strong"],
+            "reference_count": values["reference"],
+            "eligible": values["strong"] >= 1,
+            "source_modules": sorted(values["modules"]),
+            "recent_evidence_id": values["recent_id"],
+        }
+        for key, values in sorted(aggregates.items())
+    ]
+
+
 class AccountSessionIn(BaseModel):
     username: str = Field(min_length=2, max_length=30)
     display_name: str = Field(min_length=1, max_length=30)
@@ -199,7 +253,30 @@ def account_bridge() -> PlainTextResponse:
         window.dispatchEvent(new CustomEvent("ai-bole-account-ready", { detail: v.account }));
         return v.account;
       }).catch(() => null),
-    emitEvidence(event) {
+    async captureMoment(selector) {
+      try {
+        if (!window.html2canvas) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = core + "/sdk/html2canvas.min.js";
+            script.onload = resolve; script.onerror = reject; document.head.appendChild(script);
+          });
+        }
+        const target = document.querySelector(selector || "main") || document.body;
+        const canvas = await window.html2canvas(target, { scale: 0.9, useCORS: true, backgroundColor: null, logging: false });
+        const response = await fetch(core + "/api/evidence/snapshots", {
+          method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data_url: canvas.toDataURL("image/jpeg", 0.76) })
+        });
+        return response.ok ? (await response.json()).url : null;
+      } catch (_) { return null; }
+    },
+    async emitEvidence(event) {
+      if (event.capture_selector) {
+        const snapshot = await api.captureMoment(event.capture_selector);
+        event.context = Object.assign({}, event.context || {}, snapshot ? { snapshot_url: snapshot } : {});
+        delete event.capture_selector;
+      }
       return fetch(core + "/api/evidence/events", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -211,6 +288,42 @@ def account_bridge() -> PlainTextResponse:
   window.AIBole = api;
 })();'''
     return PlainTextResponse(script, media_type="application/javascript; charset=utf-8")
+
+
+class SnapshotIn(BaseModel):
+    data_url: str
+
+
+@app.get("/sdk/html2canvas.min.js")
+def screenshot_library() -> FileResponse:
+    return FileResponse(ROOT / "static" / "html2canvas.min.js", media_type="application/javascript")
+
+
+@app.post("/api/evidence/snapshots")
+def create_snapshot(payload: SnapshotIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    require_account(ai_bole_session)
+    prefix = "data:image/jpeg;base64,"
+    if not payload.data_url.startswith(prefix):
+        raise HTTPException(400, "只支持 JPEG 体验快照")
+    try:
+        content = base64.b64decode(payload.data_url[len(prefix):], validate=True)
+    except ValueError as exc:
+        raise HTTPException(400, "体验快照格式无效") from exc
+    if len(content) > 2_500_000:
+        raise HTTPException(413, "体验快照过大")
+    filename = f"{uuid.uuid4().hex}.jpg"
+    (SNAPSHOT_DIR / filename).write_bytes(content)
+    return {"url": f"http://localhost:8020/api/evidence/snapshots/{filename}"}
+
+
+@app.get("/api/evidence/snapshots/{filename}")
+def read_snapshot(filename: str) -> FileResponse:
+    if not filename.endswith(".jpg") or Path(filename).name != filename:
+        raise HTTPException(404)
+    path = SNAPSHOT_DIR / filename
+    if not path.is_file():
+        raise HTTPException(404)
+    return FileResponse(path, media_type="image/jpeg")
 
 
 @app.post("/api/account/session")
@@ -326,6 +439,20 @@ def explorer_collection(ai_bole_session: str | None = Cookie(default=None)) -> d
         for row in rows
     ]
     return build_explorer_collection(public_account(account), events)
+
+
+@app.get("/api/explorer/talents")
+def explorer_talents(ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    """返回六颗星的真实证据计数与收下资格，资格本身不持久化。"""
+    account = require_account(ai_bole_session)
+    with connect() as db:
+        rows = db.execute(
+            """SELECT id,module,intelligence_candidates,evidence_level
+               FROM evidence_events WHERE account_id=?
+               ORDER BY occurred_at ASC, created_at ASC""",
+            (account["id"],),
+        ).fetchall()
+    return {"account_id": account["id"], "talents": build_talent_eligibility(rows)}
 
 
 @app.get("/api/evidence/summary")
