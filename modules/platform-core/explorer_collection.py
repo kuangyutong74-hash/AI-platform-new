@@ -133,7 +133,9 @@ def _build_activity(module: str, key: str, events: list[dict[str, Any]], explici
 
     completed = any(raw.get("completed") is True for raw in raw_items)
     if module == "deep_sea":
-        completed = bool(summary_events) or levels == [1, 2, 3] or not explicit_key
+        # 深海每一关本身都是一件可回看的重建成果；同一 activity_id 下的多关
+        # 仍只算一次探索，三关全完再升级为“完整重建”高光。
+        completed = bool(summary_events) or (bool(levels) and completed) or not explicit_key
     elif not completed:
         # 旧事件均来自完成点，保留兼容性；新事件可显式传 completed:false 排除。
         completed = not any(raw.get("completed") is False for raw in raw_items)
@@ -253,7 +255,11 @@ def _activity_item(activity: dict[str, Any]) -> dict[str, Any]:
         "detail": detail,
         "quote": quote[:120],
         "occurred_at": activity["occurred_at"],
-        "status": module_copy["highlight"],
+        "status": (
+            "阶段重建高光"
+            if module == "deep_sea" and activity["levels"] != [1, 2, 3]
+            else module_copy["highlight"]
+        ),
         "unlocked": True,
         "event_type": str(latest.get("event_type") or "exploration_event"),
         "kind": "highlight",
@@ -343,7 +349,10 @@ def _highlight_reason(activity: dict[str, Any]) -> str:
         return f"这篇故事连续参与了 {turns} 轮，把故事完整创作到了结局。"
     if module == "deep_sea":
         adjustments = int(_deep_adjustments(activity))
-        return f"这次完成了三处基地任务，并根据结果调整了 {adjustments} 次。" if adjustments else "这次完整完成了三处基地任务，留下了一次完整重建记录。"
+        task_count = len(activity["levels"]) or 1
+        if task_count == 3:
+            return f"这次完成了三处基地任务，并根据结果调整了 {adjustments} 次。" if adjustments else "这次完整完成了三处基地任务，留下了一次完整重建记录。"
+        return f"这次完成了 {task_count} 处基地任务，并根据结果调整了 {adjustments} 次。" if adjustments else f"这次完成了 {task_count} 处基地任务，留下了一次阶段重建记录。"
     completed = int(_activity_number(activity, ("completed_stages",)))
     interactions = int(_activity_number(activity, ("interaction_count",)))
     return f"这次完成了全部 {completed} 个职业阶段，还主动尝试了 {interactions} 次。"

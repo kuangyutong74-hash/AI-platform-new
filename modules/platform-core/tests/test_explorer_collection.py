@@ -136,7 +136,7 @@ class ExplorerCollectionTests(unittest.TestCase):
             },
             "context": {"activity_id": "sea-run-1"},
         })
-        # 有 activity_id 但只完成两关的运行不计入完整足迹。
+        # 有 activity_id 且完成两关的运行算一次阶段重建，但不会抢走完整重建高光。
         for level in (1, 2):
             events.append({
                 "id": f"partial-{level}",
@@ -155,9 +155,39 @@ class ExplorerCollectionTests(unittest.TestCase):
 
         self.assertIn("完成 3 个任务", highlight["metric_value"])
         self.assertIn("调整 5 次", highlight["metric_value"])
-        self.assertEqual(summary["usage_count"], 1)
-        self.assertEqual(summary["duration_seconds"], 210)
+        self.assertEqual(summary["usage_count"], 2)
+        self.assertEqual(summary["duration_seconds"], 270)
         self.assertEqual(summary["duration_coverage"], 1.0)
+
+    def test_completed_deep_sea_level_unlocks_growth_without_a_full_run(self):
+        result = build_explorer_collection(
+            {
+                "id": "child-sea-stage", "display_name": "小潜", "age": 8,
+                "created_at": "2026-08-01T00:00:00Z",
+            },
+            [{
+                "id": "sea-level-one",
+                "module": "deep_sea",
+                "event_type": "ecology_strategy",
+                "occurred_at": "2026-08-27T00:44:29Z",
+                "evidence_level": "strong",
+                "behavior_summary": "完成珊瑚公寓重建",
+                "raw_evidence": {
+                    "completed": True,
+                    "duration_seconds": 51,
+                    "title": "珊瑚公寓重建",
+                    "meaningful_adjustments": 1,
+                },
+                "context": {"activity_id": "sea-stage-run", "level": 1},
+            }],
+        )
+
+        work = next(item for item in result["works"] if item["module"] == "deep_sea")
+        summary = next(item for item in result["milestones"] if item["module"] == "deep_sea")
+        self.assertEqual(work["status"], "阶段重建高光")
+        self.assertIn("完成 1 个任务", work["metric_value"])
+        self.assertTrue(summary["unlocked"])
+        self.assertEqual(summary["usage_count"], 1)
 
     def test_selects_career_highlight_by_completion_then_active_participation(self):
         account = {
