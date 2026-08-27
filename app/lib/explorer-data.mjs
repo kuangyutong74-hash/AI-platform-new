@@ -12,7 +12,7 @@ export const MODULE_META = {
     key: "story",
     island: "想象之洲",
     collection: "故事高光奖章",
-    short: "最长、最精彩的一次故事",
+    short: "参与最完整、最值得回看的一次故事",
     scene: "/assets/collections/works/highlight-story-sticker-v1.webp",
     milestoneImage: "/assets/collections/growth/story-island-720.webp",
     tone: "rose",
@@ -21,7 +21,7 @@ export const MODULE_META = {
     key: "deep_sea",
     island: "创造之洲",
     collection: "深海高光奖章",
-    short: "最快、最专注的一次重建",
+    short: "完成最完整、最值得回看的一次重建",
     scene: "/assets/collections/works/highlight-ocean-sticker-v1.webp",
     milestoneImage: "/assets/collections/growth/ocean-island-720.webp",
     tone: "blue",
@@ -52,27 +52,27 @@ const DEMO_HIGHLIGHTS = [
     module: "story",
     kind: "highlight",
     title: "会发光的雨伞",
-    summary: "四篇故事里，这一篇写得最长，也把害怕慢慢变成了勇敢。",
+    summary: "四篇故事里，这一篇参与得最完整，也把害怕慢慢变成了勇敢。",
     quote: "别怕，我们一起走，雨里也会有亮晶晶的路。",
     detail: "这是故事高光示例。真实数据接入后，会从你完成的故事中选择内容最完整、最值得回看的那一篇。",
     occurredAt: "2026-08-18T08:00:00+08:00",
-    status: "最长故事高光",
-    metricLabel: "故事长度",
-    metricValue: "386 字",
+    status: "完整创作高光",
+    metricLabel: "创作记录",
+    metricValue: "8 轮共创 · 结尾 86 字",
     usageCount: 4,
   },
   {
     id: "demo-sea-highlight",
     module: "deep_sea",
     kind: "highlight",
-    title: "珊瑚花园极速重建",
-    summary: "这一次路线判断又快又稳，是目前完成同一关用时最短的一次。",
+    title: "深海基地完整重建",
+    summary: "这一次完成了三处基地任务，还根据检查结果认真调整了设计。",
     quote: "先给小鱼留安全通道，再把共享花园放在中间。",
-    detail: "这是深海高光示例。真实记录会优先展示同一关的最快通关，并保留当时的重要设计选择。",
+    detail: "这是深海高光示例。真实记录会优先展示完成最完整、过程最值得回看的基地重建。",
     occurredAt: "2026-08-16T08:00:00+08:00",
-    status: "最快重建高光",
-    metricLabel: "完成速度",
-    metricValue: "4分32秒",
+    status: "完整重建高光",
+    metricLabel: "重建记录",
+    metricValue: "完成 3 个任务 · 调整 5 次",
     usageCount: 6,
   },
   {
@@ -112,7 +112,7 @@ const DEMO_TIMELINE = [
     kind: "registration",
     title: "来到探索星球",
     summary: "这是第一颗星，也是所有探索故事的起点。",
-    detail: "从注册这一天开始，四座大陆会把每一次使用的小脚印慢慢送到这里。",
+    detail: "从注册这一天开始，四座大陆会把每一次完成的小脚印慢慢送到这里。",
     quote: "从今天起，出发去发现自己的闪光点。",
     occurredAt: "2026-08-01T08:00:00+08:00",
     status: "星光起点",
@@ -124,11 +124,11 @@ const DEMO_TIMELINE = [
     ...item,
     id: `demo-summary-${item.module}`,
     kind: "module_summary",
-    title: `${MODULE_META[item.module].island}的使用小结`,
-    summary: `从第一次使用到最近一次，一共留下 ${item.usageCount} 个示例脚印。`,
-    detail: `这是模块使用小结示例。真实页面会显示首次使用、最近使用、累计次数${index < 2 ? "和可获得的累计时长" : ""}。`,
+    title: `${MODULE_META[item.module].island}的完成小结`,
+    summary: `从第一次完成到最近一次，一共留下 ${item.usageCount} 个示例脚印。`,
+    detail: `这是模块完成小结示例。真实页面会显示首次完成、最近完成、累计次数${index < 2 ? "和可获得的累计时长" : ""}。`,
     status: "模块已点亮",
-    metricLabel: "累计使用",
+    metricLabel: "累计完成",
     metricValue: `${item.usageCount} 次探索${index === 0 ? " · 累计 38分钟" : ""}`,
   })),
 ];
@@ -158,11 +158,13 @@ function normalizeItem(item, index, kind) {
     occurredAt: cleanText(item?.occurred_at ?? item?.occurredAt, new Date(0).toISOString()),
     status: cleanText(item?.status, itemKind === "highlight" ? "高光已收藏" : "模块已点亮"),
     unlocked: item?.unlocked !== false,
-    metricLabel: cleanText(item?.metric_label ?? item?.metricLabel, itemKind === "highlight" ? "高光记录" : "累计使用"),
+    metricLabel: cleanText(item?.metric_label ?? item?.metricLabel, itemKind === "highlight" ? "高光记录" : "累计完成"),
     metricValue: cleanText(item?.metric_value ?? item?.metricValue, itemKind === "registration" ? "第一次出发" : "1 次探索"),
     usageCount: Number(item?.usage_count ?? item?.usageCount) || 0,
     firstUsedAt: cleanText(item?.first_used_at ?? item?.firstUsedAt),
     lastUsedAt: cleanText(item?.last_used_at ?? item?.lastUsedAt),
+    durationSeconds: Number(item?.duration_seconds ?? item?.durationSeconds) || 0,
+    durationCoverage: Math.max(0, Math.min(1, Number(item?.duration_coverage ?? item?.durationCoverage) || 0)),
     island: meta.island,
     collection: meta.collection,
     scene: meta.scene,
@@ -188,7 +190,7 @@ export function createDemoCollection(account = {}) {
     isDemo: true,
     worksAreDemo: true,
     timelineIsDemo: true,
-    worksNotice: "还没有足够的真实高光记录，这里先展示四枚示例奖章。完成探索后，会自动换成你的最好表现。",
+    worksNotice: "还没有足够的真实高光记录，这里先展示四枚示例奖章。完成探索后，会自动换成你的代表性高光。",
     timelineNotice: "这里先展示一份使用历程示例。真实记录会从你的注册日开始。",
     notice: "当前展示的是清楚标注的示例内容。",
   };
@@ -212,11 +214,11 @@ export function normalizeCollectionResponse(payload) {
   const works = worksAreDemo ? demo.works : realWorks;
   const milestones = timelineIsDemo ? demo.milestones : realMilestones;
   const worksNotice = worksAreDemo
-    ? "还没有足够的真实高光记录，这里先展示示例奖章。完成探索后，会自动换成你的最好表现。"
-    : "每座大陆只保留一枚真实高光：最好、最快、最完整或最值得回看的一次。";
+    ? "还没有足够的真实高光记录，这里先展示示例奖章。完成探索后，会自动换成你的代表性高光。"
+    : "每座大陆只保留一枚真实高光：表达最充分、参与最完整或过程最值得回看的一次。";
   const timelineNotice = timelineIsDemo
     ? "还没有收到账号使用历程，这里先展示清楚标注的示例。"
-    : "这条星路从注册日开始，记录四个模块的首次使用、最近使用和累计次数。";
+    : "这条星路从注册日开始，记录四个模块的首次完成、最近完成和累计次数。";
   return {
     account,
     works,

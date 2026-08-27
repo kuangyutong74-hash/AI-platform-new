@@ -38,6 +38,7 @@ button {
 }
 .login-page {
   min-height: 100vh;
+  padding: 28px 0;
   display: grid;
   place-items: center;
   position: relative;
@@ -64,6 +65,8 @@ button {
 }
 .login-panel {
   width: min(460px, calc(100% - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(18px);
   border: 1px solid rgba(255, 255, 255, 0.95);
@@ -115,6 +118,30 @@ button {
   gap: 13px;
   text-align: left;
 }
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin: 0 0 18px;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(113, 97, 184, 0.08);
+}
+.auth-tabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #74798b;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+.auth-tabs button.active {
+  color: #3f4056;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 4px 12px rgba(61, 65, 87, 0.09);
+}
 .login-panel label {
   font-size: 12px;
   color: #596177;
@@ -132,6 +159,27 @@ button {
 .login-panel input:focus {
   border-color: #8171bd;
   box-shadow: 0 0 0 3px rgba(129, 113, 189, 0.12);
+}
+.password-field {
+  position: relative;
+  display: block;
+}
+.password-field input {
+  padding-right: 58px;
+}
+.password-field button {
+  position: absolute;
+  right: 8px;
+  top: 14px;
+  min-width: 42px;
+  height: 31px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #7464a6;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
 }
 .login-inline {
   display: grid;
@@ -162,7 +210,8 @@ button {
   opacity: 0.65;
   cursor: wait;
 }
-.demo-note {
+.demo-note,
+.auth-footnote {
   font-size: 11px;
   color: #9a9dac;
   margin: 15px 0 0;
@@ -271,6 +320,64 @@ button {
   gap: 12px;
   font-size: 12px;
 }
+.profile-menu {
+  position: relative;
+  justify-self: end;
+}
+.profile-menu summary {
+  min-width: 134px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  list-style: none;
+  cursor: pointer;
+  font-size: 12px;
+}
+.profile-menu summary::-webkit-details-marker {
+  display: none;
+}
+.profile-menu summary > b {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #ffd8a8, #ea99a4);
+  color: #41384d;
+  font-size: 11px;
+}
+.profile-menu[open] summary > b {
+  box-shadow: 0 0 0 3px rgba(116, 100, 182, 0.18);
+}
+.profile-menu > div {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 205px;
+  padding: 17px;
+  display: grid;
+  gap: 5px;
+  border: 1px solid rgba(84, 74, 107, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 252, 244, 0.98);
+  color: #40374e;
+  box-shadow: 0 18px 38px rgba(40, 35, 57, 0.18);
+}
+.profile-menu > div small {
+  color: #81798a;
+}
+.profile-menu > div button {
+  min-height: 38px;
+  margin-top: 9px;
+  border: 0;
+  border-radius: 10px;
+  background: #f1edf4;
+  color: #654f70;
+  cursor: pointer;
+  font-weight: 700;
+}
 .profile button {
   width: 42px;
   height: 42px;
@@ -297,7 +404,8 @@ button {
   color: #fff8e5;
   border-color: #f0cf76;
 }
-.personal-topbar .profile > span {
+.personal-topbar .profile > span,
+.personal-topbar .profile-menu summary > span {
   color: #f4ebf2;
 }
 .planet-page {
@@ -759,8 +867,12 @@ button {
     padding: 20px 8px;
     font-size: 11px;
   }
-  .profile span {
+  .profile span,
+  .profile-menu summary > span {
     display: none;
+  }
+  .profile-menu summary {
+    min-width: auto;
   }
   .planet-page {
     padding-bottom: 150px;
@@ -3851,6 +3963,14 @@ body,
 .three-scene-page button {
   font-family: var(--child-report-font);
 }
+.works-view,
+.works-view button,
+.works-view input,
+.growth-view,
+.growth-view button,
+.growth-view input {
+  font-family: var(--child-report-font) !important;
+}
 
 /* 手机底部导航必须相对视口定位；backdrop-filter 会把 fixed 子元素困在顶部栏内。 */
 @media (max-width: 850px) {
@@ -4227,5 +4347,53 @@ html {
 
   .three-scene-page .module-dock button:nth-child(4) {
     grid-column: 5;
+  }
+}
+
+/* “我的作品 / 成长足迹”沿用探索星球的明亮顶栏与排版节奏。 */
+.topbar.personal-topbar.view-works,
+.topbar.personal-topbar.view-timeline {
+  border-bottom-color: rgba(124, 108, 154, 0.16);
+  background: rgba(255, 252, 244, 0.96);
+  color: #40374e;
+  box-shadow: 0 8px 24px rgba(79, 67, 95, 0.1);
+}
+.personal-topbar.view-works .brand b,
+.personal-topbar.view-timeline .brand b {
+  color: #40374e;
+}
+.personal-topbar.view-works .brand small,
+.personal-topbar.view-works nav button,
+.personal-topbar.view-timeline .brand small,
+.personal-topbar.view-timeline nav button {
+  color: #6f6579;
+  white-space: nowrap;
+}
+.personal-topbar.view-works nav button.active,
+.personal-topbar.view-timeline nav button.active {
+  color: #594672;
+  border-color: #ba8daa;
+}
+.personal-topbar.view-works .profile > span,
+.personal-topbar.view-timeline .profile > span,
+.personal-topbar.view-works .profile-menu summary > span,
+.personal-topbar.view-timeline .profile-menu summary > span {
+  color: #51475c;
+}
+@media (max-width: 850px) {
+  .topbar.personal-topbar.view-works nav,
+  .topbar.personal-topbar.view-timeline nav {
+    border-top-color: rgba(124, 108, 154, 0.16);
+    background: rgba(255, 252, 244, 0.98);
+    box-shadow: 0 -8px 24px rgba(79, 67, 95, 0.1);
+  }
+  .personal-topbar.view-works nav button,
+  .personal-topbar.view-timeline nav button {
+    color: #6f6579;
+  }
+  .personal-topbar.view-works nav button.active,
+  .personal-topbar.view-timeline nav button.active {
+    color: #594672;
+    border-color: #ba8daa;
   }
 }

@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import json
 import base64
+import os
 import secrets
 import sqlite3
 import uuid
@@ -32,7 +33,8 @@ DATA_DIR = ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
 SNAPSHOT_DIR = DATA_DIR / "evidence-snapshots"
 SNAPSHOT_DIR.mkdir(exist_ok=True)
-DB_PATH = DATA_DIR / "ai_bole_core.db"
+DB_PATH = Path(os.environ.get("AI_BOLE_DB_PATH", DATA_DIR / "ai_bole_core.db")).resolve()
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 COOKIE_NAME = "ai_bole_session"
 SESSION_DAYS = 30
 
@@ -107,12 +109,23 @@ def initialize_database() -> None:
               behavior_summary TEXT NOT NULL,
               raw_evidence TEXT NOT NULL,
               context TEXT NOT NULL,
+              idempotency_key TEXT,
               created_at TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_sessions_token ON account_sessions(token_hash);
             CREATE INDEX IF NOT EXISTS idx_evidence_account_time ON evidence_events(account_id, occurred_at DESC);
             CREATE INDEX IF NOT EXISTS idx_evidence_account_module ON evidence_events(account_id, module);
             """
+        )
+        evidence_columns = {
+            row["name"] for row in db.execute("PRAGMA table_info(evidence_events)").fetchall()
+        }
+        if "idempotency_key" not in evidence_columns:
+            db.execute("ALTER TABLE evidence_events ADD COLUMN idempotency_key TEXT")
+        db.execute(
+            """CREATE UNIQUE INDEX IF NOT EXISTS idx_evidence_account_idempotency
+               ON evidence_events(account_id, idempotency_key)
+               WHERE idempotency_key IS NOT NULL"""
         )
         db.execute("PRAGMA optimize")
 
@@ -194,18 +207,35 @@ def build_talent_eligibility(rows: list[sqlite3.Row]) -> list[dict]:
     ]
 
 
-class AccountSessionIn(BaseModel):
+def normalize_username(value: str) -> str:
+    value = value.strip().lower()
+    if not all(ch.isalnum() or ch in "_-" for ch in value):
+        raise ValueError("账号只能包含文字、数字、下划线或短横线")
+    return value
+
+
+class AccountCredentialsIn(BaseModel):
     username: str = Field(min_length=2, max_length=30)
-    display_name: str = Field(min_length=1, max_length=30)
-    age: int = Field(ge=4, le=18)
+    # 兼容旧版本已创建的 4～5 位密码；新注册仍要求至少 6 位。
     password: str = Field(min_length=4, max_length=72)
 
     @field_validator("username")
     @classmethod
     def normalize_username(cls, value: str) -> str:
-        value = value.strip().lower()
-        if not all(ch.isalnum() or ch in "_-" for ch in value):
-            raise ValueError("账号只能包含文字、数字、下划线或短横线")
+        return normalize_username(value)
+
+
+class AccountRegistrationIn(AccountCredentialsIn):
+    password: str = Field(min_length=6, max_length=72)
+    display_name: str = Field(min_length=1, max_length=30)
+    age: int = Field(ge=4, le=18)
+
+    @field_validator("display_name")
+    @classmethod
+    def normalize_display_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("请填写孩子昵称")
         return value
 
 
@@ -245,12 +275,33 @@ def account_bridge() -> PlainTextResponse:
     """供四个独立模块共用的轻量账号与证据桥，不复制登录逻辑。"""
     script = r'''(() => {
   const core = "http://localhost:8020";
+  const queuePrefix = "ai-bole-evidence-queue:";
+  const queueKey = account => queuePrefix + account.id;
+  const readQueue = account => {
+    try { return JSON.parse(localStorage.getItem(queueKey(account)) || "[]"); }
+    catch (_) { return []; }
+  };
+  const writeQueue = (account, items) => {
+    try { localStorage.setItem(queueKey(account), JSON.stringify(items.slice(-100))); }
+    catch (_) {}
+  };
+  const post = event => fetch(core + "/api/evidence/events", {
+    method: "POST", credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(event)
+  }).then(async response => {
+    if (response.ok) return response.json();
+    const error = new Error(response.status === 401 ? "account required" : "evidence rejected");
+    error.status = response.status;
+    throw error;
+  });
   const api = {
     account: null,
     ready: fetch(core + "/api/account/me", { credentials: "include" })
       .then(r => r.ok ? r.json() : Promise.reject()).then(v => {
         api.account = v.account;
         window.dispatchEvent(new CustomEvent("ai-bole-account-ready", { detail: v.account }));
+        queueMicrotask(() => api.flushEvidence());
         return v.account;
       }).catch(() => null),
     async captureMoment(selector) {
@@ -277,14 +328,39 @@ def account_bridge() -> PlainTextResponse:
         event.context = Object.assign({}, event.context || {}, snapshot ? { snapshot_url: snapshot } : {});
         delete event.capture_selector;
       }
-      return fetch(core + "/api/evidence/events", {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(event)
-      }).then(r => r.ok ? r.json() : Promise.reject(new Error("evidence rejected")));
+      const account = api.account || await api.ready;
+      if (!account) throw new Error("请先登录探索者账号");
+      try {
+        const result = await post(event);
+        window.dispatchEvent(new CustomEvent("ai-bole-evidence-saved", { detail: result }));
+        return result;
+      } catch (error) {
+        if (error && error.status >= 400 && error.status < 500 && error.status !== 401) throw error;
+        const key = event && event.context && event.context.idempotency_key;
+        const queued = readQueue(account);
+        if (!key || !queued.some(item => item?.context?.idempotency_key === key)) queued.push(event);
+        writeQueue(account, queued);
+        window.dispatchEvent(new CustomEvent("ai-bole-evidence-queued", { detail: { key } }));
+        return { ok: true, queued: true };
+      }
+    },
+    async flushEvidence() {
+      const account = api.account || await api.ready;
+      if (!account) return { flushed: 0, pending: 0 };
+      const queued = readQueue(account);
+      const pending = [];
+      let flushed = 0;
+      for (const event of queued) {
+        try { await post(event); flushed += 1; }
+        catch (_) { pending.push(event); }
+      }
+      writeQueue(account, pending);
+      if (flushed) window.dispatchEvent(new CustomEvent("ai-bole-evidence-flushed", { detail: { flushed, pending: pending.length } }));
+      return { flushed, pending: pending.length };
     },
     returnToPlanet() { location.href = "http://localhost:4173/?from=module"; }
   };
+  window.addEventListener("online", () => api.flushEvidence());
   window.AIBole = api;
 })();'''
     return PlainTextResponse(script, media_type="application/javascript; charset=utf-8")
@@ -326,42 +402,54 @@ def read_snapshot(filename: str) -> FileResponse:
     return FileResponse(path, media_type="image/jpeg")
 
 
-@app.post("/api/account/session")
-def create_session(payload: AccountSessionIn, response: Response) -> dict:
-    timestamp = now_iso()
-    with connect() as db:
-        account = db.execute("SELECT * FROM accounts WHERE username=?", (payload.username,)).fetchone()
-        if account:
-            candidate = password_digest(payload.password, account["password_salt"])
-            if not hmac.compare_digest(candidate, account["password_hash"]):
-                raise HTTPException(401, "账号或密码不正确")
-            db.execute(
-                "UPDATE accounts SET display_name=?, age=?, updated_at=? WHERE id=?",
-                (payload.display_name.strip(), payload.age, timestamp, account["id"]),
-            )
-            account_id = account["id"]
-        else:
-            account_id = str(uuid.uuid4())
-            salt = secrets.token_hex(16)
-            db.execute(
-                "INSERT INTO accounts VALUES (?,?,?,?,?,?,?,?)",
-                (account_id, payload.username, payload.display_name.strip(), payload.age,
-                 password_digest(payload.password, salt), salt, timestamp, timestamp),
-            )
-
-        token = secrets.token_urlsafe(32)
-        expires = (datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)).isoformat()
-        db.execute(
-            "INSERT INTO account_sessions VALUES (?,?,?,?,?)",
-            (str(uuid.uuid4()), account_id, token_digest(token), expires, timestamp),
-        )
-        account = db.execute("SELECT * FROM accounts WHERE id=?", (account_id,)).fetchone()
-
+def issue_session(db: sqlite3.Connection, account_id: str, response: Response, timestamp: str) -> None:
+    db.execute("DELETE FROM account_sessions WHERE expires_at<=?", (timestamp,))
+    token = secrets.token_urlsafe(32)
+    expires = (datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)).isoformat()
+    db.execute(
+        "INSERT INTO account_sessions VALUES (?,?,?,?,?)",
+        (str(uuid.uuid4()), account_id, token_digest(token), expires, timestamp),
+    )
     response.set_cookie(
         COOKIE_NAME, token, httponly=True, samesite="lax", secure=False,
         max_age=SESSION_DAYS * 86400, path="/",
     )
-    return {"account": public_account(account), "created": account["created_at"] == timestamp}
+
+
+@app.post("/api/account/register", status_code=201)
+def register_account(payload: AccountRegistrationIn, response: Response) -> dict:
+    timestamp = now_iso()
+    with connect() as db:
+        if db.execute("SELECT 1 FROM accounts WHERE username=?", (payload.username,)).fetchone():
+            raise HTTPException(409, "这个探索者账号已经存在，请直接登录")
+        account_id = str(uuid.uuid4())
+        salt = secrets.token_hex(16)
+        try:
+            db.execute(
+                "INSERT INTO accounts VALUES (?,?,?,?,?,?,?,?)",
+                (account_id, payload.username, payload.display_name, payload.age,
+                 password_digest(payload.password, salt), salt, timestamp, timestamp),
+            )
+        except sqlite3.IntegrityError as cause:
+            raise HTTPException(409, "这个探索者账号已经存在，请直接登录") from cause
+        issue_session(db, account_id, response, timestamp)
+        account = db.execute("SELECT * FROM accounts WHERE id=?", (account_id,)).fetchone()
+    return {"account": public_account(account), "created": True}
+
+
+@app.post("/api/account/session")
+def create_session(payload: AccountCredentialsIn, response: Response) -> dict:
+    timestamp = now_iso()
+    with connect() as db:
+        account = db.execute("SELECT * FROM accounts WHERE username=?", (payload.username,)).fetchone()
+        if not account:
+            raise HTTPException(401, "账号或密码不正确")
+        candidate = password_digest(payload.password, account["password_salt"])
+        if not hmac.compare_digest(candidate, account["password_hash"]):
+            raise HTTPException(401, "账号或密码不正确")
+        db.execute("UPDATE accounts SET updated_at=? WHERE id=?", (timestamp, account["id"]))
+        issue_session(db, account["id"], response, timestamp)
+    return {"account": public_account(account), "created": False}
 
 
 @app.get("/api/account/me")
@@ -382,17 +470,37 @@ def delete_session(response: Response, ai_bole_session: str | None = Cookie(defa
 def create_evidence(payload: EvidenceIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
     account = require_account(ai_bole_session)
     event_id = str(uuid.uuid4())
+    idempotency_key = payload.context.get("idempotency_key")
+    if not isinstance(idempotency_key, str) or not idempotency_key.strip():
+        idempotency_key = None
+    else:
+        idempotency_key = idempotency_key.strip()[:160]
     with connect() as db:
-        db.execute(
-            "INSERT INTO evidence_events VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (
-                event_id, account["id"], payload.module, payload.event_type, payload.occurred_at,
-                payload.evidence_level, json.dumps(payload.intelligence_candidates, ensure_ascii=False),
-                payload.behavior_summary, json.dumps(payload.raw_evidence, ensure_ascii=False),
-                json.dumps(payload.context, ensure_ascii=False), now_iso(),
-            ),
-        )
-    return {"ok": True, "event_id": event_id}
+        try:
+            db.execute(
+                """INSERT INTO evidence_events (
+                     id, account_id, module, event_type, occurred_at, evidence_level,
+                     intelligence_candidates, behavior_summary, raw_evidence, context,
+                     idempotency_key, created_at
+                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    event_id, account["id"], payload.module, payload.event_type, payload.occurred_at,
+                    payload.evidence_level, json.dumps(payload.intelligence_candidates, ensure_ascii=False),
+                    payload.behavior_summary, json.dumps(payload.raw_evidence, ensure_ascii=False),
+                    json.dumps(payload.context, ensure_ascii=False), idempotency_key, now_iso(),
+                ),
+            )
+        except sqlite3.IntegrityError:
+            if not idempotency_key:
+                raise
+            existing = db.execute(
+                "SELECT id FROM evidence_events WHERE account_id=? AND idempotency_key=?",
+                (account["id"], idempotency_key),
+            ).fetchone()
+            if not existing:
+                raise
+            return {"ok": True, "event_id": existing["id"], "duplicate": True}
+    return {"ok": True, "event_id": event_id, "duplicate": False}
 
 
 @app.get("/api/evidence/events")
@@ -422,7 +530,7 @@ def explorer_collection(ai_bole_session: str | None = Cookie(default=None)) -> d
     account = require_account(ai_bole_session)
     with connect() as db:
         rows = db.execute(
-            "SELECT * FROM evidence_events WHERE account_id=? ORDER BY occurred_at DESC LIMIT 80",
+            "SELECT * FROM evidence_events WHERE account_id=? ORDER BY occurred_at DESC",
             (account["id"],),
         ).fetchall()
     events = [

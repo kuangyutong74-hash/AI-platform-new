@@ -307,6 +307,9 @@ var XIAOXIN_ACTIVE_SESSION_KEY='xiaoxin_active_session_id';
 // 注意：旧会话数据（备份、天气标记等）的清理由下面的初始化 IIFE 统一管理，
 // 不再在变量声明阶段做无条件的 removeItem。只有明确判定"全新对话"时才清理。
 var selectedWeather=null,weatherLabel=null,turnCount=0,messages=[],isLoading=false,finalized=false,consecutiveShortCount=0,litCategories={};
+var conversationActiveMs=0,conversationActiveFrom=Date.now();
+document.addEventListener('visibilitychange',function(){if(document.hidden){if(conversationActiveFrom){conversationActiveMs+=Date.now()-conversationActiveFrom;conversationActiveFrom=0}}else if(!conversationActiveFrom){conversationActiveFrom=Date.now()}});
+function conversationDurationSeconds(){var active=conversationActiveMs+(conversationActiveFrom?Date.now()-conversationActiveFrom:0);return Math.max(1,Math.round(active/1000))}
 
 // ===== TOPIC CATEGORY =====
 var TOPIC_CATEGORY_MAP=[
@@ -317,7 +320,9 @@ var TOPIC_CATEGORY_MAP=[
   {cat:'hobby',keywords:['画画','唱歌','音乐','钢琴','吉他','跳舞','手工','折纸','积木','游戏','动画','动漫','漫画','小说','追剧','明星','收集','拍照','视频','模型','做菜','烘焙','魔方','围棋']},
   {cat:'social',keywords:['同学','朋友','同桌','闺蜜','兄弟','好朋友','吵架','和好','送礼物','全班','一起','帮忙','分享','秘密','安慰','鼓励','支持','道歉','原谅','不跟','玩了','绝交','新朋友','转学','出去玩','邀请']}
 ];
+var TOPIC_CATEGORY_LABELS={daily:'日常生活',sports:'运动',study:'学习',emotion:'心情',hobby:'兴趣爱好',social:'朋友相处'};
 function detectCategories(){var t=messages.filter(function(m){return m.role==='user'}).map(function(m){return m.content}).join(' ');var r={};TOPIC_CATEGORY_MAP.forEach(function(e){e.keywords.forEach(function(k){if(t.indexOf(k)>=0)r[e.cat]=true})});return r}
+function conversationTopic(){var categories=Object.keys(detectCategories());return categories.length?TOPIC_CATEGORY_LABELS[categories[0]]:'我的新发现'}
 function updateRoadmap(){var n=detectCategories(),c=false;for(var k in n){if(!litCategories[k]){litCategories[k]=true;c=true}}if(!c)return;exploreMap.querySelectorAll('.roadmap-step').forEach(function(e){if(litCategories[e.dataset.cat])e.classList.add('lit')})}
 
 // ===== WELCOME =====
@@ -968,7 +973,7 @@ msgInput.addEventListener('input',function(){autoResizeTextarea();updateCharCoun
 msgInput.addEventListener('paste',function(e){var cur=msgInput.value,cl=(e.clipboardData||window.clipboardData||{}).getData?e.clipboardData.getData('text/plain'):'';if(!cl)return;var avail=2000-cur.length;if(cl.length>avail){e.preventDefault();var tr=cl.slice(0,avail),st=msgInput.selectionStart,en=msgInput.selectionEnd;msgInput.value=cur.slice(0,st)+tr+cur.slice(en);var np=st+tr.length;msgInput.setSelectionRange(np,np);autoResizeTextarea();updateCharCount();var toast=document.createElement('div');toast.textContent='最多输入 2000 个字符，超出部分未输入';toast.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#51291f;color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;z-index:9999;opacity:1;transition:opacity .4s;pointer-events:none;';document.body.appendChild(toast);setTimeout(function(){toast.style.opacity='0'},1800);setTimeout(function(){if(toast.parentNode)toast.parentNode.removeChild(toast)},2300)}});
 
 // ===== End chat =====
-async function finalizeConversation(){if(turnCount===0||finalized)return;finalized=true;sessionStorage.setItem(XIAOXIN_SESSION_FINALIZED_KEY,'1');var b={sessionId:sessionId,messages:messages,turnCount:turnCount,weather:selectedWeather,weatherLabel:weatherLabel,completed:true};try{await fetch('/api/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}catch(e){}try{var childMessages=messages.filter(function(item){return item.role==='user'}),longTurns=childMessages.filter(function(item){return item.content.length>=20}).length,totalChars=childMessages.reduce(function(sum,item){return sum+item.content.length},0);await window.AIBole?.emitEvidence({capture_selector:'.chat-section',module:'chat',event_type:'narrative_evidence',evidence_level:longTurns>=2?'strong':'reference',intelligence_candidates:['linguistic','intrapersonal'],behavior_summary:longTurns>=2?'能围绕话题持续展开，并用较完整的话表达自己的经历与想法。':'在聊天中表达了自己的兴趣与想法，可作为后续观察线索。',raw_evidence:{turn_count:turnCount,long_turn_count:longTurns,total_child_chars:totalChars,topic_source:'free_conversation'},context:{session_id:sessionId}})}catch(e){}}
+async function finalizeConversation(){if(turnCount===0||finalized)return;finalized=true;sessionStorage.setItem(XIAOXIN_SESSION_FINALIZED_KEY,'1');var b={sessionId:sessionId,messages:messages,turnCount:turnCount,weather:selectedWeather,weatherLabel:weatherLabel,completed:true};try{await fetch('/api/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}catch(e){}try{var childMessages=messages.filter(function(item){return item.role==='user'}),longTurns=childMessages.filter(function(item){return item.content.length>=20}).length,totalChars=childMessages.reduce(function(sum,item){return sum+item.content.length},0),longest=childMessages.reduce(function(best,item){return item.content.length>best.length?item.content:best},''),topic=conversationTopic();await window.AIBole?.emitEvidence({module:'chat',event_type:'narrative_evidence',evidence_level:longTurns>=2?'strong':'reference',intelligence_candidates:['linguistic','intrapersonal'],behavior_summary:longTurns>=2?'能围绕话题持续展开，并用较完整的话表达自己的经历与想法。':'在聊天中表达了自己的兴趣与想法，可作为后续观察线索。',raw_evidence:{completed:true,duration_seconds:conversationDurationSeconds(),turn_count:turnCount,long_turn_count:longTurns,total_child_chars:totalChars,topic_source:'free_conversation',topic:topic,title:'聊聊'+topic,child_words:longest.slice(0,60)},context:{activity_id:sessionId,session_id:sessionId,idempotency_key:sessionId+':completed'}})}catch(e){}}
 function buildEndUrl(){
   var params=new URLSearchParams();
   params.set('turns',turnCount);
