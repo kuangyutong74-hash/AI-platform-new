@@ -20,8 +20,10 @@ test("server renders AI伯乐探索星球", async () => {
   const html = await response.text();
   assert.match(html, /<title>AI伯乐 · 探索星球<\/title>/i);
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
-  assert.match(page, /欢迎来到探索星球/);
-  assert.match(page, /一个账号连接四块大陆/);
+  assert.match(page, /欢迎回到探索星球/);
+  assert.match(page, /注册新账号/);
+  assert.match(page, /\/api\/account\/register/);
+  assert.match(page, /两次输入的密码不一致/);
   assert.match(page, /http:\/\/localhost:8020/);
   assert.doesNotMatch(html, /codex-preview|SkeletonPreview|react-loading-skeleton/);
 });
@@ -94,4 +96,6 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
   assert.match(growth, /注册起点/);
   assert.match(growth, /timelineNotice/);
   assert.match(growth, /item\.metricValue/);
+  assert.match(growth, /item\.firstUsedAt/);
+  assert.match(growth, /最近一次完成/);
 });
