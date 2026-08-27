@@ -1,8 +1,9 @@
-require('dotenv').config();
-
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+
+// 四个探索模块统一读取整合平台根目录的 DeepSeek 配置。
+require('dotenv').config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
 const { parseEnvConfig } = require('./lib/infra/env-config');
 const { securityHeadersMiddleware } = require('./lib/infra/security-headers');

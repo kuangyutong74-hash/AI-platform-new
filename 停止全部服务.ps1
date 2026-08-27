@@ -7,8 +7,16 @@ if (-not (Test-Path -LiteralPath $registry)) {
   exit 0
 }
 
-$saved = Get-Content -Raw -LiteralPath $registry | ConvertFrom-Json
-$records = @(Convert-ServiceRegistryEntries -Entries @($saved))
+$records = @()
+try {
+  $saved = Get-Content -Raw -Encoding UTF8 -LiteralPath $registry | ConvertFrom-Json -ErrorAction Stop
+  $records = @(Convert-ServiceRegistryEntries -Entries @($saved))
+} catch {
+  $backup = "$registry.corrupt.$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+  Move-Item -LiteralPath $registry -Destination $backup -Force
+  Write-Warning "服务记录已损坏，已保留备份：$backup。重启流程将继续按配置端口回收服务。"
+  return
+}
 foreach ($record in $records) {
   $process = Get-Process -Id $record.Pid -ErrorAction SilentlyContinue
   if ($process) {
@@ -16,4 +24,4 @@ foreach ($record in $records) {
     Write-Host "[已停止] $($record.Name) (PID $($record.Pid))" -ForegroundColor Green
   }
 }
-Remove-Item -LiteralPath $registry
+Remove-Item -LiteralPath $registry -Force

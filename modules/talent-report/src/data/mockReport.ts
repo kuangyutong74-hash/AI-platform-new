@@ -1,6 +1,6 @@
 export type EvidenceLevel = "strong" | "reference";
-export type Evidence = { id:string; behavior:string; source:string; continent:string; time:string; level:EvidenceLevel; raw:string };
-export type Moment = { id:string; kind:"story"|"base"|"chat"|"career"; title:string; caption:string; quote?:string; stickers?:string[] };
+export type Evidence = { id:string; behavior:string; source:string; continent:string; time:string; level:EvidenceLevel; raw:string; logTitle?:string; logSummary?:string; logDetails?:string[] };
+export type Moment = { id:string; kind:"story"|"base"|"chat"|"career"; title:string; caption:string; quote?:string; stickers?:string[]; source?:string; time?:string; evidenceId?:string; imageUrl?:string; isExample?:boolean };
 export type Talent = { key:string; adultName:string; childName:string; icon:string; label:string; color:string; relativeStrength:number; moduleUrl:string; continent:string; module:string; encouragement:string; evidence:Evidence[]; moments?:Moment[] };
 
 const e = (id:string, behavior:string, source:string, continent:string, time:string, level:EvidenceLevel, raw:string):Evidence => ({ id, behavior, source, continent, time, level, raw });

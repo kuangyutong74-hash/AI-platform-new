@@ -39,6 +39,7 @@
   overflow: hidden;
   color: var(--works-ink);
   isolation: isolate;
+  font-family: var(--child-report-font);
 }
 .works-sky {
   position: absolute;

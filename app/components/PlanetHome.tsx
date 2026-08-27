@@ -13,6 +13,12 @@ const cosmicNodes: {view: PlatformView; label: string}[] = [
 const starSpiritImg = "/assets/storybook/star-spirit.svg";
 const floatStarsImg = "/assets/storybook/float-stars.svg";
 const floatCloudImg = "/assets/storybook/float-cloud.svg";
+const moduleNavArt:Record<(typeof modules)[number]["id"],string> = {
+  chat:"/assets/module-nav-watercolor/nav-listening-v1.webp",
+  story:"/assets/module-nav-watercolor/nav-story-v1.webp",
+  build:"/assets/module-nav-watercolor/nav-build-v1.webp",
+  career:"/assets/module-nav-watercolor/nav-career-v1.webp",
+};
 
 export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=>void}) {
   const [orbitRotation, setOrbitRotation] = useState(0);
@@ -103,6 +109,11 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
       <span className="orbit-control-hint" aria-hidden="true">沿星轨缓慢环行 · 拖动选择</span>
     </nav>
     <div className="three-stage"><Suspense fallback={<div className="globe-loading">正在点亮探索星球…</div>}><ThreeGlobe/></Suspense><div className="drag-tip"><span>✥</span> 上下左右拖动 · 360° 探索 · 点击大陆进入</div></div>
-    <div className="module-dock">{modules.map(item=><button key={item.id} onClick={()=>window.location.href=item.url}><i className={`module-icon ${item.color}`} aria-hidden="true"><img src={item.iconAsset} alt="" draggable={false}/></i><span><b>{item.module}</b><small>{item.name}</small></span></button>)}</div>
+    <nav className="module-dock" aria-label="四座探索大陆">
+      {modules.map(item=><button key={item.id} data-module={item.id} onClick={()=>window.location.href=item.url} aria-label={`进入${item.module}，${item.name}`}>
+        <i className={`module-icon ${item.color}`} aria-hidden="true"><img className="module-art" src={moduleNavArt[item.id]} alt="" draggable={false}/></i>
+        <span className="module-label"><b>{item.module}</b><small>{item.name}</small></span>
+      </button>)}
+    </nav>
   </section>;
 }

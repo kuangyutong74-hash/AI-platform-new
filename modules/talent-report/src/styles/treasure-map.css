@@ -10,8 +10,25 @@ body{overflow:hidden}.cosmos-shell.child-theme{height:100dvh;min-height:0;overfl
 ::selection{color:#4d3c53;background:#f4d69d}.treasure-map-app button:focus-visible{outline:3px solid #f3c664;outline-offset:3px}
 @keyframes star-burst{0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}100%{opacity:0;transform:translate(calc(-50% + var(--sx)),calc(-50% + var(--sy))) scale(1.5)}}@keyframes card-arrive{from{opacity:0;transform:translateY(18px) scale(.96)}}@keyframes celebrate-star{from{opacity:0;transform:translateY(24px) scale(.5) rotate(-12deg)}}
 @media(max-height:800px){.treasure-map-app{grid-template-rows:68px minmax(0,1fr) 47px 38px}.treasure-heading h1{font-size:28px}.map-star{width:72px;height:72px}.map-star>b{top:63px}.map-star em{bottom:64px}.lit-shape img{width:52px;height:52px}.star-story-card{padding:16px 24px}.star-story-card img{width:68px;height:68px}.star-story-card blockquote{margin:8px 0;padding:10px 14px}}
+
+/* 真实行为故事卡：来源、星星身份、智能体小结与操作各自成组。 */
+.star-story-card{width:min(490px,94vw);padding:28px 34px 30px;text-align:left;border-radius:24px}
+.star-story-card header{position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.star-story-card header p{margin:0;color:#a95f67;font-size:14px}
+.star-story-card header small{display:block;margin-top:5px;color:#766278;font-size:13px}
+.star-story-card header img{display:block;width:92px;height:92px;margin:0;object-fit:contain;flex:none}
+.star-story-card h2{margin:-7px 0 0;font-size:clamp(30px,5vw,38px);line-height:1.2;font-weight:400}
+.star-story-card .story-card-label{margin:20px 0 7px;color:#925a61;font-size:13px;font-weight:700;letter-spacing:.08em}
+.star-story-card blockquote{min-height:112px;margin:0;padding:18px 20px;border-radius:15px;color:#574b5e;font-size:17px;line-height:1.85;text-align:left;overflow-wrap:anywhere}
+.star-story-card blockquote.is-empty{color:#6d636e;background:#f3eddd}
+.star-story-card footer{position:relative;display:flex;justify-content:flex-end;flex-wrap:wrap;gap:11px;margin-top:20px}
+.star-story-card footer button{min-height:46px;padding:10px 18px;border-radius:13px}
+.star-story-card button:focus-visible{outline:3px solid #e6ba62;outline-offset:3px}
+@media(max-height:800px){.star-story-card{padding:20px 27px}.star-story-card header img{width:72px;height:72px}.star-story-card blockquote{min-height:88px;margin:0;padding:13px 16px;line-height:1.7}}
+@media(max-width:520px){.star-story-card{padding:22px 22px 24px}.star-story-card header{gap:12px}.star-story-card header img{width:76px;height:76px}.star-story-card blockquote{font-size:16px}.star-story-card footer{display:grid;grid-template-columns:1fr 1fr}.star-story-card footer button{width:100%}}
 @media(max-width:760px){.treasure-map-app{width:calc(100% - 14px)}.child-theme .brand-button small{display:none}.treasure-heading:before,.treasure-heading:after{display:none}.continent-region b{font-size:11px;padding:4px 7px}.map-star{width:61px;height:61px}.map-star>b{top:54px;font-size:10px}.map-star em{bottom:55px;width:120px;font-size:11px}.lit-shape img{width:43px;height:43px}.progress-track span{display:none}}
 @media(prefers-reduced-motion:reduce){.treasure-map-app *,.treasure-map-app *:before,.treasure-map-app *:after{animation:none!important;transition:opacity .18s ease!important}.map-star:hover,.map-star:focus-visible{transform:translate(-50%,-50%)}.continent-region:hover b{transform:translateX(-50%) rotate(-1deg)}.treasure-actions button:hover{transform:none}}
+.map-star.eligible:not(.lit) .sealed-shape{animation:eligible-pulse 1.8s ease-in-out infinite}.map-star.eligible:not(.lit) .sealed-shape svg>path:first-child{fill:#f7c96e;stroke:#fff8d8}.map-star.eligible:not(.lit):after{content:"";position:absolute;inset:2px;border:2px dashed rgba(255,246,174,.9);border-radius:50%;animation:eligible-turn 7s linear infinite}.map-reset{color:#7b6279;border:1px dashed rgba(112,81,104,.3);background:rgba(255,250,237,.78)}@keyframes eligible-pulse{50%{transform:scale(1.08);opacity:.82}}@keyframes eligible-turn{to{transform:rotate(360deg)}}
 
 /* 全屏藏宝图：导航承载标题，插画从导航下沿铺到视口底部。 */
 .child-theme .report-header{height:76px;min-height:76px;grid-template-columns:1fr minmax(460px,2fr) 1fr;padding-block:6px}.child-theme .report-header:after{display:none}.child-theme .title-block{display:block;color:#5b4261;text-align:center}.child-theme .title-block h1{margin:0;font-size:24px;line-height:1.1}.child-theme .title-block p{max-width:700px;margin:3px auto 0;color:#78657b;font-size:13px;letter-spacing:0;white-space:nowrap}.child-theme .report-main{height:calc(100dvh - 76px)}

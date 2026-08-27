@@ -7,18 +7,19 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent
+PLATFORM_DIR = BASE_DIR.parents[2]
 
-# Load .env file (if exists, overrides nothing if variable already set)
-load_dotenv(BASE_DIR / ".env", override=True)
+# 四个探索模块统一读取整合平台根目录的 DeepSeek 配置。
+load_dotenv(PLATFORM_DIR / ".env", override=False)
 
 STATIC_DIR = BASE_DIR / "static"
 TEMPLATES_DIR = BASE_DIR / "templates"
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{BASE_DIR / 'career_sim.db'}")
 
 # DeepSeek API (OpenAI-compatible)
-AI_API_KEY = os.getenv("AI_API_KEY", "")
-AI_API_BASE = os.getenv("AI_API_BASE", "https://api.deepseek.com/v1")
-AI_MODEL = os.getenv("AI_MODEL", "deepseek-chat")
+AI_API_KEY = os.getenv("DEEPSEEK_API_KEY", os.getenv("AI_API_KEY", ""))
+AI_API_BASE = os.getenv("DEEPSEEK_BASE_URL", os.getenv("AI_API_BASE", "https://api.deepseek.com/v1"))
+AI_MODEL = os.getenv("DEEPSEEK_MODEL", os.getenv("AI_MODEL", "deepseek-chat"))
 AI_MAX_TOKENS = int(os.getenv("AI_MAX_TOKENS", "500"))
 AI_TEMPERATURE = float(os.getenv("AI_TEMPERATURE", "0.7"))
 AI_TIMEOUT = int(os.getenv("AI_TIMEOUT", "30"))

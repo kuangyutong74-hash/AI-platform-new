@@ -13,6 +13,7 @@
   overflow: hidden;
   isolation: isolate;
   color: #40374e;
+  font-family: var(--child-report-font);
   background:
     linear-gradient(180deg, rgba(251, 248, 248, 0.42), rgba(242, 240, 247, 0.52)),
     #d8dbea url("/assets/collections/growth/watercolor-sky-scroll.webp") center top/100% auto repeat-y scroll;

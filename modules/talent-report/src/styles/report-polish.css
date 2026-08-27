@@ -1,0 +1,44 @@
+.dimension-analysis {
+  margin: 8px 0 16px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--talent) 38%, #d9cdb8);
+  border-radius: 14px 10px 15px 11px;
+  background: rgba(255, 251, 238, .78);
+  color: #5f5149;
+  font-size: 13px;
+  line-height: 1.75;
+}
+.dimension-analysis.is-empty { color: #817166; font-style: italic; }
+.evidence-empty { padding: 28px 18px; border: 1px dashed rgba(122,78,45,.25); border-radius: 14px; color: #88776a; background: rgba(255,255,255,.38); text-align: center; }
+.magic-book-app .evidence-list .evidence-card {
+  grid-template-columns: 94px minmax(0,1fr);
+  align-items: start;
+  gap: 18px;
+  min-height: 112px;
+  padding: 18px 20px;
+}
+.evidence-badge {
+  width: 94px;
+  min-width: 94px;
+  min-height: 58px;
+  place-content: center;
+  padding: 9px 10px;
+  border-radius: 13px 9px 14px 10px;
+  line-height: 1.25;
+}
+.evidence-badge span { font-size: 13px; }
+.evidence-badge small { margin-top: 3px; font-size: 10px; }
+.evidence-content { min-width: 0; padding-top: 2px; }
+.evidence-content>p { font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.evidence-meta { margin-top: 10px; }
+.adult-observe-note { display: grid; gap: 5px; line-height: 1.7; }
+.adult-observe-note b { color: #795640; font-size: 12px; }
+.adult-observe-note span { color: #66584e; }
+.book-raw-meta { align-items: center; margin-bottom: 16px; }
+.book-raw-meta em { padding: 3px 9px; border-radius: 999px; background: #f3e8ce; color: #765b46; font-size: 11px; font-style: normal; }
+.human-log { padding: 20px 22px; border-radius: 15px 11px 16px 12px; background: #f8ecd5; box-shadow: 0 8px 22px rgba(104,71,45,.08); }
+.human-log h3 { margin: 0 0 10px; color: var(--book-title); font-family: var(--book-font); font-size: 20px; }
+.human-log p { margin: 0; color: #584c44; line-height: 1.75; }
+.human-log ul { display: grid; gap: 8px; margin: 15px 0 0; padding: 14px 0 0 20px; border-top: 1px dashed rgba(122,78,45,.22); color: #68594e; line-height: 1.65; }
+.book-raw-dialog>small,.book-raw-dialog .el-dialog__body>small { display: block; margin-top: 16px; color: var(--book-muted); line-height: 1.6; }
+@media(max-width:620px){.magic-book-app .evidence-list .evidence-card{grid-template-columns:1fr;gap:10px}.evidence-badge{width:auto;min-width:0;min-height:44px;grid-auto-flow:column;gap:8px}.human-log{padding:17px}}
