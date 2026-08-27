@@ -127,7 +127,12 @@ class RuleAnalyzer:
                 "以及他能否说出为什么这样选择、遇到变化后如何调整。"
                 if items else "暂无可观测数据。完成相关探索后，这里会结合孩子的真实行为生成观察提示。"
             )
-            dimensions.append({"key": key, "name": name, "status": status, "evidence_refs": refs, "analysis": analysis, "adult_observation": observation})
+            child_story = (
+                f"在{MODULE_NAMES.get(items[0].module, items[0].module)}里，{items[0].behavior_summary.rstrip('。')}。"
+                "这是你这次探索留下的真实小发现。"
+                if items else "还没有可回看的探索记录。去对应的大陆完成一次游戏后，我会把你的真实表现写在这里。"
+            )
+            dimensions.append({"key": key, "name": name, "status": status, "evidence_refs": refs, "analysis": analysis, "adult_observation": observation, "child_story": child_story})
         active = [MODULE_NAMES.get(name, name) for name, count in Counter(event.module for event in events).items() if count]
         refs = event_refs(events)
         return {
@@ -162,7 +167,9 @@ cross_insights 必须引用输入中真实存在的 evidence_refs，但正文绝
 deep_sea=深海基地重建、career=职业模拟器。family 和 teacher 各返回4至6条不同的可执行建议数组，不得在建议中写记录 id。
 logical_mathematical 归一化为 logical。
 每个维度还要返回 adult_observation：根据该维度真实行为生成一条具体、不同的成人观察提示；没有记录时固定返回
-“暂无可观测数据。完成相关探索后，这里会结合孩子的真实行为生成观察提示。”。另外返回 evidence_explanations 数组，
+“暂无可观测数据。完成相关探索后，这里会结合孩子的真实行为生成观察提示。”。每个维度还要返回 child_story：面向孩子，
+用第二人称和一至两句儿童能读懂的话，只复述该维度已有的真实游戏表现，不得套用示例、虚构引语或泛泛夸奖；没有记录时说明
+还没有可回看的探索记录。另外返回 evidence_explanations 数组，
 每条包含 evidence_ref、中文 title、自然语言 summary 和 2 至 4 条 details；只能解释已有数据，不显示事件代码、字段名、
 会话编号或图片地址。只返回符合约定结构的 JSON。"""
 
@@ -215,6 +222,7 @@ def normalize_report(candidate: dict[str, Any], events: list[EvidenceEvent]) -> 
             "evidence_refs": refs,
             "analysis": str(item.get("analysis", "")).strip() if refs else fallback_item["analysis"],
             "adult_observation": str(item.get("adult_observation", "")).strip() if refs else fallback_item["adult_observation"],
+            "child_story": str(item.get("child_story", "")).strip() if refs else fallback_item["child_story"],
         })
     cross_insights = []
     for item in candidate.get("cross_insights", []):
