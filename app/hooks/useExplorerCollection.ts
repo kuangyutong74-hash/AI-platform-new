@@ -12,6 +12,7 @@ export default function useExplorerCollection(account:{display_name:string;age:n
   const [error,setError]=useState("");
   const [attempt,setAttempt]=useState(0);
   const retry=useCallback(()=>{setLoading(true);setError("");setAttempt(value=>value+1)},[]);
+  const refresh=useCallback(()=>setAttempt(value=>value+1),[]);
   useEffect(()=>{
     const controller=new AbortController();
     fetch(`${CORE_URL}/api/explorer/collection`,{credentials:"include",signal:controller.signal})
@@ -27,5 +28,5 @@ export default function useExplorerCollection(account:{display_name:string;age:n
       .finally(()=>{if(!controller.signal.aborted)setLoading(false);});
     return()=>controller.abort();
   },[account.age,account.created_at,account.display_name,attempt]);
-  return {data,loading,error,retry};
+  return {data,loading,error,retry,refresh};
 }

@@ -346,7 +346,7 @@ function handleLevelComplete(data) {
     if (completedLevels.join(',') === '1,2,3') {
       const totalDuration = activeDurationSeconds()
       const meaningfulAdjustments = (gameState.level1_raw?.removal_count ?? 0) + (gameState.level2_raw?.rotate_count ?? 0)
-      void syncCompletion({ module: 'deep_sea', event_type: 'deep_sea_session_completed', evidence_level: 'strong', intelligence_candidates: ['spatial', 'logical_mathematical', 'interpersonal'], behavior_summary: '完成珊瑚公寓、洋流电网和海洋议事厅三处基地任务。', raw_evidence: { completed: true, duration_seconds: totalDuration, completed_levels: completedLevels.length, total_levels: 3, meaningful_adjustments: meaningfulAdjustments, title: '深海基地完整重建' }, context: { activity_id: gameState.studentId, idempotency_key: `${gameState.studentId}:completed` } })
+      void syncCompletion({ module: 'deep_sea', event_type: 'deep_sea_session_completed', evidence_level: 'strong', intelligence_candidates: ['spatial', 'logical_mathematical', 'interpersonal'], behavior_summary: '完成珊瑚公寓、洋流电网和海洋议事厅三处基地任务。', raw_evidence: { completed: true, work_kind: 'deep_sea_base', work_content: `完成三处基地重建：生态配对、能源线路布局与成员协商。过程中进行了 ${meaningfulAdjustments} 次有意义的调整。`, duration_seconds: totalDuration, completed_levels: completedLevels.length, total_levels: 3, meaningful_adjustments: meaningfulAdjustments, title: '深海基地完整重建' }, context: { activity_id: gameState.studentId, idempotency_key: `${gameState.studentId}:completed` } })
     }
 
     currentState.value = 'END_CEREMONY'

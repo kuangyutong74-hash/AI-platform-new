@@ -170,6 +170,15 @@ function normalizeItem(item, index, kind) {
     scene: meta.scene,
     milestoneImage: meta.milestoneImage,
     tone: meta.tone,
+    isHighlight: item?.is_highlight === true || item?.isHighlight === true || itemKind === "highlight",
+    snapshotUrl: cleanText(item?.snapshot_url ?? item?.snapshotUrl),
+    comments: Array.isArray(item?.comments) ? item.comments.map((comment, commentIndex) => ({
+      id: cleanText(comment?.id, `comment-${index}-${commentIndex}`),
+      body: cleanText(comment?.body),
+      authorName: cleanText(comment?.author_name ?? comment?.authorName, "老师 / 家长"),
+      authorKind: cleanText(comment?.author_kind ?? comment?.authorKind),
+      createdAt: cleanText(comment?.created_at ?? comment?.createdAt),
+    })).filter(comment => comment.body) : [],
   };
 }
 

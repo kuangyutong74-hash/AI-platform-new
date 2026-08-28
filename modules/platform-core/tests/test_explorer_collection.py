@@ -62,6 +62,9 @@ class ExplorerCollectionTests(unittest.TestCase):
         self.assertEqual(story_highlight["title"], "星星城堡历险记")
         self.assertEqual(story_highlight["kind"], "highlight")
         self.assertIn("字", story_highlight["metric_value"])
+        self.assertTrue(story_highlight["is_highlight"])
+        self.assertEqual(len([item for item in result["works"] if item["module"] == "story"]), 2)
+        self.assertEqual(len(result["highlights"]), 2)
 
         self.assertEqual(result["milestones"][0]["kind"], "registration")
         self.assertEqual(result["milestones"][0]["occurred_at"], account["created_at"])
