@@ -251,6 +251,12 @@ def initialize_database() -> None:
               generated_at TEXT NOT NULL,
               published_at TEXT
             );
+            CREATE TABLE IF NOT EXISTS report_evidence_links (
+              report_id TEXT NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+              evidence_record_id TEXT NOT NULL REFERENCES evidence_records(id) ON DELETE RESTRICT,
+              section_key TEXT NOT NULL,
+              PRIMARY KEY (report_id, evidence_record_id, section_key)
+            );
             CREATE INDEX IF NOT EXISTS idx_assessment_profile_time ON assessment_sessions(child_profile_id, created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_source_event_session_time ON source_events(session_id, occurred_at DESC);
             """
@@ -534,6 +540,23 @@ def legacy_events_for_report(db: sqlite3.Connection, account_id: str) -> list[di
     return [{"id": row["id"], "module": row["module"], "event_type": row["event_type"], "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": json.loads(row["intelligence_candidates"]), "behavior_summary": row["behavior_summary"], "raw_evidence": json.loads(row["raw_evidence"]), "context": json.loads(row["context"])} for row in rows]
 
 
+def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple[list[dict], list[str]]:
+    """将 V1 事实事件和派生证据投影为现有报告智能体的输入，同时返回可追溯证据 ID。"""
+    rows = db.execute(
+        """SELECT se.*, er.id AS evidence_id, er.evidence_level, er.constructs_json, er.behavior_summary, s.module_id
+           FROM source_events se JOIN evidence_records er ON er.source_event_id=se.id
+           JOIN assessment_sessions s ON s.id=se.session_id
+           WHERE s.child_profile_id=? ORDER BY se.occurred_at ASC""", (profile_id,)
+    ).fetchall()
+    dimension_by_construct = {item["key"]: item["reportDimension"] for item in json.loads((REPO_ROOT / "config" / "construct-registry.v1.json").read_text(encoding="utf-8"))["constructs"]}
+    legacy_type = {"chat.observation-shared.v1": "narrative_evidence", "story.contribution-completed.v1": "story_contribution", "deep-sea.spatial-task-completed.v1": "spatial_solution", "career.task-completed.v1": "workday_process_summary"}
+    events = []
+    for row in rows:
+        constructs = json.loads(row["constructs_json"])
+        events.append({"id": row["id"], "module": row["module_id"], "event_type": legacy_type.get(row["event_type"], row["event_type"]), "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": list(dict.fromkeys(dimension_by_construct.get(key) for key in constructs if dimension_by_construct.get(key))), "behavior_summary": row["behavior_summary"], "raw_evidence": json.loads(row["payload_json"]), "context": {"source_event_id": row["id"]}})
+    return events, [row["evidence_id"] for row in rows]
+
+
 def generate_report_snapshot(child_name: str, events: list[dict]) -> dict:
     url = os.environ.get("REPORT_AGENT_URL", "http://localhost:8030/api/report/generate")
     request = urlrequest.Request(url, data=json.dumps({"child_name": child_name, "events": events}, ensure_ascii=False).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
@@ -688,7 +711,10 @@ def create_report_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict
     account = require_account(ai_bole_session)
     with connect() as db:
         profile = profile_for_account(db, account["id"])
-        events = legacy_events_for_report(db, account["id"])
+        events, evidence_ids = standard_events_for_report(db, profile["id"])
+        if not events:
+            events = legacy_events_for_report(db, account["id"])
+            evidence_ids = []
     report = generate_report_snapshot(profile["display_name"], events)
     timestamp = now_iso()
     evidence_hash = hashlib.sha256(json.dumps(events, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
@@ -700,6 +726,7 @@ def create_report_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict
                VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
             (report_id, profile["id"], "report-agent-v1", "rule-or-llm-v1", None, None, evidence_hash, "published", json.dumps(report, ensure_ascii=False), timestamp, timestamp),
         )
+        db.executemany("INSERT INTO report_evidence_links (report_id,evidence_record_id,section_key) VALUES (?,?,?)", [(report_id, evidence_id, "report") for evidence_id in evidence_ids])
     return {"id": report_id, "status": "published", "report": report}
 
 

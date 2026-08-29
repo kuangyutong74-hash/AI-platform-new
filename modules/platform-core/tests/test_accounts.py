@@ -61,6 +61,19 @@ class AccountTests(unittest.TestCase):
             )
         self.assertEqual(wrong_password.exception.status_code, 401)
 
+    def test_v1_standard_evidence_is_reportable_and_linkable(self):
+        registered = main.register_account(main.AccountRegistrationIn(username="v1_child", display_name="小河", age=9, password="secret99"), Response())
+        with main.connect() as db:
+            profile = main.profile_for_account(db, registered["account"]["id"])
+            manifest = main.module_manifest("career")
+            db.execute("INSERT INTO assessment_sessions (id,child_profile_id,module_id,module_version,status,created_at) VALUES (?,?,?,?,?,?)", ("session-v1", profile["id"], "career", manifest["version"], "completed", main.now_iso()))
+            db.execute("INSERT INTO source_events (id,session_id,idempotency_key,event_type,schema_version,payload_json,occurred_at,created_at) VALUES (?,?,?,?,?,?,?,?)", ("source-v1", "session-v1", "key-v1", "career.task-completed.v1", "1.0", '{"taskKey":"doctor","attemptCount":2,"hintCount":0,"completionSeconds":30,"adjustmentCount":1}', main.now_iso(), main.now_iso()))
+            db.execute("INSERT INTO evidence_records (id,source_event_id,evidence_level,constructs_json,behavior_summary,policy_version,construct_registry_version,derived_at) VALUES (?,?,?,?,?,?,?,?)", ("evidence-v1", "source-v1", "strong", '["problem_solving.planning"]', "完成职业任务并做出调整", "1.0", "1.0", main.now_iso()))
+            events, evidence_ids = main.standard_events_for_report(db, profile["id"])
+        self.assertEqual(events[0]["event_type"], "workday_process_summary")
+        self.assertEqual(events[0]["intelligence_candidates"], ["logical"])
+        self.assertEqual(evidence_ids, ["evidence-v1"])
+
 
 if __name__ == "__main__":
     unittest.main()
