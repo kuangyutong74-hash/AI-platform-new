@@ -453,6 +453,8 @@ class EvidenceBatchIn(BaseModel):
 class SessionStatusIn(BaseModel):
     status: Literal["completed", "interrupted", "abandoned", "active"]
     state_version: int | None = Field(default=None, alias="stateVersion", ge=1)
+    summary: dict = Field(default_factory=dict)
+    reason: str | None = Field(default=None, max_length=240)
     model_config = ConfigDict(populate_by_name=True)
 
 
@@ -733,6 +735,41 @@ def create_artifact_v1(payload: ArtifactIn, authorization: str | None = Header(d
     return {"id": payload.artifact_id, "created": True}
 
 
+@app.get("/api/v1/artifacts")
+def list_artifacts_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    account = require_account(ai_bole_session)
+    with connect() as db:
+        profile = profile_for_account(db, account["id"])
+        rows = db.execute("""SELECT a.*, s.module_id, s.module_version FROM artifacts a
+                           JOIN assessment_sessions s ON s.id=a.session_id
+                           WHERE s.child_profile_id=? ORDER BY a.created_at DESC""", (profile["id"],)).fetchall()
+    return {"artifacts": [{"id": row["id"], "sessionId": row["session_id"], "moduleId": row["module_id"], "moduleVersion": row["module_version"], "type": row["type"], "title": row["title"], "summary": row["summary"], "previewResourceId": row["preview_resource_id"], "sourceResourceId": row["source_resource_id"], "createdAt": row["created_at"]} for row in rows]}
+
+
+@app.get("/api/v1/timeline")
+def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    account = require_account(ai_bole_session)
+    with connect() as db:
+        profile = profile_for_account(db, account["id"])
+        rows = db.execute("""SELECT s.id,s.module_id,s.module_version,s.status,s.started_at,s.ended_at,s.active_seconds,
+                           COUNT(e.id) AS evidence_count, COUNT(a.id) AS artifact_count
+                           FROM assessment_sessions s LEFT JOIN source_events e ON e.session_id=s.id
+                           LEFT JOIN artifacts a ON a.session_id=s.id
+                           WHERE s.child_profile_id=? AND s.status='completed'
+                           GROUP BY s.id ORDER BY COALESCE(s.ended_at,s.started_at,s.created_at) DESC""", (profile["id"],)).fetchall()
+    return {"sessions": [{"id": row["id"], "moduleId": row["module_id"], "moduleVersion": row["module_version"], "status": row["status"], "startedAt": row["started_at"], "endedAt": row["ended_at"], "activeSeconds": row["active_seconds"], "evidenceCount": row["evidence_count"], "artifactCount": row["artifact_count"]} for row in rows]}
+
+
+@app.get("/api/v1/assessment-sessions/{session_id}")
+def read_assessment_session(session_id: str, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    account = require_account(ai_bole_session)
+    with connect() as db:
+        profile = profile_for_account(db, account["id"])
+        row = db.execute("SELECT * FROM assessment_sessions WHERE id=? AND child_profile_id=?", (session_id, profile["id"])).fetchone()
+    if not row: raise HTTPException(404, "探索会话不存在")
+    return {"id": row["id"], "moduleId": row["module_id"], "moduleVersion": row["module_version"], "status": row["status"], "createdAt": row["created_at"], "startedAt": row["started_at"], "endedAt": row["ended_at"], "activeSeconds": row["active_seconds"], "stateVersion": row["state_version"]}
+
+
 @app.post("/api/v1/reports")
 def create_report_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     """报告生成实现仍可独立部署，但证据读取和快照保存只经过 Core。"""
@@ -794,11 +831,24 @@ def account_bridge() -> PlainTextResponse:
     error.status = response.status;
     throw error;
   });
+  const v1Event = event => {
+    const raw=event.raw_evidence||{},ctx=event.context||{};
+    const type={chat:"chat.observation-shared.v1",story:"story.contribution-completed.v1",deep_sea:"deep-sea.spatial-task-completed.v1",career:"career.task-completed.v1"}[event.module];
+    let payload;
+    if(event.module==="chat") payload={turnCount:Number(raw.turn_count)||1,topicKey:String(raw.topic||"conversation").slice(0,80)};
+    else if(event.module==="story") payload={contributionCount:1,completionSeconds:Number(raw.duration_seconds)||0,storyTitle:String(raw.title||"故事共创").slice(0,120)};
+    else if(event.module==="deep_sea") payload={level:Math.max(1,Math.min(3,Number(ctx.level)||1)),completionSeconds:Number(raw.duration_seconds)||0,adjustmentCount:Number(raw.meaningful_adjustments||raw.rotate_count)||0};
+    else payload={taskKey:String(raw.career_name||ctx.career_id||"career-task").slice(0,80),attemptCount:Number(raw.interaction_count)||0,hintCount:Number(raw.hint_count)||0,completionSeconds:Number(raw.duration_seconds)||0,adjustmentCount:Number(raw.adjustment_count||raw.retry_count)||0};
+    return {schemaVersion:"1.0",eventId:crypto.randomUUID?crypto.randomUUID():Date.now()+":"+Math.random(),idempotencyKey:String(ctx.idempotency_key||Date.now()),eventType:type,occurredAt:event.occurred_at||new Date().toISOString(),payload};
+  };
+  let v1Sdk=null;
+  const activateV1=async()=>{if(!window.AIBoleModuleSDK)return null;try{const sdk=window.AIBoleModuleSDK.create({coreUrl:core});await sdk.initialize();await sdk.exchangeLaunchCode();v1Sdk=sdk;return sdk}catch(_){return null}};
   const api = {
     account: null,
     ready: fetch(core + "/api/account/me", { credentials: "include" })
       .then(r => r.ok ? r.json() : Promise.reject()).then(v => {
         api.account = v.account;
+        activateV1();
         window.dispatchEvent(new CustomEvent("ai-bole-account-ready", { detail: v.account }));
         queueMicrotask(() => api.flushEvidence());
         return v.account;
@@ -830,6 +880,7 @@ def account_bridge() -> PlainTextResponse:
       const account = api.account || await api.ready;
       if (!account) throw new Error("请先登录探索者账号");
       try {
+        if(v1Sdk){const result=await v1Sdk.emitEvidence(v1Event(event));window.dispatchEvent(new CustomEvent("ai-bole-evidence-saved",{detail:result}));return result;}
         const result = await post(event);
         window.dispatchEvent(new CustomEvent("ai-bole-evidence-saved", { detail: result }));
         return result;
@@ -872,6 +923,11 @@ class SnapshotIn(BaseModel):
 @app.get("/sdk/html2canvas.min.js")
 def screenshot_library() -> FileResponse:
     return FileResponse(ROOT / "static" / "html2canvas.min.js", media_type="application/javascript")
+
+
+@app.get("/sdk/module-sdk.js")
+def module_sdk_library() -> FileResponse:
+    return FileResponse(REPO_ROOT / "packages" / "module-sdk" / "module-sdk.js", media_type="application/javascript")
 
 
 @app.post("/api/evidence/snapshots")

@@ -98,6 +98,19 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     event.preventDefault();
     setOrbitRotation(value=>value+(event.key==="ArrowLeft"?120:-120));
   };
+  const launchModule = async (item:(typeof catalog)[number]) => {
+    const moduleId = item.id === "build" ? "deep_sea" : item.id;
+    try {
+      const response = await fetch(`${CORE_API_URL}/api/v1/assessment-sessions`, {method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({module_id:moduleId})});
+      if (!response.ok) throw new Error("session unavailable");
+      const context = await response.json();
+      window.name = JSON.stringify({namespace:"ai-bole.launch-context.v1",context});
+    } catch (_) {
+      // 兼容期允许直接访问旧模块；旧桥接仍负责保留既有证据路径。
+      window.name = "";
+    }
+    window.location.href = item.url;
+  };
   return <section className="planet-page three-scene-page">
     <div className="nebula-background" aria-hidden="true"/>
     <div className="nebula-drift" aria-hidden="true"/>
@@ -125,7 +138,7 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     </nav>
     <div className="three-stage"><Suspense fallback={<div className="globe-loading">正在点亮探索星球…</div>}><ThreeGlobe/></Suspense><div className="drag-tip"><span>✥</span> 上下左右拖动 · 360° 探索 · 点击大陆进入</div></div>
     <nav className="module-dock" aria-label="四座探索大陆">
-      {catalog.map(item=><button key={item.id} data-module={item.id} onClick={()=>window.location.href=item.url} aria-label={`进入${item.module}，${item.name}`}>
+      {catalog.map(item=><button key={item.id} data-module={item.id} onClick={()=>void launchModule(item)} aria-label={`进入${item.module}，${item.name}`}>
         <i className={`module-icon ${item.color}`} aria-hidden="true">{moduleNavArt[item.id] && <img className="module-art" src={moduleNavArt[item.id]} alt="" draggable={false}/>}</i>
         <span className="module-label"><b>{item.module}</b><small>{item.name}</small></span>
       </button>)}

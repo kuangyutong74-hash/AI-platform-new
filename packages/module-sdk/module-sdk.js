@@ -20,7 +20,17 @@
       return response.json();
     };
     return {
-      initialize(value) { context = validateContext(value || global.__AI_BOLE_LAUNCH_CONTEXT__); return Promise.resolve(context); },
+      initialize(value) {
+        if (!value && global.name) {
+          try {
+            const stored = JSON.parse(global.name);
+            if (stored.namespace === "ai-bole.launch-context.v1") value = stored.context;
+          } catch (_) {}
+          global.name = "";
+        }
+        context = validateContext(value || global.__AI_BOLE_LAUNCH_CONTEXT__);
+        return Promise.resolve(context);
+      },
       async exchangeLaunchCode() {
         if (!context) throw new Error("请先初始化启动上下文");
         const result = await fetch(coreUrl + "/api/v1/module-authorizations:exchange", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({launchCode: context.launchCode})});
