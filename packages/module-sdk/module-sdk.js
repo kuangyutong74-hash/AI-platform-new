@@ -1,65 +1,69 @@
-/* 浏览器端最小 SDK：与旧 window.AIBole 并存，逐模块采用。
- * 当前仅提供在线 V1 API；离线队列仍由兼容桥接承担，模块完成迁移后再统一收敛。 */
+/* AI 伯乐 V1 模块 SDK：token 仅驻留内存；没有 LaunchContext 时为 standalone。 */
 (function attachAIBoleModuleSDK(global) {
   const defaultCoreUrl = "http://localhost:8020";
   const requiredContext = ["sessionId", "moduleId", "moduleVersion", "launchCode", "launchCodeExpiresAt", "returnUrl", "contractVersion"];
+  const queueLimit = 100;
+  const uuid = () => global.crypto && global.crypto.randomUUID ? global.crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 
+  function readContext() {
+    if (!global.name) return null;
+    try { const value = JSON.parse(global.name); return value.namespace === "ai-bole.launch-context.v1" ? value.context : null; }
+    catch (_) { return null; }
+    finally { global.name = ""; }
+  }
   function createModuleSDK(options) {
     const coreUrl = (options && options.coreUrl) || defaultCoreUrl;
-    let context = null;
-    let token = null;
-    let interruptionBound = false;
-    const validateContext = value => {
-      if (!value || requiredContext.some(key => !value[key])) throw new Error("启动上下文不完整");
-      if (value.contractVersion !== "1.0") throw new Error("不支持的模块契约版本");
+    const expectedModuleId = options && options.moduleId;
+    let context = null, token = null, terminal = false, interruptionBound = false, queue = [];
+    const standalone = {notConnected:true, standalone:true};
+    const validate = value => {
+      if (!value || requiredContext.some(key => !value[key]) || value.contractVersion !== "1.0") throw new Error("启动上下文无效");
+      if (expectedModuleId && value.moduleId !== expectedModuleId) throw new Error("启动上下文与当前模块不匹配");
       return value;
     };
     const request = async (path, init) => {
-      if (!token) throw new Error("模块尚未完成授权");
-      const response = await fetch(coreUrl + path, Object.assign({}, init, { headers: Object.assign({"Content-Type": "application/json", "Authorization": "Bearer " + token}, init && init.headers) }));
-      if (!response.ok) {
-        const error = new Error("平台接口请求失败：" + response.status);
-        error.status = response.status;
-        throw error;
-      }
+      if (!token) return standalone;
+      const response = await fetch(coreUrl + path, Object.assign({}, init, {headers:Object.assign({"Content-Type":"application/json","Authorization":"Bearer " + token}, init && init.headers)}));
+      if (!response.ok) { const error = new Error("平台接口请求失败：" + response.status); error.status = response.status; throw error; }
       return response.json();
     };
+    const flush = async () => {
+      if (!token || !queue.length) return {flushed:0,pending:queue.length};
+      const pending = []; let flushed = 0;
+      for (const task of queue) { try { await request(task.path, task.init); flushed += 1; } catch (_) { pending.push(task); } }
+      queue = pending; return {flushed,pending:queue.length};
+    };
+    const queueOrRequest = async (path, init) => {
+      if (!context || !token) return standalone;
+      try { return await request(path, init); }
+      catch (error) { if (error.status && error.status < 500) throw error; queue = queue.concat([{path,init}]).slice(-queueLimit); return {queued:true,pending:queue.length}; }
+    };
     return {
-      initialize(value) {
-        if (!value && global.name) {
-          try {
-            const stored = JSON.parse(global.name);
-            if (stored.namespace === "ai-bole.launch-context.v1") value = stored.context;
-          } catch (_) {}
-          global.name = "";
-        }
-        context = validateContext(value || global.__AI_BOLE_LAUNCH_CONTEXT__);
-        return Promise.resolve(context);
+      async connectOptional() {
+        const value = readContext();
+        if (!value) return standalone;
+        context = validate(value);
+        const response = await fetch(coreUrl + "/api/v1/module-authorizations:exchange", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({launchCode:context.launchCode})});
+        if (!response.ok) throw new Error("启动授权已失效");
+        token = (await response.json()).token;
+        this.interruptOnPageHide();
+        return {connected:true,context};
       },
-      async exchangeLaunchCode() {
-        if (!context) throw new Error("请先初始化启动上下文");
-        const result = await fetch(coreUrl + "/api/v1/module-authorizations:exchange", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({launchCode: context.launchCode})});
-        if (!result.ok) throw new Error("启动授权已失效");
-        token = (await result.json()).token;
+      connected() { return Boolean(context && token); },
+      makeEvent(eventType, payload, idempotencyKey) { return {schemaVersion:"1.0",eventId:uuid(),idempotencyKey:idempotencyKey || uuid(),eventType,occurredAt:new Date().toISOString(),payload}; },
+      emitEvidence(event) { return queueOrRequest("/api/v1/evidence-events:batch", {method:"POST",body:JSON.stringify({events:[event]})}); },
+      publishArtifact(artifact) { return queueOrRequest("/api/v1/artifacts", {method:"POST",body:JSON.stringify(artifact)}); },
+      async captureSnapshot(selector) {
+        if (!context || !token) return standalone;
+        if (!global.html2canvas) await new Promise((resolve,reject)=>{const s=document.createElement("script");s.src=coreUrl+"/sdk/html2canvas.min.js";s.onload=resolve;s.onerror=reject;document.head.appendChild(s);});
+        const canvas = await global.html2canvas(document.querySelector(selector || "main") || document.body, {scale:.9,useCORS:true,backgroundColor:null,logging:false});
+        return request("/api/v1/assets/snapshots", {method:"POST",body:JSON.stringify({dataUrl:canvas.toDataURL("image/jpeg",.76)})});
       },
-      emitEvidence(event) { return request("/api/v1/evidence-events:batch", {method: "POST", body: JSON.stringify({events: [event]})}); },
-      publishArtifact(artifact) { return request("/api/v1/artifacts", {method: "POST", body: JSON.stringify(artifact)}); },
-      completeSession(summary) { return request("/api/v1/assessment-sessions/" + context.sessionId, {method: "PATCH", body: JSON.stringify({status: "completed", summary: summary || {}})}); },
-      interruptSession(reason) { return request("/api/v1/assessment-sessions/" + context.sessionId, {method: "PATCH", body: JSON.stringify({status: "interrupted", reason: reason || "module-interrupted"})}); },
-      interruptOnPageHide() {
-        if (interruptionBound) return;
-        interruptionBound = true;
-        global.addEventListener("pagehide", () => {
-          if (!context || !token) return;
-          fetch(coreUrl + "/api/v1/assessment-sessions/" + context.sessionId, {
-            method: "PATCH", keepalive: true,
-            headers: {"Content-Type": "application/json", "Authorization": "Bearer " + token},
-            body: JSON.stringify({status: "interrupted", reason: "pagehide"}),
-          }).catch(() => undefined);
-        });
-      },
+      async completeSession(summary) { if (!context || !token) return standalone; const flushed = await flush(); if (flushed.pending) return {queued:true,pending:flushed.pending}; terminal=true; return request("/api/v1/assessment-sessions/"+context.sessionId,{method:"PATCH",body:JSON.stringify({status:"completed",summary:summary||{}})}); },
+      async interruptSession(reason) { if (!context || !token || terminal) return standalone; terminal=true; return request("/api/v1/assessment-sessions/"+context.sessionId,{method:"PATCH",body:JSON.stringify({status:"interrupted",reason:reason||"module-interrupted"})}); },
+      interruptOnPageHide() { if (interruptionBound) return; interruptionBound=true; global.addEventListener("pagehide",()=>{if (!context || !token || terminal) return; fetch(coreUrl+"/api/v1/assessment-sessions/"+context.sessionId,{method:"PATCH",keepalive:true,headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({status:"interrupted",reason:"pagehide"})}).catch(()=>undefined);}); global.addEventListener("online",()=>flush()); },
       returnToPortal() { global.location.href = context ? context.returnUrl : "http://localhost:4173"; }
     };
   }
-  global.AIBoleModuleSDK = { create: createModuleSDK };
+  global.AIBoleModuleSDK = {create:createModuleSDK};
 })(window);

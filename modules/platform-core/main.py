@@ -30,7 +30,6 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from jsonschema import Draft202012Validator, FormatChecker
 
-from explorer_collection import build_explorer_collection
 from reports import generate_internal_report
 
 
@@ -39,23 +38,18 @@ REPO_ROOT = ROOT.parent.parent
 MODULE_CONFIG_DIR = REPO_ROOT / "config" / "modules"
 DATA_DIR = ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
-SNAPSHOT_DIR = DATA_DIR / "evidence-snapshots"
+SNAPSHOT_DIR = DATA_DIR / "v1-snapshots"
 SNAPSHOT_DIR.mkdir(exist_ok=True)
-DB_PATH = Path(os.environ.get("AI_BOLE_DB_PATH", DATA_DIR / "ai_bole_core.db")).resolve()
+DB_PATH = Path(os.environ.get("AI_BOLE_DB_PATH", DATA_DIR / "ai_bole_core_v1.db")).resolve()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 COOKIE_NAME = "ai_bole_session"
 SESSION_DAYS = 30
 
 MODULES = {"chat", "story", "deep_sea", "career"}
-INTELLIGENCES = {
-    "linguistic", "logical_mathematical", "spatial",
-    "interpersonal", "intrapersonal", "naturalistic",
-}
 CANONICAL_INTELLIGENCES = {
     "linguistic", "logical", "spatial",
     "interpersonal", "intrapersonal", "naturalistic",
 }
-INTELLIGENCE_SYNONYMS = {"logical_mathematical": "logical"}
 INTELLIGENCE_NAMES = {
     "linguistic": "语言智能",
     "logical": "逻辑—数学智能",
@@ -121,6 +115,9 @@ def load_module_catalog() -> list[dict]:
 
 def initialize_database() -> None:
     with connect() as db:
+        legacy = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='evidence_events'").fetchone()
+        if legacy:
+            raise RuntimeError("检测到已废弃的 V0 测试数据库；请停止服务后运行 reset_dev_data.py --confirm")
         db.executescript(
             """
             CREATE TABLE IF NOT EXISTS accounts (
@@ -140,23 +137,7 @@ def initialize_database() -> None:
               expires_at TEXT NOT NULL,
               created_at TEXT NOT NULL
             );
-            CREATE TABLE IF NOT EXISTS evidence_events (
-              id TEXT PRIMARY KEY,
-              account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-              module TEXT NOT NULL,
-              event_type TEXT NOT NULL,
-              occurred_at TEXT NOT NULL,
-              evidence_level TEXT NOT NULL,
-              intelligence_candidates TEXT NOT NULL,
-              behavior_summary TEXT NOT NULL,
-              raw_evidence TEXT NOT NULL,
-              context TEXT NOT NULL,
-              idempotency_key TEXT,
-              created_at TEXT NOT NULL
-            );
             CREATE INDEX IF NOT EXISTS idx_sessions_token ON account_sessions(token_hash);
-            CREATE INDEX IF NOT EXISTS idx_evidence_account_time ON evidence_events(account_id, occurred_at DESC);
-            CREATE INDEX IF NOT EXISTS idx_evidence_account_module ON evidence_events(account_id, module);
             CREATE TABLE IF NOT EXISTS child_profiles (
               id TEXT PRIMARY KEY,
               account_id TEXT NOT NULL UNIQUE REFERENCES accounts(id) ON DELETE CASCADE,
@@ -245,6 +226,11 @@ def initialize_database() -> None:
               source_resource_id TEXT,
               created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS snapshot_assets (
+              id TEXT PRIMARY KEY,
+              session_id TEXT NOT NULL REFERENCES assessment_sessions(id) ON DELETE CASCADE,
+              created_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS reports (
               id TEXT PRIMARY KEY,
               child_profile_id TEXT NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
@@ -266,13 +252,9 @@ def initialize_database() -> None:
             );
             CREATE INDEX IF NOT EXISTS idx_assessment_profile_time ON assessment_sessions(child_profile_id, created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_source_event_session_time ON source_events(session_id, occurred_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_snapshot_session ON snapshot_assets(session_id);
             """
         )
-        evidence_columns = {
-            row["name"] for row in db.execute("PRAGMA table_info(evidence_events)").fetchall()
-        }
-        if "idempotency_key" not in evidence_columns:
-            db.execute("ALTER TABLE evidence_events ADD COLUMN idempotency_key TEXT")
         session_columns = {row["name"] for row in db.execute("PRAGMA table_info(assessment_sessions)").fetchall()}
         if "summary_json" not in session_columns:
             db.execute("ALTER TABLE assessment_sessions ADD COLUMN summary_json TEXT NOT NULL DEFAULT '{}'")
@@ -283,16 +265,11 @@ def initialize_database() -> None:
             db.execute("ALTER TABLE schema_migrations ADD COLUMN source TEXT NOT NULL DEFAULT 'runtime'")
         if "result_json" not in migration_columns:
             db.execute("ALTER TABLE schema_migrations ADD COLUMN result_json TEXT NOT NULL DEFAULT '{}'")
-        db.execute(
-            """CREATE UNIQUE INDEX IF NOT EXISTS idx_evidence_account_idempotency
-               ON evidence_events(account_id, idempotency_key)
-               WHERE idempotency_key IS NOT NULL"""
-        )
         timestamp = datetime.now(timezone.utc).isoformat()
         db.execute(
             """INSERT OR IGNORE INTO schema_migrations (version,applied_at,source,result_json)
                VALUES (?,?,?,?)""",
-            ("20260829_v1_core_expand", timestamp, "platform-core.initialize_database", "{}"),
+            ("20260829_v1_only_baseline", timestamp, "platform-core.initialize_database", "{}"),
         )
         db.execute(
             """INSERT OR IGNORE INTO child_profiles (id,account_id,display_name,age,created_at,updated_at)
@@ -349,25 +326,28 @@ def require_account(token: str | None) -> sqlite3.Row:
     return row
 
 
+@lru_cache(maxsize=1)
+def construct_dimension_map() -> dict[str, str]:
+    registry = json.loads((REPO_ROOT / "config" / "construct-registry.v1.json").read_text(encoding="utf-8"))
+    return {item["key"]: item["reportDimension"] for item in registry["constructs"]}
+
+
 def build_talent_eligibility(rows: list[sqlite3.Row]) -> list[dict]:
-    """聚合可追溯证据，只判定是否具备收下资格，不换算分数或排名。"""
+    """从 V1 evidence record 推导六星资格；至少一条 strong 才能点亮。"""
     aggregates = {
         key: {"strong": 0, "reference": 0, "modules": set(), "recent_id": None}
         for key in CANONICAL_INTELLIGENCES
     }
+    dimensions = construct_dimension_map()
     for row in rows:
         try:
-            candidates = json.loads(row["intelligence_candidates"])
+            constructs = json.loads(row["constructs_json"])
         except (TypeError, json.JSONDecodeError):
-            candidates = []
-        normalized = {
-            INTELLIGENCE_SYNONYMS.get(candidate, candidate)
-            for candidate in candidates
-            if isinstance(candidate, str)
-        } & CANONICAL_INTELLIGENCES
+            constructs = []
+        normalized = {dimensions[item] for item in constructs if item in dimensions}
         for key in normalized:
             item = aggregates[key]
-            item["modules"].add(row["module"])
+            item["modules"].add(row["module_id"])
             if row["evidence_level"] == "strong":
                 item["strong"] += 1
                 item["recent_id"] = row["id"]
@@ -377,11 +357,11 @@ def build_talent_eligibility(rows: list[sqlite3.Row]) -> list[dict]:
         {
             "key": key,
             "name": INTELLIGENCE_NAMES[key],
-            "strong_count": values["strong"],
-            "reference_count": values["reference"],
+            "strongCount": values["strong"],
+            "referenceCount": values["reference"],
             "eligible": values["strong"] >= 1,
-            "source_modules": sorted(values["modules"]),
-            "recent_evidence_id": values["recent_id"],
+            "sourceModules": sorted(values["modules"]),
+            "recentEvidenceRecordId": values["recent_id"],
         }
         for key, values in sorted(aggregates.items())
     ]
@@ -419,30 +399,16 @@ class AccountRegistrationIn(AccountCredentialsIn):
         return value
 
 
-class EvidenceIn(BaseModel):
+class DeprecatedEvidenceIn(BaseModel):
+    """仅用于让已移除路由在开发中保持 404；不再连接任何数据表。"""
     module: str
-    event_type: str = Field(min_length=3, max_length=80)
+    event_type: str
     occurred_at: str = Field(default_factory=now_iso)
     evidence_level: Literal["strong", "reference"]
-    intelligence_candidates: list[str] = Field(min_length=1, max_length=3)
-    behavior_summary: str = Field(min_length=4, max_length=240)
+    intelligence_candidates: list[str] = Field(default_factory=list)
+    behavior_summary: str
     raw_evidence: dict = Field(default_factory=dict)
     context: dict = Field(default_factory=dict)
-
-    @field_validator("module")
-    @classmethod
-    def validate_module(cls, value: str) -> str:
-        if value not in MODULES:
-            raise ValueError("未知模块")
-        return value
-
-    @field_validator("intelligence_candidates")
-    @classmethod
-    def validate_intelligences(cls, values: list[str]) -> list[str]:
-        clean = list(dict.fromkeys(values))
-        if any(value not in INTELLIGENCES for value in clean):
-            raise ValueError("未知多元智能维度")
-        return clean
 
 
 class AssessmentSessionIn(BaseModel):
@@ -538,100 +504,23 @@ def policy_for_event(event_type: str) -> dict:
     return {**rule, "policyVersion": policy["version"], "constructRegistryVersion": policy["constructRegistryVersion"]}
 
 
-def mirror_legacy_event_v1(db: sqlite3.Connection, account_id: str, legacy_event_id: str, payload: EvidenceIn, idempotency_key: str | None) -> None:
-    """兼容期双写仅在 Core 同一事务内执行，旧事件失败时不会留下孤儿 V1 会话。"""
-    event_type = {"chat": "chat.observation-shared.v1", "story": "story.contribution-completed.v1", "deep_sea": "deep-sea.spatial-task-completed.v1", "career": "career.task-completed.v1"}[payload.module]
-    raw, context = payload.raw_evidence, payload.context
-    if payload.module == "chat": event_payload = {"turnCount": int(raw.get("turn_count", 1) or 1), "topicKey": str(raw.get("topic", "conversation"))[:80]}
-    elif payload.module == "story": event_payload = {"contributionCount": 1, "completionSeconds": int(raw.get("duration_seconds", 0) or 0), "storyTitle": str(raw.get("title", "故事共创"))[:120]}
-    elif payload.module == "deep_sea": event_payload = {"level": max(1, min(3, int(context.get("level", 1) or 1))), "completionSeconds": int(raw.get("duration_seconds", 0) or 0), "adjustmentCount": int(raw.get("meaningful_adjustments", raw.get("rotate_count", 0)) or 0)}
-    else: event_payload = {"taskKey": str(raw.get("career_name", context.get("career_id", "career-task")))[:80], "attemptCount": int(raw.get("interaction_count", 0) or 0), "hintCount": int(raw.get("hint_count", 0) or 0), "completionSeconds": int(raw.get("duration_seconds", 0) or 0), "adjustmentCount": int(raw.get("adjustment_count", raw.get("retry_count", 0)) or 0)}
-    envelope = EvidenceEnvelopeIn(schemaVersion="1.0", eventId=legacy_event_id, idempotencyKey=idempotency_key or legacy_event_id, eventType=event_type, occurredAt=payload.occurred_at, payload=event_payload)
-    validate_evidence_event(envelope)
-    manifest, profile, policy = module_manifest(payload.module), profile_for_account(db, account_id), policy_for_event(event_type)
-    session_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"legacy-v1:{legacy_event_id}"))
-    db.execute("INSERT OR IGNORE INTO assessment_sessions (id,child_profile_id,module_id,module_version,status,created_at,started_at,ended_at,active_seconds) VALUES (?,?,?,?,?,?,?,?,?)", (session_id, profile["id"], payload.module, manifest["version"], "completed", payload.occurred_at, payload.occurred_at, payload.occurred_at, int(raw.get("duration_seconds", 0) or 0)))
-    db.execute("INSERT OR IGNORE INTO source_events (id,session_id,idempotency_key,event_type,schema_version,payload_json,sequence_no,occurred_at,created_at) VALUES (?,?,?,?,?,?,?,?,?)", (legacy_event_id, session_id, envelope.idempotency_key, event_type, "1.0", json.dumps(event_payload, ensure_ascii=False), None, payload.occurred_at, now_iso()))
-    db.execute("INSERT OR IGNORE INTO evidence_records (id,source_event_id,evidence_level,constructs_json,behavior_summary,policy_version,construct_registry_version,derived_at) VALUES (?,?,?,?,?,?,?,?)", (str(uuid.uuid5(uuid.NAMESPACE_URL, f"legacy-evidence:{legacy_event_id}")), legacy_event_id, payload.evidence_level, json.dumps(policy["constructs"], ensure_ascii=False), payload.behavior_summary, policy["policyVersion"], policy["constructRegistryVersion"], now_iso()))
-
-
-def try_mirror_legacy_event_v1(db: sqlite3.Connection, account_id: str, legacy_event_id: str, payload: EvidenceIn, idempotency_key: str | None) -> bool:
-    """Expand 兼容期保持 V0 可写；镜像失败会被记录但不能阻断旧事件。"""
-    try:
-        mirror_legacy_event_v1(db, account_id, legacy_event_id, payload, idempotency_key)
-        return True
-    except (HTTPException, TypeError, ValueError, KeyError, json.JSONDecodeError) as exc:
-        logger.warning("v1 mirror skipped legacy_event=%s reason=%s", legacy_event_id, exc)
-        return False
-
-
-def backfill_legacy_evidence(db: sqlite3.Connection) -> int:
-    rows = db.execute("""SELECT e.* FROM evidence_events e
-                       LEFT JOIN source_events s ON s.id=e.id WHERE s.id IS NULL ORDER BY e.created_at""").fetchall()
-    mirrored = 0
-    for row in rows:
-        try:
-            payload = EvidenceIn(module=row["module"], event_type=row["event_type"], occurred_at=row["occurred_at"], evidence_level=row["evidence_level"], intelligence_candidates=json.loads(row["intelligence_candidates"]), behavior_summary=row["behavior_summary"], raw_evidence=json.loads(row["raw_evidence"]), context=json.loads(row["context"]))
-        except (ValueError, TypeError, json.JSONDecodeError) as exc:
-            logger.warning("v1 backfill skipped legacy_event=%s reason=%s", row["id"], exc)
-            continue
-        mirrored += int(try_mirror_legacy_event_v1(db, row["account_id"], row["id"], payload, row["idempotency_key"]))
-    return mirrored
-
-
-def validate_v1_data_migration(db: sqlite3.Connection) -> dict:
-    """返回可审计的迁移核验摘要；供离线迁移工具在提交前调用。"""
-    foreign_key_errors = [dict(row) for row in db.execute("PRAGMA foreign_key_check").fetchall()]
-    return {
-        "foreignKeyErrors": foreign_key_errors,
-        "legacyEvidence": db.execute("SELECT COUNT(*) AS n FROM evidence_events").fetchone()["n"],
-        "sourceEvents": db.execute("SELECT COUNT(*) AS n FROM source_events").fetchone()["n"],
-        "evidenceRecords": db.execute("SELECT COUNT(*) AS n FROM evidence_records").fetchone()["n"],
-        "moduleDistribution": [dict(row) for row in db.execute(
-            "SELECT module_id AS moduleId,COUNT(*) AS count,MIN(created_at) AS firstAt,MAX(created_at) AS lastAt FROM assessment_sessions GROUP BY module_id ORDER BY module_id"
-        ).fetchall()],
-    }
-
-
-def apply_pending_data_migrations(db: sqlite3.Connection, source: str = "platform-core.migrate") -> dict:
-    """执行一次性的历史证据回填。此函数只由迁移工具调用，不在服务启动时执行。"""
-    applied = db.execute("SELECT 1 FROM schema_migrations WHERE version=?", ("20260829_v1_legacy_evidence_backfill",)).fetchone()
-    if applied:
-        return {"applied": False, "reason": "already-applied", "validation": validate_v1_data_migration(db)}
-    migrated = backfill_legacy_evidence(db)
-    validation = validate_v1_data_migration(db)
-    if validation["foreignKeyErrors"]:
-        raise RuntimeError("迁移后外键校验失败")
-    result = {"migrated": migrated, "validation": validation}
-    db.execute(
-        "INSERT INTO schema_migrations (version,applied_at,source,result_json) VALUES (?,?,?,?)",
-        ("20260829_v1_legacy_evidence_backfill", now_iso(), source, json.dumps(result, ensure_ascii=False)),
-    )
-    return {"applied": True, **result}
-
-
 initialize_database()
 
 
-def legacy_events_for_report(db: sqlite3.Connection, account_id: str) -> list[dict]:
-    rows = db.execute("SELECT * FROM evidence_events WHERE account_id=? ORDER BY occurred_at ASC", (account_id,)).fetchall()
-    return [{"id": row["id"], "module": row["module"], "event_type": row["event_type"], "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": json.loads(row["intelligence_candidates"]), "behavior_summary": row["behavior_summary"], "raw_evidence": json.loads(row["raw_evidence"]), "context": json.loads(row["context"])} for row in rows]
-
-
 def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple[list[dict], list[str]]:
-    """将 V1 事实事件和派生证据投影为现有报告智能体的输入，同时返回可追溯证据 ID。"""
+    """将 V1 事件和派生证据投影为报告输入，引用始终使用 evidence record ID。"""
     rows = db.execute(
         """SELECT se.*, er.id AS evidence_id, er.evidence_level, er.constructs_json, er.behavior_summary, s.module_id
            FROM source_events se JOIN evidence_records er ON er.source_event_id=se.id
            JOIN assessment_sessions s ON s.id=se.session_id
            WHERE s.child_profile_id=? ORDER BY se.occurred_at ASC""", (profile_id,)
     ).fetchall()
-    dimension_by_construct = {item["key"]: item["reportDimension"] for item in json.loads((REPO_ROOT / "config" / "construct-registry.v1.json").read_text(encoding="utf-8"))["constructs"]}
-    legacy_type = {"chat.observation-shared.v1": "narrative_evidence", "story.contribution-completed.v1": "story_contribution", "deep-sea.spatial-task-completed.v1": "spatial_solution", "career.task-completed.v1": "workday_process_summary"}
+    dimension_by_construct = construct_dimension_map()
     events = []
     for row in rows:
         constructs = json.loads(row["constructs_json"])
-        events.append({"id": row["id"], "module": row["module_id"], "event_type": legacy_type.get(row["event_type"], row["event_type"]), "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": list(dict.fromkeys(dimension_by_construct.get(key) for key in constructs if dimension_by_construct.get(key))), "behavior_summary": row["behavior_summary"], "raw_evidence": json.loads(row["payload_json"]), "context": {"source_event_id": row["id"]}})
+        payload = json.loads(row["payload_json"])
+        events.append({"id": row["evidence_id"], "module": row["module_id"], "event_type": row["event_type"], "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": list(dict.fromkeys(dimension_by_construct.get(key) for key in constructs if dimension_by_construct.get(key))), "behavior_summary": row["behavior_summary"], "raw_evidence": payload, "context": {"sourceEventId": row["id"], "constructs": constructs}})
     return events, [row["evidence_id"] for row in rows]
 
 
@@ -788,6 +677,11 @@ def create_artifact_v1(payload: ArtifactIn, authorization: str | None = Header(d
     if "artifact:write" not in json.loads(auth["scopes_json"]): raise HTTPException(403, "模块授权不含作品写入权限")
     validate_schema("artifact.v1.schema.json", payload.model_dump(by_alias=True, exclude_none=True), "作品无效")
     with connect() as db:
+        if payload.preview_resource_id and not db.execute(
+            "SELECT 1 FROM snapshot_assets WHERE id=? AND session_id=?",
+            (payload.preview_resource_id, auth["session_id"]),
+        ).fetchone():
+            raise HTTPException(422, "作品预览不属于当前探索会话")
         db.execute("INSERT OR IGNORE INTO artifacts (id,session_id,type,title,summary,preview_resource_id,source_resource_id,created_at) VALUES (?,?,?,?,?,?,?,?)", (payload.artifact_id, auth["session_id"], payload.type, payload.title, payload.summary, payload.preview_resource_id, payload.source_resource_id, payload.created_at))
     return {"id": payload.artifact_id, "created": True}
 
@@ -803,18 +697,63 @@ def list_artifacts_v1(ai_bole_session: str | None = Cookie(default=None)) -> dic
     return {"artifacts": [{"id": row["id"], "sessionId": row["session_id"], "moduleId": row["module_id"], "moduleVersion": row["module_version"], "type": row["type"], "title": row["title"], "summary": row["summary"], "previewResourceId": row["preview_resource_id"], "sourceResourceId": row["source_resource_id"], "createdAt": row["created_at"]} for row in rows]}
 
 
+def evidence_rows_for_profile(db: sqlite3.Connection, profile_id: str, limit: int = 500) -> list[sqlite3.Row]:
+    return db.execute(
+        """SELECT er.id,se.id AS source_event_id,se.session_id,se.event_type,se.payload_json,se.occurred_at,
+                  er.evidence_level,er.constructs_json,er.behavior_summary,s.module_id,s.module_version
+           FROM evidence_records er JOIN source_events se ON se.id=er.source_event_id
+           JOIN assessment_sessions s ON s.id=se.session_id
+           WHERE s.child_profile_id=? ORDER BY se.occurred_at DESC, er.derived_at DESC LIMIT ?""",
+        (profile_id, max(1, min(limit, 500))),
+    ).fetchall()
+
+
+@app.get("/api/v1/evidence-records")
+def list_evidence_records_v1(limit: int = 200, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    account = require_account(ai_bole_session)
+    with connect() as db:
+        profile = profile_for_account(db, account["id"])
+        rows = evidence_rows_for_profile(db, profile["id"], limit)
+    dimensions = construct_dimension_map()
+    return {"records": [{
+        "id": row["id"], "sourceEventId": row["source_event_id"], "sessionId": row["session_id"],
+        "moduleId": row["module_id"], "moduleVersion": row["module_version"], "eventType": row["event_type"],
+        "occurredAt": row["occurred_at"], "evidenceLevel": row["evidence_level"],
+        "constructs": (constructs := json.loads(row["constructs_json"])),
+        "reportDimensions": list(dict.fromkeys(dimensions[key] for key in constructs if key in dimensions)),
+        "behaviorSummary": row["behavior_summary"], "payload": json.loads(row["payload_json"]),
+    } for row in rows]}
+
+
+@app.get("/api/v1/talents")
+def list_talents_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    account = require_account(ai_bole_session)
+    with connect() as db:
+        profile = profile_for_account(db, account["id"])
+        rows = evidence_rows_for_profile(db, profile["id"], 500)
+    return {"rule": "至少存在一条 strong 标准证据时，该维度可以点亮。", "talents": build_talent_eligibility(rows)}
+
+
 @app.get("/api/v1/timeline")
 def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     account = require_account(ai_bole_session)
     with connect() as db:
         profile = profile_for_account(db, account["id"])
         rows = db.execute("""SELECT s.id,s.module_id,s.module_version,s.status,s.started_at,s.ended_at,s.active_seconds,
-                           COUNT(e.id) AS evidence_count, COUNT(a.id) AS artifact_count
-                           FROM assessment_sessions s LEFT JOIN source_events e ON e.session_id=s.id
-                           LEFT JOIN artifacts a ON a.session_id=s.id
+                           (SELECT COUNT(*) FROM source_events e WHERE e.session_id=s.id) AS evidence_count,
+                           (SELECT COUNT(*) FROM artifacts a WHERE a.session_id=s.id) AS artifact_count
+                           FROM assessment_sessions s
                            WHERE s.child_profile_id=? AND s.status='completed'
-                           GROUP BY s.id ORDER BY COALESCE(s.ended_at,s.started_at,s.created_at) DESC""", (profile["id"],)).fetchall()
-    return {"sessions": [{"id": row["id"], "moduleId": row["module_id"], "moduleVersion": row["module_version"], "status": row["status"], "startedAt": row["started_at"], "endedAt": row["ended_at"], "activeSeconds": row["active_seconds"], "evidenceCount": row["evidence_count"], "artifactCount": row["artifact_count"]} for row in rows]}
+                           ORDER BY COALESCE(s.ended_at,s.started_at,s.created_at) DESC""", (profile["id"],)).fetchall()
+    sessions = [{"id": row["id"], "moduleId": row["module_id"], "moduleVersion": row["module_version"], "status": row["status"], "startedAt": row["started_at"], "endedAt": row["ended_at"], "activeSeconds": row["active_seconds"], "evidenceCount": row["evidence_count"], "artifactCount": row["artifact_count"]} for row in rows]
+    grouped: dict[str, list[dict]] = {}
+    for session in sessions:
+        grouped.setdefault(session["moduleId"], []).append(session)
+    module_summaries = []
+    for module_id, items in grouped.items():
+        ordered = sorted(items, key=lambda item: item["endedAt"] or item["startedAt"] or "")
+        module_summaries.append({"moduleId": module_id, "completedCount": len(items), "firstUsedAt": ordered[0]["startedAt"] or ordered[0]["endedAt"], "lastUsedAt": ordered[-1]["endedAt"] or ordered[-1]["startedAt"], "activeSeconds": sum(item["activeSeconds"] for item in items), "evidenceCount": sum(item["evidenceCount"] for item in items), "artifactCount": sum(item["artifactCount"] for item in items)})
+    return {"sessions": sessions, "moduleSummaries": module_summaries}
 
 
 @app.get("/api/v1/assessment-sessions/{session_id}")
@@ -834,9 +773,6 @@ def create_report_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict
     with connect() as db:
         profile = profile_for_account(db, account["id"])
         events, evidence_ids = standard_events_for_report(db, profile["id"])
-        standard_ids = {event["id"] for event in events}
-        # backfill 中无法通过 V1 契约的历史事件仍保留在报告输入中，不能因一次新事件而消失。
-        events.extend(event for event in legacy_events_for_report(db, account["id"]) if event["id"] not in standard_ids)
     report, generator = generate_report_snapshot(profile["display_name"], events)
     timestamp = now_iso()
     evidence_hash = hashlib.sha256(json.dumps(events, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
@@ -863,7 +799,7 @@ def latest_published_report_v1(ai_bole_session: str | None = Cookie(default=None
     return {"id": row["id"], "status": row["status"], "generatedAt": row["generated_at"], "report": json.loads(row["report_json"])}
 
 
-@app.get("/ai-bole-bridge.js", response_class=PlainTextResponse)
+@app.get("/_deprecated/bridge-removed.js", response_class=PlainTextResponse, include_in_schema=False)
 def account_bridge() -> PlainTextResponse:
     """供四个独立模块共用的轻量账号与证据桥，不复制登录逻辑。"""
     script = r'''(() => {
@@ -878,7 +814,7 @@ def account_bridge() -> PlainTextResponse:
     try { localStorage.setItem(queueKey(account), JSON.stringify(items.slice(-100))); }
     catch (_) {}
   };
-  const post = event => fetch(core + "/api/evidence/events", {
+  const post = event => fetch(core + "/_deprecated/v0/evidence-events", {
     method: "POST", credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(event)
@@ -890,10 +826,11 @@ def account_bridge() -> PlainTextResponse:
   });
   const v1Event = event => {
     const raw=event.raw_evidence||{},ctx=event.context||{};
-    const type={chat:"chat.observation-shared.v1",story:"story.contribution-completed.v1",deep_sea:"deep-sea.spatial-task-completed.v1",career:"career.task-completed.v1"}[event.module];
+    const type=event.module==="deep_sea"&&event.event_type==="deep_sea_session_completed"?"deep-sea.session-completed.v1":{chat:"chat.observation-shared.v1",story:"story.contribution-completed.v1",deep_sea:"deep-sea.spatial-task-completed.v1",career:"career.task-completed.v1"}[event.module];
     let payload;
     if(event.module==="chat") payload={turnCount:Number(raw.turn_count)||1,topicKey:String(raw.topic||"conversation").slice(0,80)};
     else if(event.module==="story") payload={contributionCount:1,completionSeconds:Number(raw.duration_seconds)||0,storyTitle:String(raw.title||"故事共创").slice(0,120)};
+    else if(event.module==="deep_sea"&&type==="deep-sea.session-completed.v1") payload={completedLevels:Math.max(1,Math.min(3,Number(raw.completed_levels)||3)),totalLevels:3,completionSeconds:Number(raw.duration_seconds)||0,adjustmentCount:Number(raw.meaningful_adjustments)||0};
     else if(event.module==="deep_sea") payload={level:Math.max(1,Math.min(3,Number(ctx.level)||1)),completionSeconds:Number(raw.duration_seconds)||0,adjustmentCount:Number(raw.meaningful_adjustments||raw.rotate_count)||0};
     else payload={taskKey:String(raw.career_name||ctx.career_id||"career-task").slice(0,80),attemptCount:Number(raw.interaction_count)||0,hintCount:Number(raw.hint_count)||0,completionSeconds:Number(raw.duration_seconds)||0,adjustmentCount:Number(raw.adjustment_count||raw.retry_count)||0};
     return {schemaVersion:"1.0",eventId:crypto.randomUUID?crypto.randomUUID():Date.now()+":"+Math.random(),idempotencyKey:String(ctx.idempotency_key||Date.now()),eventType:type,occurredAt:event.occurred_at||new Date().toISOString(),payload};
@@ -977,13 +914,14 @@ def account_bridge() -> PlainTextResponse:
     returnToPlanet() { location.href = "http://localhost:4173/?from=module"; }
   };
   window.addEventListener("online", () => api.flushEvidence());
-  window.AIBole = api;
+  window.__deprecatedAIBole = api;
 })();'''
     return PlainTextResponse(script, media_type="application/javascript; charset=utf-8")
 
 
 class SnapshotIn(BaseModel):
-    data_url: str
+    data_url: str = Field(alias="dataUrl")
+    model_config = ConfigDict(populate_by_name=True)
 
 
 @app.get("/sdk/html2canvas.min.js")
@@ -996,9 +934,10 @@ def module_sdk_library() -> FileResponse:
     return FileResponse(REPO_ROOT / "packages" / "module-sdk" / "module-sdk.js", media_type="application/javascript")
 
 
-@app.post("/api/evidence/snapshots")
-def create_snapshot(payload: SnapshotIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
-    require_account(ai_bole_session)
+@app.post("/api/v1/assets/snapshots", status_code=201)
+def create_snapshot(payload: SnapshotIn, authorization: str | None = Header(default=None)) -> dict:
+    auth = require_module_authorization(authorization)
+    if "artifact:write" not in json.loads(auth["scopes_json"]): raise HTTPException(403, "模块授权不含作品写入权限")
     prefix = "data:image/jpeg;base64,"
     if not payload.data_url.startswith(prefix):
         raise HTTPException(400, "只支持 JPEG 体验快照")
@@ -1008,16 +947,31 @@ def create_snapshot(payload: SnapshotIn, ai_bole_session: str | None = Cookie(de
         raise HTTPException(400, "体验快照格式无效") from exc
     if len(content) > 2_500_000:
         raise HTTPException(413, "体验快照过大")
-    filename = f"{uuid.uuid4().hex}.jpg"
-    (SNAPSHOT_DIR / filename).write_bytes(content)
-    return {"url": f"http://localhost:8020/api/evidence/snapshots/{filename}"}
+    snapshot_id = uuid.uuid4().hex
+    (SNAPSHOT_DIR / f"{snapshot_id}.jpg").write_bytes(content)
+    with connect() as db:
+        db.execute(
+            "INSERT INTO snapshot_assets (id,session_id,created_at) VALUES (?,?,?)",
+            (snapshot_id, auth["session_id"], now_iso()),
+        )
+    return {"id": snapshot_id, "url": f"http://localhost:8020/api/v1/assets/snapshots/{snapshot_id}"}
 
 
-@app.get("/api/evidence/snapshots/{filename}")
-def read_snapshot(filename: str) -> FileResponse:
-    if not filename.endswith(".jpg") or Path(filename).name != filename:
+@app.get("/api/v1/assets/snapshots/{snapshot_id}")
+def read_snapshot(snapshot_id: str, ai_bole_session: str | None = Cookie(default=None)) -> FileResponse:
+    if not snapshot_id.isalnum() or len(snapshot_id) != 32:
         raise HTTPException(404)
-    path = SNAPSHOT_DIR / filename
+    account = require_account(ai_bole_session)
+    with connect() as db:
+        profile = profile_for_account(db, account["id"])
+        visible = db.execute(
+            """SELECT 1 FROM snapshot_assets sa JOIN assessment_sessions s ON s.id=sa.session_id
+               WHERE sa.id=? AND s.child_profile_id=?""",
+            (snapshot_id, profile["id"]),
+        ).fetchone()
+    if not visible:
+        raise HTTPException(404)
+    path = SNAPSHOT_DIR / f"{snapshot_id}.jpg"
     if not path.is_file():
         raise HTTPException(404)
     return FileResponse(path, media_type="image/jpeg")
@@ -1090,8 +1044,9 @@ def delete_session(response: Response, ai_bole_session: str | None = Cookie(defa
     return {"ok": True}
 
 
-@app.post("/api/evidence/events")
-def create_evidence(payload: EvidenceIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+@app.post("/_deprecated/v0/evidence-events", include_in_schema=False)
+def create_evidence(payload: DeprecatedEvidenceIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    raise HTTPException(404, "V0 证据接口已移除")
     account = require_account(ai_bole_session)
     event_id = str(uuid.uuid4())
     idempotency_key = payload.context.get("idempotency_key")
@@ -1128,8 +1083,9 @@ def create_evidence(payload: EvidenceIn, ai_bole_session: str | None = Cookie(de
     return {"ok": True, "event_id": event_id, "duplicate": False, "mirrored_v1": mirrored_v1}
 
 
-@app.get("/api/evidence/events")
+@app.get("/_deprecated/v0/evidence-events", include_in_schema=False)
 def list_evidence(ai_bole_session: str | None = Cookie(default=None), limit: int = 200) -> dict:
+    raise HTTPException(404, "V0 证据接口已移除")
     account = require_account(ai_bole_session)
     safe_limit = max(1, min(limit, 500))
     with connect() as db:
@@ -1149,8 +1105,9 @@ def list_evidence(ai_bole_session: str | None = Cookie(default=None), limit: int
     return {"account": public_account(account), "events": events}
 
 
-@app.get("/api/explorer/collection")
+@app.get("/_deprecated/v0/explorer-collection", include_in_schema=False)
 def explorer_collection(ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    raise HTTPException(404, "V0 聚合接口已移除")
     """分别提供模块高光与账号使用历程，避免两个页面职责重复。"""
     account = require_account(ai_bole_session)
     with connect() as db:
@@ -1174,8 +1131,9 @@ def explorer_collection(ai_bole_session: str | None = Cookie(default=None)) -> d
     return build_explorer_collection(public_account(account), events)
 
 
-@app.get("/api/explorer/talents")
+@app.get("/_deprecated/v0/explorer-talents", include_in_schema=False)
 def explorer_talents(ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    raise HTTPException(404, "V0 天赋接口已移除")
     """返回六颗星的真实证据计数与收下资格，资格本身不持久化。"""
     account = require_account(ai_bole_session)
     with connect() as db:
@@ -1188,8 +1146,9 @@ def explorer_talents(ai_bole_session: str | None = Cookie(default=None)) -> dict
     return {"account_id": account["id"], "talents": build_talent_eligibility(rows)}
 
 
-@app.get("/api/evidence/summary")
+@app.get("/_deprecated/v0/evidence-summary", include_in_schema=False)
 def evidence_summary(ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    raise HTTPException(404, "V0 汇总接口已移除")
     """只统计频次和行为类型，不输出能力分数。"""
     account = require_account(ai_bole_session)
     with connect() as db:

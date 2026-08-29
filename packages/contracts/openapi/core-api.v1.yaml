@@ -81,9 +81,43 @@ paths:
       responses:
         '200': {description: completed sessions、证据数与作品数}
         '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/v1/evidence-records:
+    get:
+      summary: 列出当前儿童的标准证据记录
+      parameters: [{name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 500}}]
+      responses:
+        '200': {description: evidence record 列表}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/v1/talents:
+    get:
+      summary: 从标准证据实时推导六星点亮资格
+      responses:
+        '200': {description: 六个维度的 strong/reference 计数与资格}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/v1/assets/snapshots:
+    post:
+      summary: 上传当前 scoped 会话的作品预览快照
+      security: [{moduleBearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SnapshotUpload'}
+      responses:
+        '201': {description: snapshot 资源 ID 与 URL}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '413': {description: 快照超过大小限制}
+  /api/v1/assets/snapshots/{snapshotId}:
+    get:
+      summary: 读取作品预览快照
+      parameters: [{name: snapshotId, in: path, required: true, schema: {type: string}}]
+      responses:
+        '200': {description: JPEG snapshot}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
   /api/v1/reports:
     post:
-      summary: 基于标准证据和未迁移 legacy 证据生成报告快照
+      summary: 基于标准证据生成报告快照
       responses:
         '200': {description: 已发布报告快照和 evidence links}
         '401': {$ref: '#/components/responses/Unauthorized'}
@@ -132,3 +166,10 @@ components:
           items: {$ref: '../schemas/evidence/envelope.v1.schema.json'}
     Artifact:
       $ref: '../schemas/artifact.v1.schema.json'
+    SnapshotUpload:
+      type: object
+      required: [dataUrl]
+      properties:
+        dataUrl:
+          type: string
+          description: JPEG data URL，最大 2.5 MB（解码后）

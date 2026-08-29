@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import type { Talent } from "../data/mockReport";
-import { generateReport, getAccount, getEvidence, getTalentEligibility } from "../api/core";
+import { generateReport, getTalentEligibility } from "../api/core";
 import { continentHints, loadStarState, mapCopy, resetStarState, saveStarState } from "../data/treasureMap";
 import MapCanvas from "./map/MapCanvas.vue";
 import StarStoryCard from "./map/StarStoryCard.vue";
@@ -18,7 +18,7 @@ let burstTimer:number|undefined,hintTimer:number|undefined;
 const availableTalents=computed(()=>props.talents);
 const isEmpty=computed(()=>props.talents.length===0);
 const isComplete=computed(()=>availableTalents.value.length>0&&discovered.value.length===availableTalents.value.length);
-onMounted(async()=>{const keys=availableTalents.value.map(t=>t.key);const state=loadStarState(keys);discovered.value=state.discovered;order.value=state.order;revisit.value=keys.length>0&&state.discovered.length===keys.length;const [response,evidence,account]=await Promise.all([getTalentEligibility(),getEvidence(),getAccount()]);eligible.value=response?response.talents.filter(item=>item.eligible&&keys.includes(item.key)).map(item=>item.key):[];if(evidence?.events.length){const report=await generateReport(account?.account.display_name||"小朋友",evidence.events);childStories.value=Object.fromEntries((report?.dimensions||[]).map(item=>[item.key,item.child_story]).filter(([,text])=>Boolean(text)))}});
+onMounted(async()=>{const keys=availableTalents.value.map(t=>t.key);const state=loadStarState(keys);discovered.value=state.discovered;order.value=state.order;revisit.value=keys.length>0&&state.discovered.length===keys.length;const response=await getTalentEligibility();eligible.value=response?response.talents.filter(item=>item.eligible&&keys.includes(item.key)).map(item=>item.key):[];if(response?.talents.some(item=>item.strongCount||item.referenceCount)){const report=await generateReport();childStories.value=Object.fromEntries((report?.dimensions||[]).map(item=>[item.key,item.child_story]).filter(([,text])=>Boolean(text)))}});
 onBeforeUnmount(()=>{window.clearTimeout(burstTimer);window.clearTimeout(hintTimer)});
 function selectStar(talent:Talent){if(discovered.value.includes(talent.key)||eligible.value.includes(talent.key)){selected.value=talent;return}announcement.value=mapCopy.locked(talent.continent)}
 function collectStar(talent:Talent){if(!eligible.value.includes(talent.key)||discovered.value.includes(talent.key))return;discovered.value=[...discovered.value,talent.key];order.value=[...order.value,talent.key];saveStarState({discovered:discovered.value,order:order.value});burstKey.value=talent.key;announcement.value=mapCopy.foundBurst(talent.childName);window.clearTimeout(burstTimer);burstTimer=window.setTimeout(()=>{burstKey.value=undefined},900);selected.value=undefined;if(discovered.value.length===availableTalents.value.length)celebrating.value=true}

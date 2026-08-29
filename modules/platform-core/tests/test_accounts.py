@@ -1,4 +1,5 @@
 import os
+import base64
 import tempfile
 import unittest
 from pathlib import Path
@@ -70,8 +71,10 @@ class AccountTests(unittest.TestCase):
             db.execute("INSERT INTO source_events (id,session_id,idempotency_key,event_type,schema_version,payload_json,occurred_at,created_at) VALUES (?,?,?,?,?,?,?,?)", ("source-v1", "session-v1", "key-v1", "career.task-completed.v1", "1.0", '{"taskKey":"doctor","attemptCount":2,"hintCount":0,"completionSeconds":30,"adjustmentCount":1}', main.now_iso(), main.now_iso()))
             db.execute("INSERT INTO evidence_records (id,source_event_id,evidence_level,constructs_json,behavior_summary,policy_version,construct_registry_version,derived_at) VALUES (?,?,?,?,?,?,?,?)", ("evidence-v1", "source-v1", "strong", '["problem_solving.planning"]', "完成职业任务并做出调整", "1.0", "1.0", main.now_iso()))
             events, evidence_ids = main.standard_events_for_report(db, profile["id"])
-        self.assertEqual(events[0]["event_type"], "workday_process_summary")
+        self.assertEqual(events[0]["event_type"], "career.task-completed.v1")
         self.assertEqual(events[0]["intelligence_candidates"], ["logical"])
+        self.assertEqual(events[0]["raw_evidence"]["attemptCount"], 2)
+        self.assertEqual(events[0]["raw_evidence"]["completionSeconds"], 30)
         self.assertEqual(evidence_ids, ["evidence-v1"])
 
     def test_new_account_can_create_and_exchange_v1_session_once(self):
@@ -96,13 +99,23 @@ class AccountTests(unittest.TestCase):
         event = main.EvidenceEnvelopeIn(schemaVersion="1.0", eventId="career-event", idempotencyKey="career-event", eventType="career.task-completed.v1", occurredAt=main.now_iso(), payload={"taskKey":"doctor","attemptCount":2,"hintCount":0,"completionSeconds":30,"adjustmentCount":1})
         saved = main.create_evidence_events_v1(main.EvidenceBatchIn(events=[event]), header)
         self.assertFalse(saved["saved"][0]["duplicate"])
-        artifact = main.ArtifactIn(schemaVersion="1.0", artifactId="career-artifact", type="other", title="小医生的一天", summary="完成职业体验", sourceResourceId="career:demo", createdAt=main.now_iso())
+        snapshot = main.create_snapshot(
+            main.SnapshotIn(dataUrl="data:image/jpeg;base64," + base64.b64encode(b"test-jpeg").decode("ascii")),
+            header,
+        )
+        self.addCleanup(lambda: (main.SNAPSHOT_DIR / f"{snapshot['id']}.jpg").unlink(missing_ok=True))
+        artifact = main.ArtifactIn(schemaVersion="1.0", artifactId="career-artifact", type="other", title="小医生的一天", summary="完成职业体验", previewResourceId=snapshot["id"], sourceResourceId="career:demo", createdAt=main.now_iso())
         main.create_artifact_v1(artifact, header)
         changed = main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="completed", summary={"stages": 3}), header)
         self.assertFalse(changed["duplicate"])
         self.assertEqual(main.list_artifacts_v1(cookie)["artifacts"][0]["id"], "career-artifact")
-        self.assertEqual(main.timeline_v1(cookie)["sessions"][0]["evidenceCount"], 1)
+        timeline = main.timeline_v1(cookie)
+        self.assertEqual(timeline["sessions"][0]["evidenceCount"], 1)
+        self.assertEqual(timeline["moduleSummaries"][0]["completedCount"], 1)
+        self.assertTrue(timeline["moduleSummaries"][0]["firstUsedAt"])
+        self.assertEqual(timeline["moduleSummaries"][0]["lastUsedAt"], main.read_assessment_session(context["sessionId"], cookie)["endedAt"])
         self.assertEqual(main.read_assessment_session(context["sessionId"], cookie)["summary"], {"stages": 3})
+        self.assertEqual(main.read_snapshot(snapshot["id"], cookie).media_type, "image/jpeg")
 
     def test_v1_batch_is_atomic_and_invalid_transition_is_rejected(self):
         response = Response()
@@ -123,20 +136,19 @@ class AccountTests(unittest.TestCase):
             main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="completed"), header)
         self.assertEqual(transition.exception.status_code, 409)
 
-    def test_legacy_backfill_is_idempotent_and_auditable(self):
+    def test_v1_evidence_records_and_talents_are_derived_from_standard_evidence(self):
         response = Response()
-        main.register_account(main.AccountRegistrationIn(username="migrate_child", display_name="小林", age=8, password="secret77"), response)
+        main.register_account(main.AccountRegistrationIn(username="talent_child", display_name="小林", age=8, password="secret77"), response)
         cookie = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
-        legacy = main.create_evidence(main.EvidenceIn(module="chat", event_type="narrative_evidence", evidence_level="reference", intelligence_candidates=["linguistic"], behavior_summary="分享了一段完整的聊天观察。", raw_evidence={"turn_count": 2, "topic": "rain"}, context={"idempotency_key": "migration-legacy"}), cookie)
-        with main.connect() as db:
-            db.execute("DELETE FROM evidence_records WHERE source_event_id=?", (legacy["event_id"],))
-            db.execute("DELETE FROM source_events WHERE id=?", (legacy["event_id"],))
-            db.execute("DELETE FROM assessment_sessions WHERE id=?", (str(main.uuid.uuid5(main.uuid.NAMESPACE_URL, f"legacy-v1:{legacy['event_id']}")),))
-            result = main.apply_pending_data_migrations(db, source="test")
-            repeated = main.apply_pending_data_migrations(db, source="test")
-        self.assertTrue(result["applied"])
-        self.assertGreaterEqual(result["migrated"], 1)
-        self.assertFalse(repeated["applied"])
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="career"), cookie)
+        token = main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))["token"]
+        event = main.EvidenceEnvelopeIn(schemaVersion="1.0", eventId="talent-event", idempotencyKey="talent-event", eventType="career.task-completed.v1", occurredAt=main.now_iso(), payload={"taskKey":"doctor","attemptCount":2,"hintCount":0,"completionSeconds":30,"adjustmentCount":1})
+        main.create_evidence_events_v1(main.EvidenceBatchIn(events=[event]), f"Bearer {token}")
+        records = main.list_evidence_records_v1(500, cookie)["records"]
+        talents = {item["key"]: item for item in main.list_talents_v1(cookie)["talents"]}
+        self.assertEqual(records[0]["reportDimensions"], ["logical"])
+        self.assertTrue(talents["logical"]["eligible"])
+        self.assertEqual(talents["logical"]["strongCount"], 1)
 
 
 if __name__ == "__main__":

@@ -9,13 +9,12 @@ const moduleEntrypoints = [
   ["聊天观察", "../modules/chat/public/chat.html"],
 ];
 
-test("four module entrypoints load the shared V1 SDK before the compatibility bridge", async () => {
+test("four module entrypoints load the shared V1 SDK without a V0 bridge", async () => {
   for (const [name, path] of moduleEntrypoints) {
     const html = await readFile(new URL(path, import.meta.url), "utf8");
     const sdk = html.indexOf("/sdk/module-sdk.js");
-    const bridge = html.indexOf("/ai-bole-bridge.js");
     assert.ok(sdk >= 0, `${name} must load the Module SDK`);
-    assert.ok(bridge > sdk, `${name} must load the bridge after the Module SDK`);
+    assert.equal(html.includes("ai-bole-bridge.js"), false, `${name} must not load the V0 bridge`);
   }
 });
 
@@ -25,6 +24,8 @@ test("SDK consumes and clears the same-page LaunchContext without persisting its
   assert.match(sdk, /global\.name = ""/);
   assert.match(sdk, /module-authorizations:exchange/);
   assert.match(sdk, /evidence-events:batch/);
+  assert.match(sdk, /connectOptional/);
+  assert.match(sdk, /captureSnapshot/);
   assert.match(sdk, /publishArtifact/);
   assert.match(sdk, /completeSession/);
   assert.match(sdk, /interruptOnPageHide/);
