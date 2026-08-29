@@ -1,5 +1,4 @@
 const CORE_URL = import.meta.env.VITE_CORE_API_URL || "http://localhost:8020";
-const REPORT_URL = import.meta.env.VITE_REPORT_API_URL || "http://localhost:8030";
 export type CoreAccount = { id:string; username:string; display_name:string; age?:number; created_at:string };
 export type TalentEligibility = { key:string; name:string; eligible:boolean; strong_count:number; reference_count:number; source_modules:string[]; recent_evidence_id:string|null };
 export type CoreEvidence = { id:string; module:string; event_type:string; occurred_at:string; evidence_level:"strong"|"reference"; intelligence_candidates:string[]; behavior_summary:string; raw_evidence:Record<string,unknown>; context:Record<string,unknown> };
@@ -10,4 +9,4 @@ async function coreFetch<T>(path:string):Promise<T|null>{try{const response=awai
 export async function getAccount(){return coreFetch<{account:CoreAccount}>("/api/account/me")}
 export async function getTalentEligibility(){return coreFetch<{account_id:string;talents:TalentEligibility[]}>("/api/explorer/talents")}
 export async function getEvidence(){return coreFetch<{account:CoreAccount;events:CoreEvidence[]}>("/api/evidence/events?limit=500")}
-export async function generateReport(childName:string,events:CoreEvidence[]):Promise<GeneratedReport|null>{try{const response=await fetch(`${REPORT_URL}/api/report/generate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({child_name:childName,events})});if(!response.ok)return null;return await response.json() as GeneratedReport}catch{return null}}
+export async function generateReport(_childName:string,_events:CoreEvidence[]):Promise<GeneratedReport|null>{try{const latest=await coreFetch<{report:GeneratedReport}>("/api/v1/reports/latest-published");if(latest?.report)return latest.report;const response=await fetch(`${CORE_URL}/api/v1/reports`,{method:"POST",credentials:"include"});if(!response.ok)return null;return (await response.json() as {report:GeneratedReport}).report}catch{return null}}

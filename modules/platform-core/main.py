@@ -19,6 +19,8 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Literal
+from urllib import error as urlerror
+from urllib import request as urlrequest
 
 from fastapi import Cookie, FastAPI, Header, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -480,6 +482,21 @@ def policy_for_event(event_type: str) -> dict:
     return {**rule, "policyVersion": policy["version"], "constructRegistryVersion": policy["constructRegistryVersion"]}
 
 
+def legacy_events_for_report(db: sqlite3.Connection, account_id: str) -> list[dict]:
+    rows = db.execute("SELECT * FROM evidence_events WHERE account_id=? ORDER BY occurred_at ASC", (account_id,)).fetchall()
+    return [{"id": row["id"], "module": row["module"], "event_type": row["event_type"], "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": json.loads(row["intelligence_candidates"]), "behavior_summary": row["behavior_summary"], "raw_evidence": json.loads(row["raw_evidence"]), "context": json.loads(row["context"])} for row in rows]
+
+
+def generate_report_snapshot(child_name: str, events: list[dict]) -> dict:
+    url = os.environ.get("REPORT_AGENT_URL", "http://localhost:8030/api/report/generate")
+    request = urlrequest.Request(url, data=json.dumps({"child_name": child_name, "events": events}, ensure_ascii=False).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urlrequest.urlopen(request, timeout=50) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except (urlerror.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        raise HTTPException(503, "报告生成服务暂不可用") from exc
+
+
 @app.get("/api/health")
 def health() -> dict:
     return {"ok": True, "service": "ai-bole-platform-core"}
@@ -600,6 +617,38 @@ def create_evidence_events_v1(payload: EvidenceBatchIn, authorization: str | Non
             )
             saved.append({"eventId": event_id, "evidenceId": evidence_id, "duplicate": False})
     return {"saved": saved}
+
+
+@app.post("/api/v1/reports")
+def create_report_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    """报告生成实现仍可独立部署，但证据读取和快照保存只经过 Core。"""
+    account = require_account(ai_bole_session)
+    with connect() as db:
+        profile = profile_for_account(db, account["id"])
+        events = legacy_events_for_report(db, account["id"])
+    report = generate_report_snapshot(profile["display_name"], events)
+    timestamp = now_iso()
+    evidence_hash = hashlib.sha256(json.dumps(events, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+    with connect() as db:
+        report_id = str(uuid.uuid4())
+        db.execute(
+            """INSERT INTO reports
+               (id,child_profile_id,generator_version,ruleset_version,prompt_version,model_id,evidence_set_hash,status,report_json,generated_at,published_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+            (report_id, profile["id"], "report-agent-v1", "rule-or-llm-v1", None, None, evidence_hash, "published", json.dumps(report, ensure_ascii=False), timestamp, timestamp),
+        )
+    return {"id": report_id, "status": "published", "report": report}
+
+
+@app.get("/api/v1/reports/latest-published")
+def latest_published_report_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    account = require_account(ai_bole_session)
+    with connect() as db:
+        profile = profile_for_account(db, account["id"])
+        row = db.execute("SELECT * FROM reports WHERE child_profile_id=? AND status='published' ORDER BY published_at DESC LIMIT 1", (profile["id"],)).fetchone()
+    if not row:
+        raise HTTPException(404, "还没有已发布的报告")
+    return {"id": row["id"], "status": row["status"], "generatedAt": row["generated_at"], "report": json.loads(row["report_json"])}
 
 
 @app.get("/ai-bole-bridge.js", response_class=PlainTextResponse)
