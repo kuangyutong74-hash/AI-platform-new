@@ -74,6 +74,18 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(events[0]["intelligence_candidates"], ["logical"])
         self.assertEqual(evidence_ids, ["evidence-v1"])
 
+    def test_new_account_can_create_and_exchange_v1_session_once(self):
+        response = Response()
+        registered = main.register_account(main.AccountRegistrationIn(username="launch_child", display_name="小帆", age=9, password="secret77"), response)
+        token = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="career"), token)
+        self.assertTrue(context["launchCode"])
+        exchanged = main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))
+        self.assertTrue(exchanged["token"])
+        with self.assertRaises(HTTPException) as repeated:
+            main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))
+        self.assertEqual(repeated.exception.status_code, 401)
+
 
 if __name__ == "__main__":
     unittest.main()
