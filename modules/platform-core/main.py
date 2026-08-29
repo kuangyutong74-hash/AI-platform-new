@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
 import base64
 import os
 import secrets
@@ -64,6 +65,7 @@ INTELLIGENCE_NAMES = {
 }
 
 app = FastAPI(title="AI伯乐平台核心服务", version="1.0.0")
+logger = logging.getLogger("ai_bole.core")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -290,9 +292,6 @@ def initialize_database() -> None:
                 (manifest["id"], manifest["version"], "1.0", manifest["constructRegistryVersion"], json.dumps(manifest, ensure_ascii=False), timestamp),
             )
         db.execute("PRAGMA optimize")
-
-
-initialize_database()
 
 
 def now_iso() -> str:
@@ -535,6 +534,35 @@ def mirror_legacy_event_v1(db: sqlite3.Connection, account_id: str, legacy_event
     db.execute("INSERT OR IGNORE INTO evidence_records (id,source_event_id,evidence_level,constructs_json,behavior_summary,policy_version,construct_registry_version,derived_at) VALUES (?,?,?,?,?,?,?,?)", (str(uuid.uuid5(uuid.NAMESPACE_URL, f"legacy-evidence:{legacy_event_id}")), legacy_event_id, payload.evidence_level, json.dumps(policy["constructs"], ensure_ascii=False), payload.behavior_summary, policy["policyVersion"], policy["constructRegistryVersion"], now_iso()))
 
 
+def try_mirror_legacy_event_v1(db: sqlite3.Connection, account_id: str, legacy_event_id: str, payload: EvidenceIn, idempotency_key: str | None) -> bool:
+    """Expand 兼容期保持 V0 可写；镜像失败会被记录但不能阻断旧事件。"""
+    try:
+        mirror_legacy_event_v1(db, account_id, legacy_event_id, payload, idempotency_key)
+        return True
+    except (HTTPException, TypeError, ValueError, KeyError, json.JSONDecodeError) as exc:
+        logger.warning("v1 mirror skipped legacy_event=%s reason=%s", legacy_event_id, exc)
+        return False
+
+
+def backfill_legacy_evidence(db: sqlite3.Connection) -> int:
+    rows = db.execute("""SELECT e.* FROM evidence_events e
+                       LEFT JOIN source_events s ON s.id=e.id WHERE s.id IS NULL ORDER BY e.created_at""").fetchall()
+    mirrored = 0
+    for row in rows:
+        try:
+            payload = EvidenceIn(module=row["module"], event_type=row["event_type"], occurred_at=row["occurred_at"], evidence_level=row["evidence_level"], intelligence_candidates=json.loads(row["intelligence_candidates"]), behavior_summary=row["behavior_summary"], raw_evidence=json.loads(row["raw_evidence"]), context=json.loads(row["context"]))
+        except (ValueError, TypeError, json.JSONDecodeError) as exc:
+            logger.warning("v1 backfill skipped legacy_event=%s reason=%s", row["id"], exc)
+            continue
+        mirrored += int(try_mirror_legacy_event_v1(db, row["account_id"], row["id"], payload, row["idempotency_key"]))
+    return mirrored
+
+
+initialize_database()
+with connect() as _migration_db:
+    backfill_legacy_evidence(_migration_db)
+
+
 def legacy_events_for_report(db: sqlite3.Connection, account_id: str) -> list[dict]:
     rows = db.execute("SELECT * FROM evidence_events WHERE account_id=? ORDER BY occurred_at ASC", (account_id,)).fetchall()
     return [{"id": row["id"], "module": row["module"], "event_type": row["event_type"], "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": json.loads(row["intelligence_candidates"]), "behavior_summary": row["behavior_summary"], "raw_evidence": json.loads(row["raw_evidence"]), "context": json.loads(row["context"])} for row in rows]
@@ -712,9 +740,9 @@ def create_report_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict
     with connect() as db:
         profile = profile_for_account(db, account["id"])
         events, evidence_ids = standard_events_for_report(db, profile["id"])
-        if not events:
-            events = legacy_events_for_report(db, account["id"])
-            evidence_ids = []
+        standard_ids = {event["id"] for event in events}
+        # backfill 中无法通过 V1 契约的历史事件仍保留在报告输入中，不能因一次新事件而消失。
+        events.extend(event for event in legacy_events_for_report(db, account["id"]) if event["id"] not in standard_ids)
     report = generate_report_snapshot(profile["display_name"], events)
     timestamp = now_iso()
     evidence_hash = hashlib.sha256(json.dumps(events, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
@@ -964,7 +992,7 @@ def create_evidence(payload: EvidenceIn, ai_bole_session: str | None = Cookie(de
                     json.dumps(payload.context, ensure_ascii=False), idempotency_key, now_iso(),
                 ),
             )
-            mirror_legacy_event_v1(db, account["id"], event_id, payload, idempotency_key)
+            mirrored_v1 = try_mirror_legacy_event_v1(db, account["id"], event_id, payload, idempotency_key)
         except sqlite3.IntegrityError:
             if not idempotency_key:
                 raise
@@ -975,7 +1003,7 @@ def create_evidence(payload: EvidenceIn, ai_bole_session: str | None = Cookie(de
             if not existing:
                 raise
             return {"ok": True, "event_id": existing["id"], "duplicate": True}
-    return {"ok": True, "event_id": event_id, "duplicate": False}
+    return {"ok": True, "event_id": event_id, "duplicate": False, "mirrored_v1": mirrored_v1}
 
 
 @app.get("/api/evidence/events")
