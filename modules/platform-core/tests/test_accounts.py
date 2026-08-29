@@ -86,6 +86,58 @@ class AccountTests(unittest.TestCase):
             main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))
         self.assertEqual(repeated.exception.status_code, 401)
 
+    def test_v1_event_artifact_and_completion_are_profile_scoped(self):
+        response = Response()
+        registered = main.register_account(main.AccountRegistrationIn(username="artifact_child", display_name="小岸", age=8, password="secret77"), response)
+        cookie = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="career"), cookie)
+        authorization = main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))["token"]
+        header = f"Bearer {authorization}"
+        event = main.EvidenceEnvelopeIn(schemaVersion="1.0", eventId="career-event", idempotencyKey="career-event", eventType="career.task-completed.v1", occurredAt=main.now_iso(), payload={"taskKey":"doctor","attemptCount":2,"hintCount":0,"completionSeconds":30,"adjustmentCount":1})
+        saved = main.create_evidence_events_v1(main.EvidenceBatchIn(events=[event]), header)
+        self.assertFalse(saved["saved"][0]["duplicate"])
+        artifact = main.ArtifactIn(schemaVersion="1.0", artifactId="career-artifact", type="other", title="小医生的一天", summary="完成职业体验", sourceResourceId="career:demo", createdAt=main.now_iso())
+        main.create_artifact_v1(artifact, header)
+        changed = main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="completed", summary={"stages": 3}), header)
+        self.assertFalse(changed["duplicate"])
+        self.assertEqual(main.list_artifacts_v1(cookie)["artifacts"][0]["id"], "career-artifact")
+        self.assertEqual(main.timeline_v1(cookie)["sessions"][0]["evidenceCount"], 1)
+        self.assertEqual(main.read_assessment_session(context["sessionId"], cookie)["summary"], {"stages": 3})
+
+    def test_v1_batch_is_atomic_and_invalid_transition_is_rejected(self):
+        response = Response()
+        main.register_account(main.AccountRegistrationIn(username="atomic_child", display_name="小舟", age=8, password="secret77"), response)
+        cookie = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="career"), cookie)
+        token = main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))["token"]
+        header = f"Bearer {token}"
+        valid = main.EvidenceEnvelopeIn(schemaVersion="1.0", eventId="atomic-valid", idempotencyKey="atomic-valid", eventType="career.task-completed.v1", occurredAt=main.now_iso(), payload={"taskKey":"doctor","attemptCount":1,"hintCount":0,"completionSeconds":3,"adjustmentCount":0})
+        invalid = main.EvidenceEnvelopeIn(schemaVersion="1.0", eventId="atomic-invalid", idempotencyKey="atomic-invalid", eventType="career.task-completed.v1", occurredAt=main.now_iso(), payload={"taskKey":"doctor"})
+        with self.assertRaises(HTTPException) as rejected:
+            main.create_evidence_events_v1(main.EvidenceBatchIn(events=[valid, invalid]), header)
+        self.assertEqual(rejected.exception.status_code, 422)
+        with main.connect() as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) AS n FROM source_events WHERE session_id=?", (context["sessionId"],)).fetchone()["n"], 0)
+        main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="interrupted", reason="test"), header)
+        with self.assertRaises(HTTPException) as transition:
+            main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="completed"), header)
+        self.assertEqual(transition.exception.status_code, 409)
+
+    def test_legacy_backfill_is_idempotent_and_auditable(self):
+        response = Response()
+        main.register_account(main.AccountRegistrationIn(username="migrate_child", display_name="小林", age=8, password="secret77"), response)
+        cookie = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
+        legacy = main.create_evidence(main.EvidenceIn(module="chat", event_type="narrative_evidence", evidence_level="reference", intelligence_candidates=["linguistic"], behavior_summary="分享了一段完整的聊天观察。", raw_evidence={"turn_count": 2, "topic": "rain"}, context={"idempotency_key": "migration-legacy"}), cookie)
+        with main.connect() as db:
+            db.execute("DELETE FROM evidence_records WHERE source_event_id=?", (legacy["event_id"],))
+            db.execute("DELETE FROM source_events WHERE id=?", (legacy["event_id"],))
+            db.execute("DELETE FROM assessment_sessions WHERE id=?", (str(main.uuid.uuid5(main.uuid.NAMESPACE_URL, f"legacy-v1:{legacy['event_id']}")),))
+            result = main.apply_pending_data_migrations(db, source="test")
+            repeated = main.apply_pending_data_migrations(db, source="test")
+        self.assertTrue(result["applied"])
+        self.assertGreaterEqual(result["migrated"], 1)
+        self.assertFalse(repeated["applied"])
+
 
 if __name__ == "__main__":
     unittest.main()

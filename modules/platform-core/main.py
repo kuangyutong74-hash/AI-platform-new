@@ -31,6 +31,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from jsonschema import Draft202012Validator, FormatChecker
 
 from explorer_collection import build_explorer_collection
+from reports import generate_internal_report
 
 
 ROOT = Path(__file__).resolve().parent
@@ -166,7 +167,9 @@ def initialize_database() -> None:
             );
             CREATE TABLE IF NOT EXISTS schema_migrations (
               version TEXT PRIMARY KEY,
-              applied_at TEXT NOT NULL
+              applied_at TEXT NOT NULL,
+              source TEXT NOT NULL DEFAULT 'runtime',
+              result_json TEXT NOT NULL DEFAULT '{}'
             );
             CREATE TABLE IF NOT EXISTS modules (
               id TEXT PRIMARY KEY,
@@ -195,6 +198,8 @@ def initialize_database() -> None:
               ended_at TEXT,
               active_seconds INTEGER NOT NULL DEFAULT 0,
               state_version INTEGER NOT NULL DEFAULT 1,
+              summary_json TEXT NOT NULL DEFAULT '{}',
+              interruption_reason TEXT,
               FOREIGN KEY (module_id, module_version) REFERENCES module_versions(module_id, version)
             );
             CREATE TABLE IF NOT EXISTS module_authorizations (
@@ -268,13 +273,27 @@ def initialize_database() -> None:
         }
         if "idempotency_key" not in evidence_columns:
             db.execute("ALTER TABLE evidence_events ADD COLUMN idempotency_key TEXT")
+        session_columns = {row["name"] for row in db.execute("PRAGMA table_info(assessment_sessions)").fetchall()}
+        if "summary_json" not in session_columns:
+            db.execute("ALTER TABLE assessment_sessions ADD COLUMN summary_json TEXT NOT NULL DEFAULT '{}'")
+        if "interruption_reason" not in session_columns:
+            db.execute("ALTER TABLE assessment_sessions ADD COLUMN interruption_reason TEXT")
+        migration_columns = {row["name"] for row in db.execute("PRAGMA table_info(schema_migrations)").fetchall()}
+        if "source" not in migration_columns:
+            db.execute("ALTER TABLE schema_migrations ADD COLUMN source TEXT NOT NULL DEFAULT 'runtime'")
+        if "result_json" not in migration_columns:
+            db.execute("ALTER TABLE schema_migrations ADD COLUMN result_json TEXT NOT NULL DEFAULT '{}'")
         db.execute(
             """CREATE UNIQUE INDEX IF NOT EXISTS idx_evidence_account_idempotency
                ON evidence_events(account_id, idempotency_key)
                WHERE idempotency_key IS NOT NULL"""
         )
         timestamp = datetime.now(timezone.utc).isoformat()
-        db.execute("INSERT OR IGNORE INTO schema_migrations (version,applied_at) VALUES (?,?)", ("20260829_v1_core_expand", timestamp))
+        db.execute(
+            """INSERT OR IGNORE INTO schema_migrations (version,applied_at,source,result_json)
+               VALUES (?,?,?,?)""",
+            ("20260829_v1_core_expand", timestamp, "platform-core.initialize_database", "{}"),
+        )
         db.execute(
             """INSERT OR IGNORE INTO child_profiles (id,account_id,display_name,age,created_at,updated_at)
                SELECT id,id,display_name,age,created_at,updated_at FROM accounts"""
@@ -505,7 +524,7 @@ def require_module_authorization(authorization: str | None) -> sqlite3.Row:
 
 
 def validate_evidence_event(event: EvidenceEnvelopeIn) -> None:
-    validate_schema("evidence/envelope.v1.schema.json", event.model_dump(by_alias=True), "证据 Envelope 无效")
+    validate_schema("evidence/envelope.v1.schema.json", event.model_dump(by_alias=True, exclude_none=True), "证据 Envelope 无效")
     validate_schema(f"evidence/{event.event_type}.schema.json", event.payload, "证据 Payload 无效")
 
 
@@ -560,9 +579,38 @@ def backfill_legacy_evidence(db: sqlite3.Connection) -> int:
     return mirrored
 
 
+def validate_v1_data_migration(db: sqlite3.Connection) -> dict:
+    """返回可审计的迁移核验摘要；供离线迁移工具在提交前调用。"""
+    foreign_key_errors = [dict(row) for row in db.execute("PRAGMA foreign_key_check").fetchall()]
+    return {
+        "foreignKeyErrors": foreign_key_errors,
+        "legacyEvidence": db.execute("SELECT COUNT(*) AS n FROM evidence_events").fetchone()["n"],
+        "sourceEvents": db.execute("SELECT COUNT(*) AS n FROM source_events").fetchone()["n"],
+        "evidenceRecords": db.execute("SELECT COUNT(*) AS n FROM evidence_records").fetchone()["n"],
+        "moduleDistribution": [dict(row) for row in db.execute(
+            "SELECT module_id AS moduleId,COUNT(*) AS count,MIN(created_at) AS firstAt,MAX(created_at) AS lastAt FROM assessment_sessions GROUP BY module_id ORDER BY module_id"
+        ).fetchall()],
+    }
+
+
+def apply_pending_data_migrations(db: sqlite3.Connection, source: str = "platform-core.migrate") -> dict:
+    """执行一次性的历史证据回填。此函数只由迁移工具调用，不在服务启动时执行。"""
+    applied = db.execute("SELECT 1 FROM schema_migrations WHERE version=?", ("20260829_v1_legacy_evidence_backfill",)).fetchone()
+    if applied:
+        return {"applied": False, "reason": "already-applied", "validation": validate_v1_data_migration(db)}
+    migrated = backfill_legacy_evidence(db)
+    validation = validate_v1_data_migration(db)
+    if validation["foreignKeyErrors"]:
+        raise RuntimeError("迁移后外键校验失败")
+    result = {"migrated": migrated, "validation": validation}
+    db.execute(
+        "INSERT INTO schema_migrations (version,applied_at,source,result_json) VALUES (?,?,?,?)",
+        ("20260829_v1_legacy_evidence_backfill", now_iso(), source, json.dumps(result, ensure_ascii=False)),
+    )
+    return {"applied": True, **result}
+
+
 initialize_database()
-with connect() as _migration_db:
-    backfill_legacy_evidence(_migration_db)
 
 
 def legacy_events_for_report(db: sqlite3.Connection, account_id: str) -> list[dict]:
@@ -587,12 +635,16 @@ def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple
     return events, [row["evidence_id"] for row in rows]
 
 
-def generate_report_snapshot(child_name: str, events: list[dict]) -> dict:
-    url = os.environ.get("REPORT_AGENT_URL", "http://localhost:8030/api/report/generate")
+def generate_report_snapshot(child_name: str, events: list[dict]) -> tuple[dict, dict]:
+    """默认走 Core 内置规则；配置 REPORT_AGENT_URL 时可保留独立服务作回归对照。"""
+    url = os.environ.get("REPORT_AGENT_URL", "").strip()
+    if not url:
+        return generate_internal_report(child_name, events), {"generatorVersion": "core-rule-analyzer-v1", "rulesetVersion": "core-rules-v1", "promptVersion": None, "modelId": None}
     request = urlrequest.Request(url, data=json.dumps({"child_name": child_name, "events": events}, ensure_ascii=False).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
     try:
         with urlrequest.urlopen(request, timeout=50) as response:
-            return json.loads(response.read().decode("utf-8"))
+            report = json.loads(response.read().decode("utf-8"))
+            return report, {"generatorVersion": "report-agent-http-v1", "rulesetVersion": "rule-or-llm-v1", "promptVersion": None, "modelId": os.environ.get("REPORT_LLM_MODEL") or None}
     except (urlerror.URLError, TimeoutError, json.JSONDecodeError) as exc:
         raise HTTPException(503, "报告生成服务暂不可用") from exc
 
@@ -681,7 +733,12 @@ def change_assessment_session(session_id: str, payload: SessionStatusIn, authori
         active_seconds = session["active_seconds"]
         if ended_at and session["started_at"]:
             active_seconds += max(0, int((datetime.fromisoformat(ended_at) - datetime.fromisoformat(session["started_at"])).total_seconds()))
-        db.execute("UPDATE assessment_sessions SET status=?,ended_at=?,active_seconds=?,state_version=state_version+1 WHERE id=?", (payload.status, ended_at, active_seconds, session_id))
+        db.execute(
+            """UPDATE assessment_sessions
+               SET status=?,ended_at=?,active_seconds=?,summary_json=?,interruption_reason=?,state_version=state_version+1
+               WHERE id=?""",
+            (payload.status, ended_at, active_seconds, json.dumps(payload.summary, ensure_ascii=False), payload.reason, session_id),
+        )
         if ended_at: db.execute("UPDATE module_authorizations SET revoked_at=? WHERE session_id=? AND revoked_at=''", (timestamp, session_id))
     return {"id": session_id, "status": payload.status, "duplicate": False}
 
@@ -729,7 +786,7 @@ def create_evidence_events_v1(payload: EvidenceBatchIn, authorization: str | Non
 def create_artifact_v1(payload: ArtifactIn, authorization: str | None = Header(default=None)) -> dict:
     auth = require_module_authorization(authorization)
     if "artifact:write" not in json.loads(auth["scopes_json"]): raise HTTPException(403, "模块授权不含作品写入权限")
-    validate_schema("artifact.v1.schema.json", payload.model_dump(by_alias=True), "作品无效")
+    validate_schema("artifact.v1.schema.json", payload.model_dump(by_alias=True, exclude_none=True), "作品无效")
     with connect() as db:
         db.execute("INSERT OR IGNORE INTO artifacts (id,session_id,type,title,summary,preview_resource_id,source_resource_id,created_at) VALUES (?,?,?,?,?,?,?,?)", (payload.artifact_id, auth["session_id"], payload.type, payload.title, payload.summary, payload.preview_resource_id, payload.source_resource_id, payload.created_at))
     return {"id": payload.artifact_id, "created": True}
@@ -767,7 +824,7 @@ def read_assessment_session(session_id: str, ai_bole_session: str | None = Cooki
         profile = profile_for_account(db, account["id"])
         row = db.execute("SELECT * FROM assessment_sessions WHERE id=? AND child_profile_id=?", (session_id, profile["id"])).fetchone()
     if not row: raise HTTPException(404, "探索会话不存在")
-    return {"id": row["id"], "moduleId": row["module_id"], "moduleVersion": row["module_version"], "status": row["status"], "createdAt": row["created_at"], "startedAt": row["started_at"], "endedAt": row["ended_at"], "activeSeconds": row["active_seconds"], "stateVersion": row["state_version"]}
+    return {"id": row["id"], "moduleId": row["module_id"], "moduleVersion": row["module_version"], "status": row["status"], "createdAt": row["created_at"], "startedAt": row["started_at"], "endedAt": row["ended_at"], "activeSeconds": row["active_seconds"], "stateVersion": row["state_version"], "summary": json.loads(row["summary_json"] or "{}"), "reason": row["interruption_reason"]}
 
 
 @app.post("/api/v1/reports")
@@ -780,7 +837,7 @@ def create_report_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict
         standard_ids = {event["id"] for event in events}
         # backfill 中无法通过 V1 契约的历史事件仍保留在报告输入中，不能因一次新事件而消失。
         events.extend(event for event in legacy_events_for_report(db, account["id"]) if event["id"] not in standard_ids)
-    report = generate_report_snapshot(profile["display_name"], events)
+    report, generator = generate_report_snapshot(profile["display_name"], events)
     timestamp = now_iso()
     evidence_hash = hashlib.sha256(json.dumps(events, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
     with connect() as db:
@@ -789,7 +846,7 @@ def create_report_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict
             """INSERT INTO reports
                (id,child_profile_id,generator_version,ruleset_version,prompt_version,model_id,evidence_set_hash,status,report_json,generated_at,published_at)
                VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
-            (report_id, profile["id"], "report-agent-v1", "rule-or-llm-v1", None, None, evidence_hash, "published", json.dumps(report, ensure_ascii=False), timestamp, timestamp),
+            (report_id, profile["id"], generator["generatorVersion"], generator["rulesetVersion"], generator["promptVersion"], generator["modelId"], evidence_hash, "published", json.dumps(report, ensure_ascii=False), timestamp, timestamp),
         )
         db.executemany("INSERT INTO report_evidence_links (report_id,evidence_record_id,section_key) VALUES (?,?,?)", [(report_id, evidence_id, "report") for evidence_id in evidence_ids])
     return {"id": report_id, "status": "published", "report": report}
@@ -841,14 +898,22 @@ def account_bridge() -> PlainTextResponse:
     else payload={taskKey:String(raw.career_name||ctx.career_id||"career-task").slice(0,80),attemptCount:Number(raw.interaction_count)||0,hintCount:Number(raw.hint_count)||0,completionSeconds:Number(raw.duration_seconds)||0,adjustmentCount:Number(raw.adjustment_count||raw.retry_count)||0};
     return {schemaVersion:"1.0",eventId:crypto.randomUUID?crypto.randomUUID():Date.now()+":"+Math.random(),idempotencyKey:String(ctx.idempotency_key||Date.now()),eventType:type,occurredAt:event.occurred_at||new Date().toISOString(),payload};
   };
-  let v1Sdk=null;
-  const activateV1=async()=>{if(!window.AIBoleModuleSDK)return null;try{const sdk=window.AIBoleModuleSDK.create({coreUrl:core});await sdk.initialize();await sdk.exchangeLaunchCode();v1Sdk=sdk;return sdk}catch(_){return null}};
+  let v1Sdk=null,v1Ready=null;
+  const activateV1=async()=>{if(!window.AIBoleModuleSDK)return null;try{const sdk=window.AIBoleModuleSDK.create({coreUrl:core});await sdk.initialize();await sdk.exchangeLaunchCode();sdk.interruptOnPageHide();v1Sdk=sdk;return sdk}catch(_){return null}};
+  const isTerminalEvent=event=>event.module!=="deep_sea"||event.event_type==="deep_sea_session_completed";
+  const publishTerminalArtifact=async(event,sdk)=>{
+    if(!isTerminalEvent(event))return;
+    const raw=event.raw_evidence||{},ctx=event.context||{};
+    const type={story:"story",chat:"conversation",deep_sea:"game-result",career:"other"}[event.module];
+    const key=String(ctx.idempotency_key||Date.now());
+    await sdk.publishArtifact({schemaVersion:"1.0",artifactId:"legacy-adapter:"+key,type,title:String(raw.title||"一次探索作品").slice(0,160),summary:String(event.behavior_summary||"").slice(0,500),previewResourceId:ctx.snapshot_url||null,sourceResourceId:"legacy:"+event.module+":"+key,createdAt:event.occurred_at||new Date().toISOString()});
+  };
   const api = {
     account: null,
     ready: fetch(core + "/api/account/me", { credentials: "include" })
       .then(r => r.ok ? r.json() : Promise.reject()).then(v => {
         api.account = v.account;
-        activateV1();
+        v1Ready=activateV1();
         window.dispatchEvent(new CustomEvent("ai-bole-account-ready", { detail: v.account }));
         queueMicrotask(() => api.flushEvidence());
         return v.account;
@@ -880,7 +945,8 @@ def account_bridge() -> PlainTextResponse:
       const account = api.account || await api.ready;
       if (!account) throw new Error("请先登录探索者账号");
       try {
-        if(v1Sdk){const result=await v1Sdk.emitEvidence(v1Event(event));window.dispatchEvent(new CustomEvent("ai-bole-evidence-saved",{detail:result}));return result;}
+        await (v1Ready||activateV1());
+        if(v1Sdk){const result=await v1Sdk.emitEvidence(v1Event(event));await publishTerminalArtifact(event,v1Sdk);if(isTerminalEvent(event))await v1Sdk.completeSession({legacyEventType:event.event_type});window.dispatchEvent(new CustomEvent("ai-bole-evidence-saved",{detail:result}));return result;}
         const result = await post(event);
         window.dispatchEvent(new CustomEvent("ai-bole-evidence-saved", { detail: result }));
         return result;

@@ -2,24 +2,133 @@ openapi: 3.1.0
 info:
   title: AI 伯乐核心 API
   version: 1.0.0
+  description: Portal、模块 SDK 与报告服务的唯一 HTTP 契约来源。
 paths:
   /api/v1/modules:
     get:
-      summary: 获取已启用模块目录
+      summary: 获取启用模块目录
       responses:
-        '200': { description: 模块清单 }
+        '200': {description: 模块 Manifest 列表}
   /api/v1/assessment-sessions:
     post:
-      summary: 创建探索会话
+      summary: 为当前儿童创建探索会话和一次性启动码
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/AssessmentSessionCreate'}}}
       responses:
-        '201': { description: 会话与一次性启动码 }
+        '201': {description: LaunchContext}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /api/v1/assessment-sessions/{sessionId}:
+    parameters: [{$ref: '#/components/parameters/SessionId'}]
+    get:
+      summary: 读取当前儿童拥有的探索会话
+      responses:
+        '200': {description: 会话详情}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    patch:
+      summary: 使用 scoped token 改变会话状态
+      security: [{moduleBearer: []}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/SessionStatus'}}}
+      responses:
+        '200': {description: 状态变化结果}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {description: 状态机或版本冲突}
   /api/v1/module-authorizations:exchange:
     post:
-      summary: 用一次性启动码兑换模块令牌
+      summary: 用一次性启动码兑换短期模块令牌
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/LaunchCodeExchange'}}}
       responses:
-        '200': { description: 短期模块令牌 }
+        '200': {description: scoped token}
+        '401': {$ref: '#/components/responses/Unauthorized'}
   /api/v1/evidence-events:batch:
     post:
-      summary: 批量提交已校验证据事件
+      summary: 原子提交一批 V1 证据事件
+      description: 任一事件未通过 Envelope、事件 payload 或模块能力校验时整批不写入。
+      security: [{moduleBearer: []}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/EvidenceBatch'}}}
       responses:
-        '200': { description: 提交结果 }
+        '200': {description: 每条事件的保存或幂等结果}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {description: 当前会话不允许写入}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /api/v1/artifacts:
+    get:
+      summary: 列出当前儿童的正式作品
+      responses:
+        '200': {description: 按创建时间倒序的作品列表}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+    post:
+      summary: 发布当前 scoped 会话的作品
+      security: [{moduleBearer: []}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/Artifact'}}}
+      responses:
+        '201': {description: 作品已创建或幂等确认}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /api/v1/timeline:
+    get:
+      summary: 获取当前儿童的已完成会话足迹
+      responses:
+        '200': {description: completed sessions、证据数与作品数}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/v1/reports:
+    post:
+      summary: 基于标准证据和未迁移 legacy 证据生成报告快照
+      responses:
+        '200': {description: 已发布报告快照和 evidence links}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/v1/reports/latest-published:
+    get:
+      summary: 获取当前儿童最近的已发布报告
+      responses:
+        '200': {description: 最新已发布报告}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+components:
+  securitySchemes:
+    moduleBearer: {type: http, scheme: bearer}
+  parameters:
+    SessionId: {name: sessionId, in: path, required: true, schema: {type: string}}
+  responses:
+    Unauthorized: {description: 未登录、令牌失效或启动码已使用}
+    Forbidden: {description: 当前令牌没有所需 scope 或不属于该会话}
+    NotFound: {description: 资源不存在或不属于当前儿童}
+    ValidationError: {description: 请求未通过 JSON Schema 或字段校验}
+  schemas:
+    AssessmentSessionCreate:
+      type: object
+      required: [module_id]
+      properties: {module_id: {type: string}}
+    LaunchCodeExchange:
+      type: object
+      required: [launchCode]
+      properties: {launchCode: {type: string, minLength: 20}}
+    SessionStatus:
+      type: object
+      required: [status]
+      properties:
+        status: {enum: [active, completed, interrupted, abandoned]}
+        stateVersion: {type: integer, minimum: 1}
+        summary: {type: object}
+        reason: {type: string, maxLength: 240}
+    EvidenceBatch:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: {$ref: '../schemas/evidence/envelope.v1.schema.json'}
+    Artifact:
+      $ref: '../schemas/artifact.v1.schema.json'
