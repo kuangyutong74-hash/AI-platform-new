@@ -162,6 +162,10 @@ def initialize_database() -> None:
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+              version TEXT PRIMARY KEY,
+              applied_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS modules (
               id TEXT PRIMARY KEY,
               name TEXT NOT NULL,
@@ -262,6 +266,7 @@ def initialize_database() -> None:
                WHERE idempotency_key IS NOT NULL"""
         )
         timestamp = datetime.now(timezone.utc).isoformat()
+        db.execute("INSERT OR IGNORE INTO schema_migrations (version,applied_at) VALUES (?,?)", ("20260829_v1_core_expand", timestamp))
         db.execute(
             """INSERT OR IGNORE INTO child_profiles (id,account_id,display_name,age,created_at,updated_at)
                SELECT id,id,display_name,age,created_at,updated_at FROM accounts"""
