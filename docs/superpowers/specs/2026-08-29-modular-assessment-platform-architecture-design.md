@@ -1,6 +1,6 @@
 # AI 伯乐模块化评测平台架构重构设计 v1.1
 
-> 状态：已根据架构评审补强授权、版本、证据语义、状态机、安全与质量门禁，等待项目负责人复审
+> 状态：已根据架构评审补强授权、版本、证据语义、状态机与质量门禁，等待项目负责人复审
 >
 > 日期：2026-08-29
 >
@@ -428,7 +428,7 @@ interface EvidenceEnvelopeV1<TPayload> {
 - 字段名称和单位由 Schema 固定，例如统一使用 `attemptCount` 和秒；
 - 原始对话全文、敏感输入和无关点击流不得进入统一证据库；
 - Core API 根据 `session_id + idempotency_key` 防止重复；
-- `occurred_at` 保存客户端声明的行为时间，`received_at` 保存 Core 接收时间；
+- `occurred_at` 保存客户端声明的行为发生时间；
 - `sequenceNo` 用于同一会话内的可选排序和缺失检测，不作为全局序号；
 - 契约升级新增 event type 版本，不原地修改已发布 payload schema。
 
@@ -573,7 +573,6 @@ erDiagram
       text payload_json
       integer sequence_no
       text occurred_at
-      text received_at
     }
     EVIDENCE_RECORDS {
       text id PK
@@ -781,50 +780,13 @@ flowchart LR
 
 不引入消息队列。浏览器本地队列和批量补交足以满足当前规模。
 
-## 10. Security & Privacy
+## 10. 部署与启动模型
 
-本项目处理儿童账号、行为证据和作品，安全设计遵循“本地低复杂度、最小权限、最少数据”原则。
-
-### 10.1 身份与凭据
-
-- 新密码使用 Argon2id；现有 PBKDF2 密码在成功登录后无感升级，不要求重置；
-- 账号 Cookie 使用 `HttpOnly`、`SameSite=Lax` 和 `Path=/`；HTTPS 环境必须开启 `Secure`；
-- Cookie 只用于 Portal 与 Core API，不提供给体验模块；
-- module token 只保存在 SDK 内存中，不写入 URL、localStorage、日志或作品数据；
-- launch code 只能兑换一次，数据库保存哈希，兑换或过期后立即失效；
-- 退出登录、会话完成/放弃或管理员撤销时废止关联 token。
-
-### 10.2 Web 边界
-
-- Cookie 鉴权的写请求必须同时通过 CSRF token 和 `Origin` 校验；
-- CORS 只允许服务配置中声明的精确 Origin，携带凭据时禁止 `*`；
-- module token API 不接受 Cookie 作为授权替代；
-- 各应用逐步启用 Content-Security-Policy；迁移期单独记录仍依赖内联脚本的页面，不永久保留宽松策略；
-- Portal 不把 `accountId`、`childProfileId`、密码、LLM key 或数据库路径放入模块 URL。
-
-### 10.3 密钥、日志与限流
-
-- LLM/API key 只通过被 Git 忽略的环境配置传入，不进入前端构建产物；
-- 结构化日志可记录 request ID、session ID 哈希、event type、数量、耗时和错误码；
-- 日志禁止记录密码、Cookie、token、launch code、儿童原始对话、故事全文和完整 evidence payload；
-- 登录失败按“账号 + 来源地址”执行轻量限流：15 分钟内最多 10 次，成功登录后清除；
-- 本地开发允许 loopback Origin，局域网部署必须显式配置主机名，不自动放开整个网段。
-
-### 10.4 保留、删除与导出
-
-- 每个实验在配置中声明 `study_id`、`retention_days` 和负责人；
-- 到期数据先进入“可删除清单”，不后台静默删除；负责人确认并完成一致性备份后执行删除；
-- 删除账号时级联删除统一数据库中的档案、授权、会话、事件、证据、作品索引和报告；模块内部数据通过 `sourceResourceId` 清单联动清理；
-- 研究导出使用实验参与者伪名 ID，默认不包含账号名、昵称、完整对话、作品正文、资源 URL 或 token；
-- 导出操作记录操作者、时间、字段集合和数据范围，但不记录导出内容本身。
-
-## 11. 部署与启动模型
-
-### 11.1 迁移期
+### 10.1 迁移期
 
 第一阶段保持现有 10 项服务可启动，新增服务配置校验和模块清单，不改变用户运行方式。
 
-### 11.2 目标状态
+### 10.2 目标状态
 
 在不重写模块业务的情况下，将服务数量从 10 项收敛到最多 6 项：
 
@@ -841,7 +803,7 @@ flowchart LR
 
 目标状态不要求 Docker、Nginx 或 Kubernetes。若以后需要局域网部署，再增加单一反向代理，不影响当前模块契约。
 
-## 12. 新旧职责对照
+## 11. 新旧职责对照
 
 | 当前实现 | 目标归属 | 处理方式 |
 |---|---|---|
@@ -856,7 +818,7 @@ flowchart LR
 | 模块自行判断强/参考证据 | Core API/evidence-policy | 模块提交事实事件，Core 按版本化 policy 派生证据 |
 | 模块内部会话 ID | `assessment_session_id` | 建立映射并逐步替换 |
 
-## 13. 原功能保留矩阵
+## 12. 原功能保留矩阵
 
 | 功能 | 重构后入口 | 数据来源 | 验收方式 |
 |---|---|---|---|
@@ -875,9 +837,9 @@ flowchart LR
 | 职业过程记录 | career-exploration | Core evidence | 调整、重试、提示等指标可追溯 |
 | 示例数据 | Portal | Portal fixture | 始终明确标记为示例 |
 
-## 14. 测试策略
+## 13. 测试策略
 
-### 14.1 契约测试
+### 13.1 契约测试
 
 所有模块共享同一套测试：
 
@@ -890,13 +852,13 @@ flowchart LR
 - 完成、中断和返回平台状态正确；
 - 模块无法连接 Core API 时能够暂存证据。
 
-### 14.2 Core API 测试
+### 13.2 Core API 测试
 
 - 账号之间的数据完全隔离；
 - 探索会话状态迁移合法；
 - 非法状态转换被拒绝，重复完成不会重复计时；
 - source event 必须属于 token 绑定且匹配模块版本的会话；
-- 相同事件保存 `occurred_at` 和独立的 `received_at`；
+- source event 保存经过格式校验的 `occurred_at`；
 - 历史模块版本 manifest 不会被新版本覆盖；
 - Evidence Policy 只引用合法 Construct Registry key；
 - 作品必须关联合法会话；
@@ -904,7 +866,7 @@ flowchart LR
 - 旧账号和证据迁移后数量、所属和时间不变；
 - SQLite 外键、WAL 和幂等索引生效。
 
-### 14.3 最小端到端回归
+### 13.3 最小端到端回归
 
 1. 注册或登录测试账号；
 2. 分别完成聊天、故事、深海和职业的最短有效路径；
@@ -914,7 +876,7 @@ flowchart LR
 6. 从报告证据详情回溯到四模块的真实事件；
 7. 退出并重新登录，确认数据仍存在且不串号。
 
-### 14.4 CI 最小质量门禁
+### 13.4 CI 最小质量门禁
 
 本项目不建立复杂发布流水线，但每个合并请求或主分支提交必须执行统一脚本，并满足：
 
@@ -929,7 +891,7 @@ flowchart LR
 
 由于部分模块依赖本地 AI、语音或图形交互，CI 中允许使用确定性 stub 完成 smoke test；真实 AI 和完整人工体验验收在阶段发布检查中执行。任何被修改模块不得以“其他模块没有 CI”为理由跳过自己的契约测试。
 
-## 15. 分阶段迁移计划
+## 14. 分阶段迁移计划
 
 ```mermaid
 flowchart LR
@@ -962,7 +924,7 @@ flowchart LR
 ### 阶段 2：统一核心数据库
 
 - 增加 child_profiles、modules、module_versions、assessment_sessions、module_authorizations、source_events、evidence_records、artifacts、reports 和关联表；
-- 将现有 evidence_events 映射到 source event 与 derived evidence，并补充 session 归属、双时间和策略版本；
+- 将现有 evidence_events 映射到 source event 与 derived evidence，并补充 session 归属、行为发生时间和策略版本；
 - 开启 WAL、外键和迁移版本；
 - 编写可重复执行的数据迁移和回滚备份；
 - Core API 成为唯一访问者。
@@ -997,11 +959,11 @@ flowchart LR
 
 该阶段不属于完成本次架构重构的必要条件。
 
-## 16. 数据迁移与兼容策略
+## 15. 数据迁移与兼容策略
 
 每一项数据库或跨模块契约变更均按 **Expand → Migrate → Contract** 执行，不允许在同一发布版本中同时增加替代路径、迁移最后一个调用者并删除旧路径。
 
-### 16.1 Expand：先增加兼容能力
+### 15.1 Expand：先增加兼容能力
 
 - 迁移前使用 SQLite Online Backup API 或 `VACUUM INTO` 创建可校验备份，聊天数据目录另行复制，不覆盖原文件；
 - 先增加新表、新列、新索引、新 API 和 V1 Schema，旧字段与 V0 API 保持可读写；
@@ -1009,17 +971,17 @@ flowchart LR
 - `window.AIBole.emitEvidence` 通过兼容层转发到 V1 事件入口；
 - 新旧写入必须有明确的唯一事实来源；如短期双写不可避免，应由 Core API 在同一事务中完成并接受一致性测试。
 
-### 16.2 Migrate：迁移与验证
+### 15.2 Migrate：迁移与验证
 
 - 迁移工具以旧数据只读、新结构写入方式运行；
 - 每张迁移表记录来源系统、旧 ID、迁移批次和迁移时间；
 - 脚本可重复执行，重复记录通过旧 ID 映射或幂等键跳过；
-- 无法可靠补齐的 `occurred_at` 必须标注推断来源，不得直接等同于迁移时间；`received_at` 使用实际接收或迁移时间；
+- 无法可靠补齐的 `occurred_at` 必须标注推断来源，不得直接等同于迁移时间；
 - 迁移后至少校验账号数、儿童档案数、会话数、源事件数、证据数、模块分布、时间范围、外键完整性和抽样内容哈希；
 - 在数据库临时副本上执行迁移 dry-run 和回滚演练，生产文件迁移失败时保留原文件并停止启动；
 - 所有 Portal 与模块调用者切换至 V1 后，至少经过一个可回退发布周期再进入 Contract。
 
-### 16.3 Contract：最后移除旧路径
+### 15.3 Contract：最后移除旧路径
 
 - 仅当调用日志和仓库搜索均证明旧 API、旧字段与 V0 SDK 不再被使用时，才删除兼容路径；
 - 删除前固化最终迁移报告、备份位置、恢复步骤和负责人确认；
@@ -1027,7 +989,7 @@ flowchart LR
 - 历史 `module_version`、manifest、Construct Registry、Evidence Policy 和已发布报告快照不得因 Contract 被覆盖；
 - Contract 完成后再次运行契约测试、迁移测试和最小端到端回归。
 
-## 17. 风险与控制
+## 16. 风险与控制
 
 | 风险 | 影响 | 控制方式 |
 |---|---|---|
@@ -1042,7 +1004,7 @@ flowchart LR
 | 服务合并引入启动回归 | 中 | 每次只合并一项，并保留旧启动配置回退 |
 | 模块内部 ID 与平台 ID 混淆 | 中 | LaunchContext 明确提供 sessionId，旧 ID 仅存 `sourceResourceId` |
 
-## 18. 非目标
+## 17. 非目标
 
 本次架构重构明确不包含：
 
@@ -1054,7 +1016,7 @@ flowchart LR
 - 建立多学校、多租户或复杂教师权限体系；
 - 对现有 UI 进行全面视觉重做。
 
-## 19. 验收标准
+## 18. 验收标准
 
 ### 架构验收
 
@@ -1064,7 +1026,7 @@ flowchart LR
 - Core API 是统一 SQLite 的唯一访问者；
 - `sessionId` 仅用于关联，不能单独读取或写入任何会话数据；模块必须以一次性 launch code 换取 scoped token；
 - 每个已发布模块版本具有不可变、可追溯且通过 Schema 校验的 manifest；
-- 每条 source event 都通过 Envelope 与对应 event-type JSON Schema 的机器校验，并保存 `occurred_at` 与 `received_at`；
+- 每条 source event 都通过 Envelope 与对应 event-type JSON Schema 的机器校验，并保存 `occurred_at`；
 - 所有 construct 均来自指定版本 Construct Registry，强/参考证据由指定版本 Evidence Policy 派生，模块不能自行决定；
 - Assessment Session 的每次状态变化均由服务端状态机校验，非法迁移返回 `409` 且不改变数据；
 - 每条跨模块证据都关联儿童档案、探索会话、模块版本、Registry 版本和 Policy 版本；
@@ -1089,7 +1051,7 @@ flowchart LR
 - 数据库可通过单一命令备份和校验；
 - 开发者能够从文档定位任一模块的数据入口、会话和证据来源。
 
-## 20. 实施交付物与后续文档
+## 19. 实施交付物与后续文档
 
 阶段 1 必须先产出并纳入版本控制的机器可读契约：
 
@@ -1104,8 +1066,7 @@ flowchart LR
 1. 逐任务实施计划；
 2. SQLite Expand → Migrate → Contract 与回滚手册；
 3. 四模块功能回归清单；
-4. 安全配置、密钥轮换和事件响应说明；
-5. 实验数据保留、删除、导出与隐私说明；
-6. 模块接入示例和本地调试指南。
+4. 实验数据导出说明；
+5. 模块接入示例和本地调试指南。
 
 实施计划必须按阶段拆分，每个阶段都能独立运行和验收，不允许以“全部重写完成后才能启动”为迁移方式。
