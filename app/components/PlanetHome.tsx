@@ -21,6 +21,7 @@ const moduleNavArt:Record<(typeof modules)[number]["id"],string> = {
 };
 
 export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=>void}) {
+  const [catalog, setCatalog] = useState(modules);
   const [orbitRotation, setOrbitRotation] = useState(0);
   const [draggingOrbit, setDraggingOrbit] = useState(false);
   const dragState = useRef({x:0, y:0, rotation:0, moved:false});
@@ -39,6 +40,21 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     frame = requestAnimationFrame(revolve);
     return () => cancelAnimationFrame(frame);
   }, [draggingOrbit]);
+  useEffect(() => {
+    let active = true;
+    fetch("http://localhost:8020/api/v1/modules")
+      .then(response => response.ok ? response.json() : Promise.reject())
+      .then(data => {
+        if (!active || !Array.isArray(data.modules)) return;
+        const byId = new Map(data.modules.map((item: {id?: string}) => [item.id, item]));
+        setCatalog(modules.map(item => {
+          const manifest = byId.get(item.id === "build" ? "deep_sea" : item.id) as {name?: string; description?: string; entryUrl?: string; healthUrl?: string} | undefined;
+          return manifest ? {...item, name: manifest.name || item.name, desc: manifest.description || item.desc, url: manifest.entryUrl || item.url, healthUrl: manifest.healthUrl || item.healthUrl} : item;
+        }));
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
   const normalizeDelta = (value:number) => ((value + 540) % 360) - 180;
   const snapToFront = (rotation:number) => {
     const delta = baseAngles.map(angle=>normalizeDelta(90-(angle+rotation))).sort((a,b)=>Math.abs(a)-Math.abs(b))[0];
@@ -110,7 +126,7 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     </nav>
     <div className="three-stage"><Suspense fallback={<div className="globe-loading">正在点亮探索星球…</div>}><ThreeGlobe/></Suspense><div className="drag-tip"><span>✥</span> 上下左右拖动 · 360° 探索 · 点击大陆进入</div></div>
     <nav className="module-dock" aria-label="四座探索大陆">
-      {modules.map(item=><button key={item.id} data-module={item.id} onClick={()=>window.location.href=item.url} aria-label={`进入${item.module}，${item.name}`}>
+      {catalog.map(item=><button key={item.id} data-module={item.id} onClick={()=>window.location.href=item.url} aria-label={`进入${item.module}，${item.name}`}>
         <i className={`module-icon ${item.color}`} aria-hidden="true"><img className="module-art" src={moduleNavArt[item.id]} alt="" draggable={false}/></i>
         <span className="module-label"><b>{item.module}</b><small>{item.name}</small></span>
       </button>)}
