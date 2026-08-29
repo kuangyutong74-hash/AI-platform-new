@@ -26,7 +26,7 @@
 ## 我的作品与成长足迹
 
 - 点击主星球附近的“我的作品”或“成长足迹”星石即可进入；顶部导航和浏览器前进、后退同样可用。
-- 两个页面共用统一账号，并从 `http://localhost:8020/api/explorer/collection` 读取真实证据记录。
+- 两个页面共用统一账号，优先从 Core 的 `/api/v1/artifacts` 和 `/api/v1/timeline` 读取正式作品与会话足迹；V1 还没有数据时才兼容读取旧聚合。
 - 当前账号还没有探索记录，或后端暂时不可用时，页面会显示明确标注的示例内容，不会把示例当成孩子的真实档案。
 - “我的作品”不再重复罗列全部历史，而是从四个模块各选出一枚高光（如最长故事、最快通关），用透明立体书贴纸呈现，并保留详情阅读、中文朗读和字号切换。
 - “成长足迹”从账号注册日开始，按模块展示首次使用、最近使用、累计次数与可用的累计时长；仍包含星路手账、未点亮提示和作品互跳。
@@ -89,5 +89,24 @@ npm test
 ```
 
 `npm test` 会依次执行正式构建、页面与数据契约测试、一键启动记录兼容测试，以及统一账号服务的后端测试。首次运行前请先执行 `安装全部依赖.ps1`。
+
+如需一并验证可构建的模块和聊天模块单测，可运行：
+
+```powershell
+npm run verify:workspace
+```
+
+## Core 数据迁移
+
+V1 历史证据回填不在服务启动时执行。先在临时副本上检查，再执行正式迁移：
+
+```powershell
+Push-Location modules\platform-core
+.\.venv\Scripts\python.exe .\migrate.py --dry-run
+.\.venv\Scripts\python.exe .\migrate.py
+Pop-Location
+```
+
+正式迁移会用 SQLite Online Backup API 在 `modules/platform-core/data/backups/` 创建执行前备份；dry-run 不会修改正式数据库。迁移记录保存于 `schema_migrations`，已经应用的版本可安全重复执行。
 
 只需检查前端构建时，可以运行 `.\构建检查.ps1`。
