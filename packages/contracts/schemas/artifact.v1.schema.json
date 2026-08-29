@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "artifact.v1.schema.json",
+  "type": "object",
+  "required": ["schemaVersion", "artifactId", "type", "title", "summary", "createdAt"],
+  "properties": {
+    "schemaVersion": {"const": "1.0"}, "artifactId": {"type": "string"},
+    "type": {"enum": ["story", "snapshot", "conversation", "game-result", "other"]},
+    "title": {"type": "string", "minLength": 1}, "summary": {"type": "string"},
+    "previewResourceId": {"type": "string"}, "sourceResourceId": {"type": "string"},
+    "createdAt": {"type": "string", "format": "date-time"}
+  }, "additionalProperties": false
+}

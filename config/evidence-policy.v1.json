@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "constructRegistryVersion": "1.0",
+  "rules": [
+    {"eventType": "career.task-completed.v1", "evidenceLevel": "reference", "constructs": ["problem_solving.planning", "problem_solving.adaptation"], "behaviorSummary": "完成职业任务并留下过程记录"},
+    {"eventType": "story.contribution-completed.v1", "evidenceLevel": "reference", "constructs": ["creativity.narrative_expression"], "behaviorSummary": "完成故事共创表达"},
+    {"eventType": "deep-sea.spatial-task-completed.v1", "evidenceLevel": "reference", "constructs": ["spatial.solution_design", "problem_solving.planning"], "behaviorSummary": "完成深海基地建造任务"},
+    {"eventType": "chat.observation-shared.v1", "evidenceLevel": "reference", "constructs": ["self_reflection.interest_expression", "collaboration.perspective_taking"], "behaviorSummary": "分享了一次观察或想法"}
+  ]
+}

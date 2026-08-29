@@ -29,6 +29,8 @@ from explorer_collection import build_explorer_collection
 
 
 ROOT = Path(__file__).resolve().parent
+REPO_ROOT = ROOT.parent.parent
+MODULE_CONFIG_DIR = REPO_ROOT / "config" / "modules"
 DATA_DIR = ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
 SNAPSHOT_DIR = DATA_DIR / "evidence-snapshots"
@@ -75,6 +77,23 @@ def connect() -> sqlite3.Connection:
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA foreign_keys = ON")
     return db
+
+
+def load_module_catalog() -> list[dict]:
+    """读取版本化模块清单；Portal 只消费该目录，不再维护第二份固定 URL。"""
+    catalog: list[dict] = []
+    for path in sorted(MODULE_CONFIG_DIR.glob("*.json")):
+        try:
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"模块清单无效：{path.name}") from exc
+        required = {"id", "version", "name", "entryUrl", "targetAge", "constructRegistryVersion", "constructs", "supportedEventTypes", "capabilities"}
+        if not required.issubset(manifest) or manifest["id"] not in MODULES:
+            raise RuntimeError(f"模块清单字段不完整：{path.name}")
+        catalog.append(manifest)
+    if {item["id"] for item in catalog} != MODULES:
+        raise RuntimeError("模块清单必须完整登记 chat、story、deep_sea、career")
+    return catalog
 
 
 def initialize_database() -> None:
@@ -268,6 +287,12 @@ class EvidenceIn(BaseModel):
 @app.get("/api/health")
 def health() -> dict:
     return {"ok": True, "service": "ai-bole-platform-core"}
+
+
+@app.get("/api/v1/modules")
+def list_modules_v1() -> dict:
+    """V1 模块目录：保留旧 Portal 配置，待其迁移后成为唯一入口。"""
+    return {"contractVersion": "1.0", "modules": load_module_catalog()}
 
 
 @app.get("/ai-bole-bridge.js", response_class=PlainTextResponse)

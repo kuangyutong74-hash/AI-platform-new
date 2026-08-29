@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evidence/career.task-completed.v1.schema.json",
+  "type": "object", "required": ["taskKey", "attemptCount", "hintCount", "completionSeconds", "adjustmentCount"],
+  "properties": {"taskKey": {"type": "string", "minLength": 1}, "attemptCount": {"type": "integer", "minimum": 0}, "hintCount": {"type": "integer", "minimum": 0}, "completionSeconds": {"type": "integer", "minimum": 0}, "adjustmentCount": {"type": "integer", "minimum": 0}}, "additionalProperties": false
+}

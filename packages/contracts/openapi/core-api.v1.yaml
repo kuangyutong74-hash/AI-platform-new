@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: AI 伯乐核心 API
+  version: 1.0.0
+paths:
+  /api/v1/modules:
+    get:
+      summary: 获取已启用模块目录
+      responses:
+        '200': { description: 模块清单 }
+  /api/v1/assessment-sessions:
+    post:
+      summary: 创建探索会话
+      responses:
+        '201': { description: 会话与一次性启动码 }
+  /api/v1/module-authorizations:exchange:
+    post:
+      summary: 用一次性启动码兑换模块令牌
+      responses:
+        '200': { description: 短期模块令牌 }
+  /api/v1/evidence-events:batch:
+    post:
+      summary: 批量提交已校验证据事件
+      responses:
+        '200': { description: 提交结果 }

@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "constructs": [
+    {"key": "creativity.narrative_expression", "displayName": "叙事表达", "reportDimension": "linguistic"},
+    {"key": "problem_solving.planning", "displayName": "规划", "reportDimension": "logical"},
+    {"key": "problem_solving.adaptation", "displayName": "策略调整", "reportDimension": "logical"},
+    {"key": "spatial.solution_design", "displayName": "空间方案设计", "reportDimension": "spatial"},
+    {"key": "collaboration.perspective_taking", "displayName": "观点采择", "reportDimension": "interpersonal"},
+    {"key": "self_reflection.interest_expression", "displayName": "兴趣表达", "reportDimension": "intrapersonal"}
+  ]
+}
