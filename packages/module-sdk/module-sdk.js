@@ -8,6 +8,7 @@
     const coreUrl = (options && options.coreUrl) || defaultCoreUrl;
     let context = null;
     let token = null;
+    let interruptionBound = false;
     const validateContext = value => {
       if (!value || requiredContext.some(key => !value[key])) throw new Error("启动上下文不完整");
       if (value.contractVersion !== "1.0") throw new Error("不支持的模块契约版本");
@@ -16,7 +17,11 @@
     const request = async (path, init) => {
       if (!token) throw new Error("模块尚未完成授权");
       const response = await fetch(coreUrl + path, Object.assign({}, init, { headers: Object.assign({"Content-Type": "application/json", "Authorization": "Bearer " + token}, init && init.headers) }));
-      if (!response.ok) throw new Error("平台接口请求失败：" + response.status);
+      if (!response.ok) {
+        const error = new Error("平台接口请求失败：" + response.status);
+        error.status = response.status;
+        throw error;
+      }
       return response.json();
     };
     return {
@@ -41,6 +46,18 @@
       publishArtifact(artifact) { return request("/api/v1/artifacts", {method: "POST", body: JSON.stringify(artifact)}); },
       completeSession(summary) { return request("/api/v1/assessment-sessions/" + context.sessionId, {method: "PATCH", body: JSON.stringify({status: "completed", summary: summary || {}})}); },
       interruptSession(reason) { return request("/api/v1/assessment-sessions/" + context.sessionId, {method: "PATCH", body: JSON.stringify({status: "interrupted", reason: reason || "module-interrupted"})}); },
+      interruptOnPageHide() {
+        if (interruptionBound) return;
+        interruptionBound = true;
+        global.addEventListener("pagehide", () => {
+          if (!context || !token) return;
+          fetch(coreUrl + "/api/v1/assessment-sessions/" + context.sessionId, {
+            method: "PATCH", keepalive: true,
+            headers: {"Content-Type": "application/json", "Authorization": "Bearer " + token},
+            body: JSON.stringify({status: "interrupted", reason: "pagehide"}),
+          }).catch(() => undefined);
+        });
+      },
       returnToPortal() { global.location.href = context ? context.returnUrl : "http://localhost:4173"; }
     };
   }
