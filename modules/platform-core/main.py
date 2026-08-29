@@ -16,6 +16,7 @@ import os
 import secrets
 import sqlite3
 import uuid
+from functools import lru_cache
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Literal
@@ -26,6 +27,7 @@ from fastapi import Cookie, FastAPI, Header, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from jsonschema import Draft202012Validator, FormatChecker
 
 from explorer_collection import build_explorer_collection
 
@@ -83,6 +85,21 @@ def connect() -> sqlite3.Connection:
     return db
 
 
+@lru_cache(maxsize=32)
+def load_json_schema(relative_path: str) -> Draft202012Validator:
+    try:
+        schema = json.loads((REPO_ROOT / "packages" / "contracts" / "schemas" / relative_path).read_text(encoding="utf-8"))
+        return Draft202012Validator(schema, format_checker=FormatChecker())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"契约文件无效：{relative_path}") from exc
+
+
+def validate_schema(relative_path: str, value: dict, message: str) -> None:
+    errors = sorted(load_json_schema(relative_path).iter_errors(value), key=lambda error: list(error.path))
+    if errors:
+        raise HTTPException(422, f"{message}：{errors[0].message}")
+
+
 def load_module_catalog() -> list[dict]:
     """读取版本化模块清单；Portal 只消费该目录，不再维护第二份固定 URL。"""
     catalog: list[dict] = []
@@ -91,9 +108,8 @@ def load_module_catalog() -> list[dict]:
             manifest = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
             raise RuntimeError(f"模块清单无效：{path.name}") from exc
-        required = {"id", "version", "name", "entryUrl", "targetAge", "constructRegistryVersion", "constructs", "supportedEventTypes", "capabilities"}
-        if not required.issubset(manifest) or manifest["id"] not in MODULES:
-            raise RuntimeError(f"模块清单字段不完整：{path.name}")
+        validate_schema("module-manifest.v1.schema.json", manifest, f"模块清单无效：{path.name}")
+        if manifest["id"] not in MODULES: raise RuntimeError(f"未知模块清单：{path.name}")
         catalog.append(manifest)
     if {item["id"] for item in catalog} != MODULES:
         raise RuntimeError("模块清单必须完整登记 chat、story、deep_sea、career")
@@ -430,6 +446,18 @@ class SessionStatusIn(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class ArtifactIn(BaseModel):
+    schema_version: Literal["1.0"] = Field(alias="schemaVersion")
+    artifact_id: str = Field(alias="artifactId", min_length=1, max_length=128)
+    type: Literal["story", "snapshot", "conversation", "game-result", "other"]
+    title: str = Field(min_length=1, max_length=160)
+    summary: str = Field(max_length=500)
+    preview_resource_id: str | None = Field(default=None, alias="previewResourceId")
+    source_resource_id: str | None = Field(default=None, alias="sourceResourceId")
+    created_at: str = Field(alias="createdAt")
+    model_config = ConfigDict(populate_by_name=True)
+
+
 def module_manifest(module_id: str) -> dict:
     for manifest in load_module_catalog():
         if manifest["id"] == module_id:
@@ -464,22 +492,36 @@ def require_module_authorization(authorization: str | None) -> sqlite3.Row:
     return authorization_row
 
 
-def event_schema_required_fields(event_type: str) -> set[str]:
-    schema_path = REPO_ROOT / "packages" / "contracts" / "schemas" / "evidence" / f"{event_type}.schema.json"
-    try:
-        schema = json.loads(schema_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise HTTPException(422, "没有匹配的证据事件契约") from exc
-    return set(schema.get("required", []))
+def validate_evidence_event(event: EvidenceEnvelopeIn) -> None:
+    validate_schema("evidence/envelope.v1.schema.json", event.model_dump(by_alias=True), "证据 Envelope 无效")
+    validate_schema(f"evidence/{event.event_type}.schema.json", event.payload, "证据 Payload 无效")
 
 
 def policy_for_event(event_type: str) -> dict:
     policy_path = REPO_ROOT / "config" / "evidence-policy.v1.json"
-    policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    try: policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc: raise HTTPException(503, "证据策略暂不可用") from exc
     rule = next((item for item in policy["rules"] if item["eventType"] == event_type), None)
     if not rule:
         raise HTTPException(422, "该事件未配置证据策略")
     return {**rule, "policyVersion": policy["version"], "constructRegistryVersion": policy["constructRegistryVersion"]}
+
+
+def mirror_legacy_event_v1(db: sqlite3.Connection, account_id: str, legacy_event_id: str, payload: EvidenceIn, idempotency_key: str | None) -> None:
+    """兼容期双写仅在 Core 同一事务内执行，旧事件失败时不会留下孤儿 V1 会话。"""
+    event_type = {"chat": "chat.observation-shared.v1", "story": "story.contribution-completed.v1", "deep_sea": "deep-sea.spatial-task-completed.v1", "career": "career.task-completed.v1"}[payload.module]
+    raw, context = payload.raw_evidence, payload.context
+    if payload.module == "chat": event_payload = {"turnCount": int(raw.get("turn_count", 1) or 1), "topicKey": str(raw.get("topic", "conversation"))[:80]}
+    elif payload.module == "story": event_payload = {"contributionCount": 1, "completionSeconds": int(raw.get("duration_seconds", 0) or 0), "storyTitle": str(raw.get("title", "故事共创"))[:120]}
+    elif payload.module == "deep_sea": event_payload = {"level": max(1, min(3, int(context.get("level", 1) or 1))), "completionSeconds": int(raw.get("duration_seconds", 0) or 0), "adjustmentCount": int(raw.get("meaningful_adjustments", raw.get("rotate_count", 0)) or 0)}
+    else: event_payload = {"taskKey": str(raw.get("career_name", context.get("career_id", "career-task")))[:80], "attemptCount": int(raw.get("interaction_count", 0) or 0), "hintCount": int(raw.get("hint_count", 0) or 0), "completionSeconds": int(raw.get("duration_seconds", 0) or 0), "adjustmentCount": int(raw.get("adjustment_count", raw.get("retry_count", 0)) or 0)}
+    envelope = EvidenceEnvelopeIn(schemaVersion="1.0", eventId=legacy_event_id, idempotencyKey=idempotency_key or legacy_event_id, eventType=event_type, occurredAt=payload.occurred_at, payload=event_payload)
+    validate_evidence_event(envelope)
+    manifest, profile, policy = module_manifest(payload.module), profile_for_account(db, account_id), policy_for_event(event_type)
+    session_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"legacy-v1:{legacy_event_id}"))
+    db.execute("INSERT OR IGNORE INTO assessment_sessions (id,child_profile_id,module_id,module_version,status,created_at,started_at,ended_at,active_seconds) VALUES (?,?,?,?,?,?,?,?,?)", (session_id, profile["id"], payload.module, manifest["version"], "completed", payload.occurred_at, payload.occurred_at, payload.occurred_at, int(raw.get("duration_seconds", 0) or 0)))
+    db.execute("INSERT OR IGNORE INTO source_events (id,session_id,idempotency_key,event_type,schema_version,payload_json,sequence_no,occurred_at,created_at) VALUES (?,?,?,?,?,?,?,?,?)", (legacy_event_id, session_id, envelope.idempotency_key, event_type, "1.0", json.dumps(event_payload, ensure_ascii=False), None, payload.occurred_at, now_iso()))
+    db.execute("INSERT OR IGNORE INTO evidence_records (id,source_event_id,evidence_level,constructs_json,behavior_summary,policy_version,construct_registry_version,derived_at) VALUES (?,?,?,?,?,?,?,?)", (str(uuid.uuid5(uuid.NAMESPACE_URL, f"legacy-evidence:{legacy_event_id}")), legacy_event_id, payload.evidence_level, json.dumps(policy["constructs"], ensure_ascii=False), payload.behavior_summary, policy["policyVersion"], policy["constructRegistryVersion"], now_iso()))
 
 
 def legacy_events_for_report(db: sqlite3.Connection, account_id: str) -> list[dict]:
@@ -551,7 +593,8 @@ def exchange_module_authorization(payload: LaunchCodeExchangeIn) -> dict:
         ).fetchone()
         if not row or row["status"] not in {"created", "interrupted"}:
             raise HTTPException(401, "启动授权已失效")
-        db.execute("UPDATE module_authorizations SET exchanged_at=?,token_hash=?,expires_at=? WHERE id=?", (timestamp, token_digest(token), expires, row["id"]))
+        updated = db.execute("UPDATE module_authorizations SET exchanged_at=?,token_hash=?,expires_at=? WHERE id=? AND exchanged_at IS NULL", (timestamp, token_digest(token), expires, row["id"])).rowcount
+        if updated != 1: raise HTTPException(401, "启动授权已失效")
         if row["status"] == "created":
             db.execute("UPDATE assessment_sessions SET status='active',started_at=?,state_version=state_version+1 WHERE id=?", (timestamp, row["session_id"]))
     return {"token": token, "tokenType": "Bearer", "expiresAt": expires}
@@ -562,6 +605,8 @@ def change_assessment_session(session_id: str, payload: SessionStatusIn, authori
     auth = require_module_authorization(authorization)
     if auth["session_id"] != session_id:
         raise HTTPException(403, "模块授权不属于该探索会话")
+    required_scope = "session:complete" if payload.status == "completed" else "session:interrupt"
+    if required_scope not in json.loads(auth["scopes_json"]): raise HTTPException(403, "模块授权不含会话状态权限")
     allowed = {"active": {"completed", "interrupted", "abandoned"}, "interrupted": {"active", "abandoned"}}
     timestamp = now_iso()
     with connect() as db:
@@ -575,13 +620,18 @@ def change_assessment_session(session_id: str, payload: SessionStatusIn, authori
         if payload.state_version is not None and payload.state_version != session["state_version"]:
             raise HTTPException(409, "SESSION_STATE_CONFLICT")
         ended_at = timestamp if payload.status in {"completed", "abandoned"} else None
-        db.execute("UPDATE assessment_sessions SET status=?,ended_at=?,state_version=state_version+1 WHERE id=?", (payload.status, ended_at, session_id))
+        active_seconds = session["active_seconds"]
+        if ended_at and session["started_at"]:
+            active_seconds += max(0, int((datetime.fromisoformat(ended_at) - datetime.fromisoformat(session["started_at"])).total_seconds()))
+        db.execute("UPDATE assessment_sessions SET status=?,ended_at=?,active_seconds=?,state_version=state_version+1 WHERE id=?", (payload.status, ended_at, active_seconds, session_id))
+        if ended_at: db.execute("UPDATE module_authorizations SET revoked_at=? WHERE session_id=? AND revoked_at=''", (timestamp, session_id))
     return {"id": session_id, "status": payload.status, "duplicate": False}
 
 
 @app.post("/api/v1/evidence-events:batch")
 def create_evidence_events_v1(payload: EvidenceBatchIn, authorization: str | None = Header(default=None)) -> dict:
     auth = require_module_authorization(authorization)
+    if "evidence:write" not in json.loads(auth["scopes_json"]): raise HTTPException(403, "模块授权不含证据写入权限")
     if auth["status"] not in {"active", "interrupted"}:
         raise HTTPException(409, "探索会话当前不能写入证据")
     manifest = module_manifest(auth["module_id"])
@@ -590,9 +640,7 @@ def create_evidence_events_v1(payload: EvidenceBatchIn, authorization: str | Non
         for event in payload.events:
             if event.event_type not in manifest["supportedEventTypes"]:
                 raise HTTPException(422, "该模块版本不支持此事件类型")
-            required_fields = event_schema_required_fields(event.event_type)
-            if not required_fields.issubset(event.payload):
-                raise HTTPException(422, "证据事件缺少必填字段")
+            validate_evidence_event(event)
             policy = policy_for_event(event.event_type)
             event_id = str(uuid.uuid4())
             try:
@@ -617,6 +665,16 @@ def create_evidence_events_v1(payload: EvidenceBatchIn, authorization: str | Non
             )
             saved.append({"eventId": event_id, "evidenceId": evidence_id, "duplicate": False})
     return {"saved": saved}
+
+
+@app.post("/api/v1/artifacts", status_code=201)
+def create_artifact_v1(payload: ArtifactIn, authorization: str | None = Header(default=None)) -> dict:
+    auth = require_module_authorization(authorization)
+    if "artifact:write" not in json.loads(auth["scopes_json"]): raise HTTPException(403, "模块授权不含作品写入权限")
+    validate_schema("artifact.v1.schema.json", payload.model_dump(by_alias=True), "作品无效")
+    with connect() as db:
+        db.execute("INSERT OR IGNORE INTO artifacts (id,session_id,type,title,summary,preview_resource_id,source_resource_id,created_at) VALUES (?,?,?,?,?,?,?,?)", (payload.artifact_id, auth["session_id"], payload.type, payload.title, payload.summary, payload.preview_resource_id, payload.source_resource_id, payload.created_at))
+    return {"id": payload.artifact_id, "created": True}
 
 
 @app.post("/api/v1/reports")
@@ -676,29 +734,6 @@ def account_bridge() -> PlainTextResponse:
     error.status = response.status;
     throw error;
   });
-  const v1Type = {chat:"chat.observation-shared.v1",story:"story.contribution-completed.v1",deep_sea:"deep-sea.spatial-task-completed.v1",career:"career.task-completed.v1"};
-  const v1DoneKey = event => "ai-bole-v1-migrated:" + (event?.context?.idempotency_key || "");
-  const v1Payload = event => {
-    const raw = event.raw_evidence || {}, context = event.context || {};
-    if (event.module === "chat") return {turnCount: Number(raw.turn_count) || 1, topicKey: String(raw.topic || "conversation").slice(0,80)};
-    if (event.module === "story") return {contributionCount: 1, completionSeconds: Number(raw.duration_seconds) || 0, storyTitle: String(raw.title || "故事共创").slice(0,120)};
-    if (event.module === "deep_sea") return {level: Math.max(1,Math.min(3,Number(context.level) || 1)), completionSeconds: Number(raw.duration_seconds) || 0, adjustmentCount: Number(raw.meaningful_adjustments || raw.rotate_count) || 0};
-    return {taskKey: String(raw.career_name || context.career_id || "career-task").slice(0,80), attemptCount: Number(raw.interaction_count) || 0, hintCount: Number(raw.hint_count) || 0, completionSeconds: Number(raw.duration_seconds) || 0, adjustmentCount: Number(raw.adjustment_count || raw.retry_count) || 0};
-  };
-  const mirrorV1 = async event => {
-    if (!v1Type[event?.module]) return;
-    const doneKey = v1DoneKey(event); if (!event?.context?.idempotency_key || localStorage.getItem(doneKey)) return;
-    const created = await fetch(core + "/api/v1/assessment-sessions", {method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({module_id:event.module})});
-    if (!created.ok) throw new Error("session create failed");
-    const context = await created.json();
-    const exchanged = await fetch(core + "/api/v1/module-authorizations:exchange", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({launchCode:context.launchCode})});
-    if (!exchanged.ok) throw new Error("authorization exchange failed");
-    const auth = await exchanged.json();
-    const envelope = {schemaVersion:"1.0",eventId:crypto.randomUUID ? crypto.randomUUID() : Date.now()+":"+Math.random(),idempotencyKey:event.context.idempotency_key,eventType:v1Type[event.module],occurredAt:event.occurred_at || new Date().toISOString(),payload:v1Payload(event)};
-    const saved = await fetch(core + "/api/v1/evidence-events:batch", {method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+auth.token},body:JSON.stringify({events:[envelope]})});
-    if (!saved.ok) throw new Error("v1 evidence rejected");
-    localStorage.setItem(doneKey,"1");
-  };
   const api = {
     account: null,
     ready: fetch(core + "/api/account/me", { credentials: "include" })
@@ -736,7 +771,6 @@ def account_bridge() -> PlainTextResponse:
       if (!account) throw new Error("请先登录探索者账号");
       try {
         const result = await post(event);
-        mirrorV1(event).catch(() => undefined);
         window.dispatchEvent(new CustomEvent("ai-bole-evidence-saved", { detail: result }));
         return result;
       } catch (error) {
@@ -835,6 +869,7 @@ def register_account(payload: AccountRegistrationIn, response: Response) -> dict
                 (account_id, payload.username, payload.display_name, payload.age,
                  password_digest(payload.password, salt), salt, timestamp, timestamp),
             )
+            db.execute("INSERT INTO child_profiles (id,account_id,display_name,age,created_at,updated_at) VALUES (?,?,?,?,?,?)", (account_id, account_id, payload.display_name, payload.age, timestamp, timestamp))
         except sqlite3.IntegrityError as cause:
             raise HTTPException(409, "这个探索者账号已经存在，请直接登录") from cause
         issue_session(db, account_id, response, timestamp)
@@ -866,6 +901,8 @@ def account_me(ai_bole_session: str | None = Cookie(default=None)) -> dict:
 def delete_session(response: Response, ai_bole_session: str | None = Cookie(default=None)) -> dict:
     if ai_bole_session:
         with connect() as db:
+            account = require_account(ai_bole_session)
+            db.execute("UPDATE module_authorizations SET revoked_at=? WHERE session_id IN (SELECT s.id FROM assessment_sessions s JOIN child_profiles p ON p.id=s.child_profile_id WHERE p.account_id=?) AND revoked_at=''", (now_iso(), account["id"]))
             db.execute("DELETE FROM account_sessions WHERE token_hash=?", (token_digest(ai_bole_session),))
     response.delete_cookie(COOKIE_NAME, path="/")
     return {"ok": True}
@@ -895,6 +932,7 @@ def create_evidence(payload: EvidenceIn, ai_bole_session: str | None = Cookie(de
                     json.dumps(payload.context, ensure_ascii=False), idempotency_key, now_iso(),
                 ),
             )
+            mirror_legacy_event_v1(db, account["id"], event_id, payload, idempotency_key)
         except sqlite3.IntegrityError:
             if not idempotency_key:
                 raise

@@ -1,4 +1,5 @@
-/* 浏览器端最小 SDK：与旧 window.AIBole 并存，逐模块采用。 */
+/* 浏览器端最小 SDK：与旧 window.AIBole 并存，逐模块采用。
+ * 当前仅提供在线 V1 API；离线队列仍由兼容桥接承担，模块完成迁移后再统一收敛。 */
 (function attachAIBoleModuleSDK(global) {
   const defaultCoreUrl = "http://localhost:8020";
   const requiredContext = ["sessionId", "moduleId", "moduleVersion", "launchCode", "launchCodeExpiresAt", "returnUrl", "contractVersion"];

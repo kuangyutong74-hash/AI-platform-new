@@ -30,6 +30,9 @@ class AccountTests(unittest.TestCase):
         self.assertTrue(registered["created"])
         self.assertEqual(registered["account"]["username"], "little_star")
         self.assertEqual(registered["account"]["display_name"], "小星")
+        with main.connect() as db:
+            profile = db.execute("SELECT * FROM child_profiles WHERE account_id=?", (registered["account"]["id"],)).fetchone()
+        self.assertIsNotNone(profile)
 
         logged_in = main.create_session(
             main.AccountCredentialsIn(username="LITTLE_STAR", password="secret88"),
