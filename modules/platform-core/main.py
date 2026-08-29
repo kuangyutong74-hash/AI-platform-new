@@ -69,8 +69,8 @@ app.add_middleware(
         "http://localhost:3001", "http://localhost:8000", "http://localhost:5175",
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
@@ -676,6 +676,29 @@ def account_bridge() -> PlainTextResponse:
     error.status = response.status;
     throw error;
   });
+  const v1Type = {chat:"chat.observation-shared.v1",story:"story.contribution-completed.v1",deep_sea:"deep-sea.spatial-task-completed.v1",career:"career.task-completed.v1"};
+  const v1DoneKey = event => "ai-bole-v1-migrated:" + (event?.context?.idempotency_key || "");
+  const v1Payload = event => {
+    const raw = event.raw_evidence || {}, context = event.context || {};
+    if (event.module === "chat") return {turnCount: Number(raw.turn_count) || 1, topicKey: String(raw.topic || "conversation").slice(0,80)};
+    if (event.module === "story") return {contributionCount: 1, completionSeconds: Number(raw.duration_seconds) || 0, storyTitle: String(raw.title || "故事共创").slice(0,120)};
+    if (event.module === "deep_sea") return {level: Math.max(1,Math.min(3,Number(context.level) || 1)), completionSeconds: Number(raw.duration_seconds) || 0, adjustmentCount: Number(raw.meaningful_adjustments || raw.rotate_count) || 0};
+    return {taskKey: String(raw.career_name || context.career_id || "career-task").slice(0,80), attemptCount: Number(raw.interaction_count) || 0, hintCount: Number(raw.hint_count) || 0, completionSeconds: Number(raw.duration_seconds) || 0, adjustmentCount: Number(raw.adjustment_count || raw.retry_count) || 0};
+  };
+  const mirrorV1 = async event => {
+    if (!v1Type[event?.module]) return;
+    const doneKey = v1DoneKey(event); if (!event?.context?.idempotency_key || localStorage.getItem(doneKey)) return;
+    const created = await fetch(core + "/api/v1/assessment-sessions", {method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({module_id:event.module})});
+    if (!created.ok) throw new Error("session create failed");
+    const context = await created.json();
+    const exchanged = await fetch(core + "/api/v1/module-authorizations:exchange", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({launchCode:context.launchCode})});
+    if (!exchanged.ok) throw new Error("authorization exchange failed");
+    const auth = await exchanged.json();
+    const envelope = {schemaVersion:"1.0",eventId:crypto.randomUUID ? crypto.randomUUID() : Date.now()+":"+Math.random(),idempotencyKey:event.context.idempotency_key,eventType:v1Type[event.module],occurredAt:event.occurred_at || new Date().toISOString(),payload:v1Payload(event)};
+    const saved = await fetch(core + "/api/v1/evidence-events:batch", {method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+auth.token},body:JSON.stringify({events:[envelope]})});
+    if (!saved.ok) throw new Error("v1 evidence rejected");
+    localStorage.setItem(doneKey,"1");
+  };
   const api = {
     account: null,
     ready: fetch(core + "/api/account/me", { credentials: "include" })
@@ -713,6 +736,7 @@ def account_bridge() -> PlainTextResponse:
       if (!account) throw new Error("请先登录探索者账号");
       try {
         const result = await post(event);
+        mirrorV1(event).catch(() => undefined);
         window.dispatchEvent(new CustomEvent("ai-bole-evidence-saved", { detail: result }));
         return result;
       } catch (error) {
