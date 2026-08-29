@@ -1,6 +1,6 @@
 "use client";
 import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
-import { PLATFORM_MODULES as modules } from "../config/modules";
+import { CORE_API_URL, PLATFORM_MODULES as modules } from "../config/modules";
 const ThreeGlobe = lazy(() => import("./ThreeGlobe"));
 type PlatformView = "planet" | "works" | "timeline" | "report";
 
@@ -13,7 +13,7 @@ const cosmicNodes: {view: PlatformView; label: string}[] = [
 const starSpiritImg = "/assets/storybook/star-spirit.svg";
 const floatStarsImg = "/assets/storybook/float-stars.svg";
 const floatCloudImg = "/assets/storybook/float-cloud.svg";
-const moduleNavArt:Record<(typeof modules)[number]["id"],string> = {
+const moduleNavArt:Record<string,string> = {
   chat:"/assets/module-nav-watercolor/nav-listening-v1.webp",
   story:"/assets/module-nav-watercolor/nav-story-v1.webp",
   build:"/assets/module-nav-watercolor/nav-build-v1.webp",
@@ -42,14 +42,13 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
   }, [draggingOrbit]);
   useEffect(() => {
     let active = true;
-    fetch("http://localhost:8020/api/v1/modules")
+    fetch(`${CORE_API_URL}/api/v1/modules`)
       .then(response => response.ok ? response.json() : Promise.reject())
       .then(data => {
         if (!active || !Array.isArray(data.modules)) return;
-        const byId = new Map(data.modules.map((item: {id?: string}) => [item.id, item]));
-        setCatalog(modules.map(item => {
-          const manifest = byId.get(item.id === "build" ? "deep_sea" : item.id) as {name?: string; description?: string; entryUrl?: string; healthUrl?: string} | undefined;
-          return manifest ? {...item, name: manifest.name || item.name, desc: manifest.description || item.desc, url: manifest.entryUrl || item.url, healthUrl: manifest.healthUrl || item.healthUrl} : item;
+        setCatalog(data.modules.map((manifest: {id:string;name:string;description?:string;entryUrl:string;healthUrl?:string}, index:number) => {
+          const existing = modules.find(item => (item.id === "build" ? "deep_sea" : item.id) === manifest.id);
+          return existing ? {...existing, name: manifest.name, desc: manifest.description || existing.desc, url: manifest.entryUrl, healthUrl: manifest.healthUrl || existing.healthUrl} : {id: manifest.id, name: manifest.name, module: manifest.name, icon: "✦", iconAsset: "", angle: (index * 73) % 360, latitude: index % 2 ? -22 : 22, url: manifest.entryUrl, healthUrl: manifest.healthUrl || "", color: "mint" as const, desc: manifest.description || "新的探索体验"};
         }));
       })
       .catch(() => undefined);
@@ -127,7 +126,7 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     <div className="three-stage"><Suspense fallback={<div className="globe-loading">正在点亮探索星球…</div>}><ThreeGlobe/></Suspense><div className="drag-tip"><span>✥</span> 上下左右拖动 · 360° 探索 · 点击大陆进入</div></div>
     <nav className="module-dock" aria-label="四座探索大陆">
       {catalog.map(item=><button key={item.id} data-module={item.id} onClick={()=>window.location.href=item.url} aria-label={`进入${item.module}，${item.name}`}>
-        <i className={`module-icon ${item.color}`} aria-hidden="true"><img className="module-art" src={moduleNavArt[item.id]} alt="" draggable={false}/></i>
+        <i className={`module-icon ${item.color}`} aria-hidden="true">{moduleNavArt[item.id] && <img className="module-art" src={moduleNavArt[item.id]} alt="" draggable={false}/>}</i>
         <span className="module-label"><b>{item.module}</b><small>{item.name}</small></span>
       </button>)}
     </nav>

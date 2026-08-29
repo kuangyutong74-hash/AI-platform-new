@@ -1,7 +1,7 @@
 export type ModuleColor = "mint" | "rose" | "blue" | "amber";
 
 export type PlatformModule = {
-  id: "chat" | "story" | "build" | "career";
+  id: string;
   name: string;
   module: string;
   icon: string;
@@ -15,6 +15,7 @@ export type PlatformModule = {
 };
 
 export const PLATFORM_URL = "http://localhost:4173";
+export const CORE_API_URL = "http://localhost:8020";
 
 export const PLATFORM_MODULES: PlatformModule[] = [
   { id: "chat", name: "倾听之洲", module: "聊天观察", icon: "◌", iconAsset: "/assets/module-icons/module-listening-v2.png?v=1", angle: 8, latitude: 24, url: "http://localhost:3000/chat.html?from=ai-bole", healthUrl: "http://localhost:3000/chat.html", color: "mint", desc: "说说兴趣、问题和生活里的新发现" },
