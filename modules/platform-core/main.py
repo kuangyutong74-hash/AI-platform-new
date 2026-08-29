@@ -20,10 +20,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Literal
 
-from fastapi import Cookie, FastAPI, HTTPException, Response
+from fastapi import Cookie, FastAPI, Header, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from explorer_collection import build_explorer_collection
 
@@ -76,6 +76,8 @@ def connect() -> sqlite3.Connection:
     db = sqlite3.connect(DB_PATH)
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA foreign_keys = ON")
+    db.execute("PRAGMA busy_timeout = 5000")
+    db.execute("PRAGMA journal_mode = WAL")
     return db
 
 
@@ -134,6 +136,101 @@ def initialize_database() -> None:
             CREATE INDEX IF NOT EXISTS idx_sessions_token ON account_sessions(token_hash);
             CREATE INDEX IF NOT EXISTS idx_evidence_account_time ON evidence_events(account_id, occurred_at DESC);
             CREATE INDEX IF NOT EXISTS idx_evidence_account_module ON evidence_events(account_id, module);
+            CREATE TABLE IF NOT EXISTS child_profiles (
+              id TEXT PRIMARY KEY,
+              account_id TEXT NOT NULL UNIQUE REFERENCES accounts(id) ON DELETE CASCADE,
+              display_name TEXT NOT NULL,
+              age INTEGER NOT NULL,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS modules (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              enabled INTEGER NOT NULL DEFAULT 1,
+              current_version TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS module_versions (
+              module_id TEXT NOT NULL REFERENCES modules(id) ON DELETE RESTRICT,
+              version TEXT NOT NULL,
+              contract_version TEXT NOT NULL,
+              construct_registry_version TEXT NOT NULL,
+              manifest_json TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              PRIMARY KEY (module_id, version)
+            );
+            CREATE TABLE IF NOT EXISTS assessment_sessions (
+              id TEXT PRIMARY KEY,
+              child_profile_id TEXT NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
+              module_id TEXT NOT NULL,
+              module_version TEXT NOT NULL,
+              status TEXT NOT NULL CHECK(status IN ('created','active','interrupted','completed','abandoned')),
+              created_at TEXT NOT NULL,
+              started_at TEXT,
+              ended_at TEXT,
+              active_seconds INTEGER NOT NULL DEFAULT 0,
+              state_version INTEGER NOT NULL DEFAULT 1,
+              FOREIGN KEY (module_id, module_version) REFERENCES module_versions(module_id, version)
+            );
+            CREATE TABLE IF NOT EXISTS module_authorizations (
+              id TEXT PRIMARY KEY,
+              session_id TEXT NOT NULL REFERENCES assessment_sessions(id) ON DELETE CASCADE,
+              launch_code_hash TEXT NOT NULL UNIQUE,
+              launch_expires_at TEXT NOT NULL,
+              exchanged_at TEXT,
+              token_hash TEXT UNIQUE,
+              scopes_json TEXT NOT NULL,
+              expires_at TEXT,
+              revoked_at TEXT NOT NULL DEFAULT ''
+            );
+            CREATE TABLE IF NOT EXISTS source_events (
+              id TEXT PRIMARY KEY,
+              session_id TEXT NOT NULL REFERENCES assessment_sessions(id) ON DELETE CASCADE,
+              idempotency_key TEXT NOT NULL,
+              event_type TEXT NOT NULL,
+              schema_version TEXT NOT NULL,
+              payload_json TEXT NOT NULL,
+              sequence_no INTEGER,
+              occurred_at TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              UNIQUE(session_id, idempotency_key)
+            );
+            CREATE TABLE IF NOT EXISTS evidence_records (
+              id TEXT PRIMARY KEY,
+              source_event_id TEXT NOT NULL REFERENCES source_events(id) ON DELETE CASCADE,
+              evidence_level TEXT NOT NULL CHECK(evidence_level IN ('strong','reference')),
+              constructs_json TEXT NOT NULL,
+              behavior_summary TEXT NOT NULL,
+              policy_version TEXT NOT NULL,
+              construct_registry_version TEXT NOT NULL,
+              derived_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS artifacts (
+              id TEXT PRIMARY KEY,
+              session_id TEXT NOT NULL REFERENCES assessment_sessions(id) ON DELETE CASCADE,
+              type TEXT NOT NULL,
+              title TEXT NOT NULL,
+              summary TEXT NOT NULL,
+              preview_resource_id TEXT,
+              source_resource_id TEXT,
+              created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS reports (
+              id TEXT PRIMARY KEY,
+              child_profile_id TEXT NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
+              generator_version TEXT NOT NULL,
+              ruleset_version TEXT NOT NULL,
+              prompt_version TEXT,
+              model_id TEXT,
+              evidence_set_hash TEXT NOT NULL,
+              status TEXT NOT NULL CHECK(status IN ('draft','published','failed')),
+              report_json TEXT NOT NULL,
+              generated_at TEXT NOT NULL,
+              published_at TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_assessment_profile_time ON assessment_sessions(child_profile_id, created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_source_event_session_time ON source_events(session_id, occurred_at DESC);
             """
         )
         evidence_columns = {
@@ -146,6 +243,23 @@ def initialize_database() -> None:
                ON evidence_events(account_id, idempotency_key)
                WHERE idempotency_key IS NOT NULL"""
         )
+        timestamp = datetime.now(timezone.utc).isoformat()
+        db.execute(
+            """INSERT OR IGNORE INTO child_profiles (id,account_id,display_name,age,created_at,updated_at)
+               SELECT id,id,display_name,age,created_at,updated_at FROM accounts"""
+        )
+        for manifest in load_module_catalog():
+            db.execute(
+                """INSERT INTO modules (id,name,enabled,current_version,updated_at) VALUES (?,?,?,?,?)
+                   ON CONFLICT(id) DO UPDATE SET name=excluded.name, current_version=excluded.current_version, updated_at=excluded.updated_at""",
+                (manifest["id"], manifest["name"], 1, manifest["version"], timestamp),
+            )
+            db.execute(
+                """INSERT OR IGNORE INTO module_versions
+                   (module_id,version,contract_version,construct_registry_version,manifest_json,created_at)
+                   VALUES (?,?,?,?,?,?)""",
+                (manifest["id"], manifest["version"], "1.0", manifest["constructRegistryVersion"], json.dumps(manifest, ensure_ascii=False), timestamp),
+            )
         db.execute("PRAGMA optimize")
 
 
@@ -284,6 +398,88 @@ class EvidenceIn(BaseModel):
         return clean
 
 
+class AssessmentSessionIn(BaseModel):
+    module_id: str = Field(min_length=2, max_length=64)
+
+
+class LaunchCodeExchangeIn(BaseModel):
+    launch_code: str = Field(alias="launchCode", min_length=20, max_length=256)
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class EvidenceEnvelopeIn(BaseModel):
+    schema_version: Literal["1.0"] = Field(alias="schemaVersion")
+    event_id: str = Field(alias="eventId", min_length=1, max_length=128)
+    idempotency_key: str = Field(alias="idempotencyKey", min_length=1, max_length=160)
+    event_type: str = Field(alias="eventType", min_length=3, max_length=120)
+    occurred_at: str = Field(alias="occurredAt", min_length=10, max_length=64)
+    sequence_no: int | None = Field(default=None, alias="sequenceNo", ge=0)
+    payload: dict
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class EvidenceBatchIn(BaseModel):
+    events: list[EvidenceEnvelopeIn] = Field(min_length=1, max_length=100)
+
+
+class SessionStatusIn(BaseModel):
+    status: Literal["completed", "interrupted", "abandoned", "active"]
+    state_version: int | None = Field(default=None, alias="stateVersion", ge=1)
+    model_config = ConfigDict(populate_by_name=True)
+
+
+def module_manifest(module_id: str) -> dict:
+    for manifest in load_module_catalog():
+        if manifest["id"] == module_id:
+            return manifest
+    raise HTTPException(404, "体验模块不存在")
+
+
+def profile_for_account(db: sqlite3.Connection, account_id: str) -> sqlite3.Row:
+    profile = db.execute("SELECT * FROM child_profiles WHERE account_id=?", (account_id,)).fetchone()
+    if not profile:
+        raise HTTPException(409, "儿童档案尚未完成迁移")
+    return profile
+
+
+def bearer_token(authorization: str | None) -> str:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(401, "缺少模块授权")
+    return authorization[7:].strip()
+
+
+def require_module_authorization(authorization: str | None) -> sqlite3.Row:
+    token = bearer_token(authorization)
+    with connect() as db:
+        authorization_row = db.execute(
+            """SELECT a.*, s.status, s.module_id, s.module_version, s.child_profile_id
+               FROM module_authorizations a JOIN assessment_sessions s ON s.id=a.session_id
+               WHERE a.token_hash=? AND a.expires_at>? AND a.revoked_at=''""",
+            (token_digest(token), now_iso()),
+        ).fetchone()
+    if not authorization_row:
+        raise HTTPException(401, "模块授权已失效")
+    return authorization_row
+
+
+def event_schema_required_fields(event_type: str) -> set[str]:
+    schema_path = REPO_ROOT / "packages" / "contracts" / "schemas" / "evidence" / f"{event_type}.schema.json"
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(422, "没有匹配的证据事件契约") from exc
+    return set(schema.get("required", []))
+
+
+def policy_for_event(event_type: str) -> dict:
+    policy_path = REPO_ROOT / "config" / "evidence-policy.v1.json"
+    policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    rule = next((item for item in policy["rules"] if item["eventType"] == event_type), None)
+    if not rule:
+        raise HTTPException(422, "该事件未配置证据策略")
+    return {**rule, "policyVersion": policy["version"], "constructRegistryVersion": policy["constructRegistryVersion"]}
+
+
 @app.get("/api/health")
 def health() -> dict:
     return {"ok": True, "service": "ai-bole-platform-core"}
@@ -293,6 +489,117 @@ def health() -> dict:
 def list_modules_v1() -> dict:
     """V1 模块目录：保留旧 Portal 配置，待其迁移后成为唯一入口。"""
     return {"contractVersion": "1.0", "modules": load_module_catalog()}
+
+
+@app.post("/api/v1/assessment-sessions", status_code=201)
+def create_assessment_session(payload: AssessmentSessionIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    """创建会话并签发一次性启动码；session ID 从不作为模块凭据。"""
+    account = require_account(ai_bole_session)
+    manifest = module_manifest(payload.module_id)
+    timestamp = now_iso()
+    session_id = str(uuid.uuid4())
+    launch_code = secrets.token_urlsafe(32)
+    expires = (datetime.now(timezone.utc) + timedelta(seconds=60)).isoformat()
+    with connect() as db:
+        profile = profile_for_account(db, account["id"])
+        if not manifest["targetAge"]["min"] <= profile["age"] <= manifest["targetAge"]["max"]:
+            raise HTTPException(422, "当前年龄不在该体验模块的适用范围")
+        db.execute(
+            """INSERT INTO assessment_sessions
+               (id,child_profile_id,module_id,module_version,status,created_at)
+               VALUES (?,?,?,?,?,?)""",
+            (session_id, profile["id"], manifest["id"], manifest["version"], "created", timestamp),
+        )
+        db.execute(
+            """INSERT INTO module_authorizations
+               (id,session_id,launch_code_hash,launch_expires_at,scopes_json)
+               VALUES (?,?,?,?,?)""",
+            (str(uuid.uuid4()), session_id, token_digest(launch_code), expires,
+             json.dumps(["evidence:write", "artifact:write", "session:complete", "session:interrupt"])),
+        )
+    return {"sessionId": session_id, "moduleId": manifest["id"], "moduleVersion": manifest["version"], "launchCode": launch_code, "launchCodeExpiresAt": expires, "returnUrl": "http://localhost:4173/?from=module", "contractVersion": "1.0"}
+
+
+@app.post("/api/v1/module-authorizations:exchange")
+def exchange_module_authorization(payload: LaunchCodeExchangeIn) -> dict:
+    timestamp = now_iso()
+    expires = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+    token = secrets.token_urlsafe(32)
+    with connect() as db:
+        row = db.execute(
+            """SELECT a.*, s.status FROM module_authorizations a
+               JOIN assessment_sessions s ON s.id=a.session_id
+               WHERE a.launch_code_hash=? AND a.launch_expires_at>? AND a.exchanged_at IS NULL""",
+            (token_digest(payload.launch_code), timestamp),
+        ).fetchone()
+        if not row or row["status"] not in {"created", "interrupted"}:
+            raise HTTPException(401, "启动授权已失效")
+        db.execute("UPDATE module_authorizations SET exchanged_at=?,token_hash=?,expires_at=? WHERE id=?", (timestamp, token_digest(token), expires, row["id"]))
+        if row["status"] == "created":
+            db.execute("UPDATE assessment_sessions SET status='active',started_at=?,state_version=state_version+1 WHERE id=?", (timestamp, row["session_id"]))
+    return {"token": token, "tokenType": "Bearer", "expiresAt": expires}
+
+
+@app.patch("/api/v1/assessment-sessions/{session_id}")
+def change_assessment_session(session_id: str, payload: SessionStatusIn, authorization: str | None = Header(default=None)) -> dict:
+    auth = require_module_authorization(authorization)
+    if auth["session_id"] != session_id:
+        raise HTTPException(403, "模块授权不属于该探索会话")
+    allowed = {"active": {"completed", "interrupted", "abandoned"}, "interrupted": {"active", "abandoned"}}
+    timestamp = now_iso()
+    with connect() as db:
+        session = db.execute("SELECT * FROM assessment_sessions WHERE id=?", (session_id,)).fetchone()
+        if not session:
+            raise HTTPException(404, "探索会话不存在")
+        if session["status"] == payload.status:
+            return {"id": session_id, "status": session["status"], "duplicate": True}
+        if payload.status not in allowed.get(session["status"], set()):
+            raise HTTPException(409, "SESSION_TRANSITION_INVALID")
+        if payload.state_version is not None and payload.state_version != session["state_version"]:
+            raise HTTPException(409, "SESSION_STATE_CONFLICT")
+        ended_at = timestamp if payload.status in {"completed", "abandoned"} else None
+        db.execute("UPDATE assessment_sessions SET status=?,ended_at=?,state_version=state_version+1 WHERE id=?", (payload.status, ended_at, session_id))
+    return {"id": session_id, "status": payload.status, "duplicate": False}
+
+
+@app.post("/api/v1/evidence-events:batch")
+def create_evidence_events_v1(payload: EvidenceBatchIn, authorization: str | None = Header(default=None)) -> dict:
+    auth = require_module_authorization(authorization)
+    if auth["status"] not in {"active", "interrupted"}:
+        raise HTTPException(409, "探索会话当前不能写入证据")
+    manifest = module_manifest(auth["module_id"])
+    saved: list[dict] = []
+    with connect() as db:
+        for event in payload.events:
+            if event.event_type not in manifest["supportedEventTypes"]:
+                raise HTTPException(422, "该模块版本不支持此事件类型")
+            required_fields = event_schema_required_fields(event.event_type)
+            if not required_fields.issubset(event.payload):
+                raise HTTPException(422, "证据事件缺少必填字段")
+            policy = policy_for_event(event.event_type)
+            event_id = str(uuid.uuid4())
+            try:
+                db.execute(
+                    """INSERT INTO source_events
+                       (id,session_id,idempotency_key,event_type,schema_version,payload_json,sequence_no,occurred_at,created_at)
+                       VALUES (?,?,?,?,?,?,?,?,?)""",
+                    (event_id, auth["session_id"], event.idempotency_key, event.event_type, event.schema_version,
+                     json.dumps(event.payload, ensure_ascii=False), event.sequence_no, event.occurred_at, now_iso()),
+                )
+            except sqlite3.IntegrityError:
+                existing = db.execute("SELECT id FROM source_events WHERE session_id=? AND idempotency_key=?", (auth["session_id"], event.idempotency_key)).fetchone()
+                saved.append({"eventId": existing["id"], "duplicate": True})
+                continue
+            evidence_id = str(uuid.uuid4())
+            db.execute(
+                """INSERT INTO evidence_records
+                   (id,source_event_id,evidence_level,constructs_json,behavior_summary,policy_version,construct_registry_version,derived_at)
+                   VALUES (?,?,?,?,?,?,?,?)""",
+                (evidence_id, event_id, policy["evidenceLevel"], json.dumps(policy["constructs"], ensure_ascii=False),
+                 policy["behaviorSummary"], policy["policyVersion"], policy["constructRegistryVersion"], now_iso()),
+            )
+            saved.append({"eventId": event_id, "evidenceId": evidence_id, "duplicate": False})
+    return {"saved": saved}
 
 
 @app.get("/ai-bole-bridge.js", response_class=PlainTextResponse)
