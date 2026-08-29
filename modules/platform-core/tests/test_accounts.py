@@ -31,7 +31,6 @@ class AccountTests(unittest.TestCase):
                 display_name="小星",
                 age=8,
                 password="secret88",
-                recovery_code="123456",
             ),
             Response(),
         )
@@ -53,7 +52,6 @@ class AccountTests(unittest.TestCase):
             display_name="小月",
             age=9,
             password="planet99",
-            recovery_code="654321",
         )
         main.register_account(payload, Response())
         with self.assertRaises(HTTPException) as duplicate:
@@ -71,33 +69,48 @@ class AccountTests(unittest.TestCase):
         child_response = Response()
         child = main.register_account(main.AccountRegistrationIn(
             username=None, display_name="小舟", age=8, password="child888",
-            recovery_code="112233", role="student",
+            role="student",
         ), child_response)["account"]
         self.assertRegex(child["username"], r"^s\d{8}$")
 
         adult_response = Response()
         adult = main.register_account(main.AccountRegistrationIn(
             username=None, display_name="舟舟妈妈", password="adult888",
-            recovery_code="445566", role="adult", adult_kind="parent",
+            role="adult", adult_kind="parent",
         ), adult_response)["account"]
         adult_cookie = session_cookie(adult_response)
         self.assertRegex(adult["username"], r"^a\d{8}$")
 
         linked = main.bind_student(main.StudentLinkIn(username=child["username"]), adult_cookie)
         self.assertEqual(linked["student"]["id"], child["id"])
+        self.assertEqual(linked["selected_student"]["id"], child["id"])
+        self.assertEqual(len(linked["students"]), 1)
         selected = main.select_student(main.StudentContextIn(student_id=child["id"]), adult_cookie)
         self.assertEqual(selected["selected_student"]["display_name"], "小舟")
         profile = main.account_me(adult_cookie)
         self.assertEqual(profile["account"]["role"], "adult")
         self.assertEqual(profile["selected_student"]["id"], child["id"])
 
-    def test_password_reset_uses_recovery_code_and_invalidates_old_password(self):
+    def test_adult_can_register_without_parent_or_teacher_kind(self):
+        adult_response = Response()
+        registered = main.register_account(main.AccountRegistrationIn(
+            username="observer_account", display_name="测试观察员", password="adult888",
+            role="adult",
+        ), adult_response)
+
+        self.assertEqual(registered["account"]["role"], "adult")
+        self.assertIsNone(registered["account"]["adult_kind"])
+        session = main.account_me(session_cookie(adult_response))
+        self.assertEqual(session["students"], [])
+        self.assertIsNone(session["selected_student"])
+
+    def test_password_reset_uses_username_and_invalidates_old_password(self):
         main.register_account(main.AccountRegistrationIn(
             username="reset_star", display_name="小重", age=7, password="before88",
-            recovery_code="778899", role="student",
+            role="student",
         ), Response())
         main.reset_password(main.PasswordResetIn(
-            username="reset_star", recovery_code="778899", new_password="after888",
+            username="reset_star", new_password="after888",
         ))
         with self.assertRaises(HTTPException):
             main.create_session(main.AccountCredentialsIn(username="reset_star", password="before88"), Response())
@@ -107,11 +120,37 @@ class AccountTests(unittest.TestCase):
         )
         self.assertEqual(logged_in["account"]["display_name"], "小重")
 
+    def test_student_can_add_and_delete_a_manual_work(self):
+        student_response = Response()
+        student = main.register_account(main.AccountRegistrationIn(
+            username="manual_creator", display_name="小创", age=10, password="create88",
+            role="student",
+        ), student_response)["account"]
+        student_cookie = session_cookie(student_response)
+
+        created = main.create_manual_work(main.ManualWorkIn(
+            module="story", title="我的纸飞机", description="我画了一架飞向月亮的纸飞机。",
+        ), student_cookie)["work"]
+        self.assertEqual(created["kind"], "manual_work")
+        self.assertEqual(created["title"], "我的纸飞机")
+        collection = main.explorer_collection(student_cookie)
+        self.assertIn(created["id"], {work["id"] for work in collection["works"]})
+
+        with main.connect() as db:
+            evidence_count = db.execute(
+                "SELECT COUNT(*) AS total FROM evidence_events WHERE account_id=?", (student["id"],)
+            ).fetchone()["total"]
+        self.assertEqual(evidence_count, 0)
+        main.delete_manual_work(created["id"], student_cookie)
+        self.assertNotIn(created["id"], {
+            work["id"] for work in main.explorer_collection(student_cookie)["works"]
+        })
+
     def test_adult_comment_is_visible_to_the_bound_student(self):
         child_response = Response()
         child = main.register_account(main.AccountRegistrationIn(
             username="comment_child", display_name="小评", age=9, password="child999",
-            recovery_code="101010", role="student",
+            role="student",
         ), child_response)["account"]
         child_cookie = session_cookie(child_response)
         main.create_evidence(main.EvidenceIn(
@@ -125,7 +164,7 @@ class AccountTests(unittest.TestCase):
         adult_response = Response()
         main.register_account(main.AccountRegistrationIn(
             username="comment_parent", display_name="小评爸爸", password="adult999",
-            recovery_code="202020", role="adult", adult_kind="parent",
+            role="adult", adult_kind="parent",
         ), adult_response)
         adult_cookie = session_cookie(adult_response)
         main.bind_student(main.StudentLinkIn(username=child["username"]), adult_cookie)
@@ -133,7 +172,7 @@ class AccountTests(unittest.TestCase):
         created = main.create_work_comment(main.WorkCommentIn(
             work_id=work_id, body="你把故事的结尾讲得很完整，我看见了你的耐心。",
         ), adult_cookie)
-        self.assertEqual(created["comment"]["author_kind"], "parent")
+        self.assertIsNone(created["comment"]["author_kind"])
 
         student_collection = main.explorer_collection(child_cookie)
         self.assertEqual(student_collection["works"][0]["comments"][0]["body"], created["comment"]["body"])

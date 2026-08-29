@@ -186,6 +186,9 @@ button {
   grid-template-columns: 1.4fr 0.6fr;
   gap: 12px;
 }
+.login-inline.single {
+  grid-template-columns: 1fr;
+}
 .login-error {
   margin: 0;
   padding: 9px 11px;
@@ -255,7 +258,7 @@ button {
   height: 76px;
   padding: 0 4vw;
   display: grid;
-  grid-template-columns: 220px 1fr 190px;
+  grid-template-columns: 220px 1fr minmax(320px, auto);
   align-items: center;
   border-bottom: 1px solid var(--line);
   background: rgba(250, 249, 245, 0.78);
@@ -323,6 +326,13 @@ button {
 .profile-menu {
   position: relative;
   justify-self: end;
+}
+.topbar-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }
 .profile-menu summary {
   min-width: 134px;
@@ -4409,7 +4419,11 @@ html {
 .account-code small{grid-column:1/-1;color:#746780}.account-code strong{font:700 28px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:2px;color:#493961}.account-code button,.text-button{border:0;background:transparent;color:#695087;text-decoration:underline;cursor:pointer}
 .binding-box{margin:18px 0;padding:18px;border-radius:18px;background:rgba(255,255,255,.68);border:1px solid rgba(99,76,126,.16);text-align:left}.binding-box h2{margin:0;color:#493961}.binding-box h2 small{font-size:13px;color:#81758b}.binding-box>p{margin:5px 0 13px;font-size:13px}
 .binding-box form{display:grid!important;grid-template-columns:1fr auto;gap:8px}.binding-box form button{border:0;border-radius:12px;background:#6e538e;color:#fff;padding:0 16px;font:inherit;font-weight:700;cursor:pointer}.binding-box form button:disabled{opacity:.55}
-.bound-students{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.bound-students span{display:flex;gap:8px;align-items:baseline;border-radius:999px;background:#f4eff8;padding:7px 10px}.bound-students small{color:#7b6d84}
+.adult-empty-state{min-height:calc(100vh - 84px);display:grid;place-items:center;padding:48px 20px;background:radial-gradient(circle at 18% 20%,rgba(220,235,240,.58),transparent 42%),radial-gradient(circle at 84% 72%,rgba(244,215,151,.42),transparent 38%),#f8f7f1}.adult-empty-state>div{width:min(620px,100%);padding:34px;border:1px solid rgba(99,76,126,.15);border-radius:26px;background:rgba(255,255,255,.82);box-shadow:0 18px 45px rgba(70,55,85,.09);text-align:center}.adult-empty-state h1{margin:6px 0 10px;color:#493961}.adult-empty-state>div>p{line-height:1.7;color:#746780}.adult-empty-state .binding-box{background:#faf8fc}
+.empty-state-action,.manage-students-button{border:0;border-radius:999px;background:#6e538e;color:#fff;padding:10px 17px;font:inherit;font-weight:700;cursor:pointer}.empty-state-action{margin:8px 0 4px;padding:12px 22px}.manage-students-button{flex:none;padding:8px 12px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);font-size:12px}.view-works .manage-students-button,.view-timeline .manage-students-button{background:#f1eaf5;border-color:#dfd0e7;color:#614d6b}
+.bound-students{display:grid;gap:8px;margin-top:12px}.bound-students>span{display:flex;justify-content:space-between;align-items:center;gap:12px;border-radius:14px;background:#f4eff8;padding:8px 10px}.bound-students>span>span{display:grid;gap:2px}.bound-students small{display:block;color:#7b6d84}.bound-students>span>button{border:0;background:transparent;color:#9a5262;text-decoration:underline;cursor:pointer}.bound-students>span>button:disabled{opacity:.5}
 .student-switcher{display:flex;align-items:center;gap:7px;color:inherit;font-size:12px;white-space:nowrap}.student-switcher select{max-width:190px;border:1px solid rgba(255,255,255,.28);border-radius:10px;background:rgba(255,255,255,.12);color:inherit;padding:7px}.student-switcher option{color:#40374e;background:#fff}
+.student-manager-backdrop{position:fixed;z-index:100;inset:0;display:grid;place-items:center;padding:20px;background:rgba(26,20,45,.42);backdrop-filter:blur(8px)}.student-manager{width:min(560px,100%);max-height:min(720px,calc(100vh - 40px));overflow:auto;border:1px solid rgba(255,255,255,.7);border-radius:24px;background:#fffdf9;padding:24px;box-shadow:0 28px 80px rgba(31,23,48,.28)}.student-manager>header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}.student-manager>header p{margin:0;color:#9b7c52;font-size:11px;letter-spacing:.13em}.student-manager>header h2{margin:4px 0 0;color:#493961}.student-manager>header>button{width:38px;height:38px;border:0;border-radius:50%;background:#f2edf4;color:#594672;font-size:24px;cursor:pointer}.student-manager .binding-box{margin-bottom:0;background:#faf8fc}
 .report-frame-shell{height:calc(100vh - 76px);min-height:680px;background:#21183d}.report-frame-shell iframe{display:block;width:100%;height:100%;border:0;background:#21183d}
-@media(max-width:900px){.student-switcher{order:3;width:100%;justify-content:center}.student-switcher select{max-width:min(70vw,320px)}.role-choice{grid-template-columns:1fr}.report-frame-shell{height:calc(100vh - 118px);min-height:620px}}
+@media(max-width:1100px){.topbar{grid-template-columns:190px 1fr minmax(250px,auto)}.student-switcher>span{display:none}.manage-students-button{padding-inline:9px}}
+@media(max-width:900px){.student-switcher select{max-width:min(34vw,250px)}.role-choice{grid-template-columns:1fr}.report-frame-shell{height:calc(100vh - 118px);min-height:620px}.manage-students-button{font-size:0}.manage-students-button:after{content:"管理";font-size:12px}}

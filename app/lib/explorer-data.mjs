@@ -223,8 +223,8 @@ export function normalizeCollectionResponse(payload) {
   const works = worksAreDemo ? demo.works : realWorks;
   const milestones = timelineIsDemo ? demo.milestones : realMilestones;
   const worksNotice = worksAreDemo
-    ? "还没有足够的真实高光记录，这里先展示示例奖章。完成探索后，会自动换成你的代表性高光。"
-    : "每座大陆只保留一枚真实高光：表达最充分、参与最完整或过程最值得回看的一次。";
+    ? "还没有作品，这里先展示四座大陆的示例。你可以完成探索，也可以自己添加第一件作品。"
+    : "这里收着探索完成的作品，也收着你自己添加的创作。";
   const timelineNotice = timelineIsDemo
     ? "还没有收到账号使用历程，这里先展示清楚标注的示例。"
     : "这条星路从注册日开始，记录四个模块的首次完成、最近完成和累计次数。";

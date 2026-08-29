@@ -64,6 +64,7 @@ app.add_middleware(
         "http://localhost:4173", "http://localhost:3000", "http://localhost:5174",
         "http://localhost:3001", "http://localhost:8000", "http://localhost:5175",
     ],
+    allow_origin_regex=r"http://(?:localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type"],
@@ -129,8 +130,17 @@ def initialize_database() -> None:
               body TEXT NOT NULL,
               created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS manual_works (
+              id TEXT PRIMARY KEY,
+              student_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+              module TEXT NOT NULL,
+              title TEXT NOT NULL,
+              description TEXT NOT NULL,
+              created_at TEXT NOT NULL
+            );
             CREATE INDEX IF NOT EXISTS idx_adult_links_student ON adult_student_links(student_account_id);
             CREATE INDEX IF NOT EXISTS idx_work_comments_student_work ON work_comments(student_account_id, work_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_manual_works_student_time ON manual_works(student_account_id, created_at DESC);
             """
         )
         account_columns = {
@@ -299,7 +309,6 @@ class AccountRegistrationIn(BaseModel):
     age: int | None = None
     role: Literal["student", "adult"] = "student"
     adult_kind: Literal["parent", "teacher"] | None = None
-    recovery_code: str = Field(min_length=6, max_length=12)
 
     @field_validator("username")
     @classmethod
@@ -314,28 +323,20 @@ class AccountRegistrationIn(BaseModel):
             raise ValueError("请填写昵称")
         return value
 
-    @field_validator("recovery_code")
-    @classmethod
-    def validate_recovery_code(cls, value: str) -> str:
-        value = value.strip()
-        if not value.isdigit():
-            raise ValueError("找回码只能使用数字")
-        return value
-
     @model_validator(mode="after")
     def validate_role_fields(self):
         if self.role == "student":
             if self.age is None or not 4 <= self.age <= 18:
                 raise ValueError("学生年龄需填写 4～18 岁")
             self.adult_kind = None
-        elif not self.adult_kind:
-            raise ValueError("请选择家长或老师身份")
+        else:
+            # 测试阶段统一使用成人端，不区分家长与老师。
+            self.adult_kind = None
         return self
 
 
 class PasswordResetIn(BaseModel):
     username: str = Field(min_length=2, max_length=30)
-    recovery_code: str = Field(min_length=6, max_length=12)
     new_password: str = Field(min_length=6, max_length=72)
 
     @field_validator("username")
@@ -368,6 +369,25 @@ class WorkCommentIn(BaseModel):
         if not value:
             raise ValueError("请写下点评内容")
         return value
+
+
+class ManualWorkIn(BaseModel):
+    module: Literal["story", "deep_sea", "career", "chat"]
+    title: str = Field(min_length=1, max_length=60)
+    description: str = Field(default="", max_length=1000)
+
+    @field_validator("title")
+    @classmethod
+    def normalize_manual_work_title(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("请填写作品名称")
+        return value
+
+    @field_validator("description")
+    @classmethod
+    def normalize_manual_work_description(cls, value: str) -> str:
+        return value.strip()
 
 
 class EvidenceIn(BaseModel):
@@ -596,17 +616,15 @@ def register_account(payload: AccountRegistrationIn, response: Response) -> dict
             raise HTTPException(409, "这个探索者账号已经存在，请直接登录")
         account_id = str(uuid.uuid4())
         salt = secrets.token_hex(16)
-        recovery_salt = secrets.token_hex(16)
         try:
             db.execute(
                 """INSERT INTO accounts
                    (id,username,display_name,age,password_hash,password_salt,created_at,updated_at,
-                    role,adult_kind,recovery_hash,recovery_salt)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    role,adult_kind)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
                 (account_id, username, payload.display_name, payload.age or 0,
                  password_digest(payload.password, salt), salt, timestamp, timestamp,
-                 payload.role, payload.adult_kind,
-                 password_digest(payload.recovery_code, recovery_salt), recovery_salt),
+                 payload.role, payload.adult_kind),
             )
         except sqlite3.IntegrityError as cause:
             raise HTTPException(409, "这个探索者账号已经存在，请直接登录") from cause
@@ -637,11 +655,8 @@ def create_session(payload: AccountCredentialsIn, response: Response) -> dict:
 def reset_password(payload: PasswordResetIn) -> dict:
     with connect() as db:
         account = db.execute("SELECT * FROM accounts WHERE username=?", (payload.username,)).fetchone()
-        if not account or not account["recovery_hash"] or not account["recovery_salt"]:
-            raise HTTPException(400, "账号或找回码不正确；旧账号请联系平台管理员初始化找回码")
-        candidate = password_digest(payload.recovery_code, account["recovery_salt"])
-        if not hmac.compare_digest(candidate, account["recovery_hash"]):
-            raise HTTPException(400, "账号或找回码不正确")
+        if not account:
+            raise HTTPException(404, "没有找到这个账号，请核对用户名")
         salt = secrets.token_hex(16)
         db.execute(
             "UPDATE accounts SET password_hash=?,password_salt=?,updated_at=? WHERE id=?",
@@ -692,7 +707,7 @@ def bind_student(payload: StudentLinkIn, ai_bole_session: str | None = Cookie(de
                WHERE account_id=?""",
             (student["id"], viewer["id"]),
         )
-    return {"ok": True, "student": public_account(student)}
+    return {"ok": True, "student": public_account(student), **account_session_payload(viewer, ai_bole_session)}
 
 
 @app.delete("/api/account/students/{student_id}")
@@ -715,7 +730,7 @@ def unbind_student(student_id: str, ai_bole_session: str | None = Cookie(default
         )
     if not removed:
         raise HTTPException(404, "没有找到这条学生绑定")
-    return {"ok": True}
+    return {"ok": True, **account_session_payload(viewer, ai_bole_session)}
 
 
 @app.post("/api/account/context")
@@ -836,7 +851,12 @@ def explorer_collection(ai_bole_session: str | None = Cookie(default=None)) -> d
                WHERE c.student_account_id=? ORDER BY c.created_at""",
             (account["id"],),
         ).fetchall()
+        manual_works = db.execute(
+            "SELECT * FROM manual_works WHERE student_account_id=? ORDER BY created_at DESC",
+            (account["id"],),
+        ).fetchall()
     result = build_explorer_collection(public_account(account), events)
+    result["works"].extend(manual_work_item(work) for work in manual_works)
     by_work: dict[str, list[dict]] = {}
     for comment in comments:
         by_work.setdefault(comment["work_id"], []).append({
@@ -850,6 +870,60 @@ def explorer_collection(ai_bole_session: str | None = Cookie(default=None)) -> d
         work["comments"] = by_work.get(work["id"], [])
     result["viewer"] = public_account(viewer)
     return result
+
+
+def manual_work_item(row: sqlite3.Row) -> dict:
+    return {
+        "id": f"manual-{row['id']}",
+        "module": row["module"],
+        "title": row["title"],
+        "summary": "这是我自己添加的作品。",
+        "detail": row["description"] or "这件作品由我自己添加到作品册。",
+        "quote": "",
+        "occurred_at": row["created_at"],
+        "status": "我添加的作品",
+        "unlocked": True,
+        "event_type": "manual_work_added",
+        "kind": "manual_work",
+        "is_highlight": False,
+        "snapshot_url": "",
+        "metric_label": "作品来源",
+        "metric_value": "自主添加",
+        "usage_count": 1,
+    }
+
+
+@app.post("/api/explorer/works", status_code=201)
+def create_manual_work(payload: ManualWorkIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    student = require_student_viewer(ai_bole_session)
+    work_id = str(uuid.uuid4())
+    created_at = now_iso()
+    with connect() as db:
+        db.execute(
+            "INSERT INTO manual_works (id,student_account_id,module,title,description,created_at) VALUES (?,?,?,?,?,?)",
+            (work_id, student["id"], payload.module, payload.title, payload.description, created_at),
+        )
+        row = db.execute("SELECT * FROM manual_works WHERE id=?", (work_id,)).fetchone()
+    return {"work": {**manual_work_item(row), "comments": []}}
+
+
+@app.delete("/api/explorer/works/{work_id}")
+def delete_manual_work(work_id: str, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    student = require_student_viewer(ai_bole_session)
+    raw_id = work_id.removeprefix("manual-")
+    with connect() as db:
+        removed = db.execute(
+            "DELETE FROM manual_works WHERE id=? AND student_account_id=?",
+            (raw_id, student["id"]),
+        ).rowcount
+        if removed:
+            db.execute(
+                "DELETE FROM work_comments WHERE student_account_id=? AND work_id=?",
+                (student["id"], f"manual-{raw_id}"),
+            )
+    if not removed:
+        raise HTTPException(404, "没有找到这件自主添加的作品")
+    return {"ok": True}
 
 
 @app.post("/api/explorer/comments", status_code=201)
@@ -872,6 +946,12 @@ def create_work_comment(payload: WorkCommentIn, ai_bole_session: str | None = Co
         valid_work_ids = {
             work["id"] for work in build_explorer_collection(public_account(student), events)["works"]
         }
+        valid_work_ids.update(
+            f"manual-{row['id']}"
+            for row in db.execute(
+                "SELECT id FROM manual_works WHERE student_account_id=?", (student["id"],)
+            ).fetchall()
+        )
         if payload.work_id not in valid_work_ids:
             raise HTTPException(404, "没有找到这件作品")
         comment_id = str(uuid.uuid4())

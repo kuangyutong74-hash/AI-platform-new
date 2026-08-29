@@ -26,6 +26,12 @@ test("server renders AI伯乐探索星球", async () => {
   assert.match(page, /\/api\/account\/password\/reset/);
   assert.match(page, /我是学生/);
   assert.match(page, /我是老师 \/ 家长/);
+  assert.doesNotMatch(page, /name="adultKind"/);
+  assert.doesNotMatch(page, /recoveryCode|找回码/);
+  assert.match(page, /暂不绑定，进入家长 \/ 老师端/);
+  assert.match(page, /没有学生账号也可以先进入/);
+  assert.match(page, /退出登录/);
+  assert.match(page, /管理学生/);
   assert.match(page, /两次输入的密码不一致/);
   assert.match(page, /http:\/\/localhost:8020/);
   assert.doesNotMatch(html, /codex-preview|SkeletonPreview|react-loading-skeleton/);
@@ -97,6 +103,9 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
   }
   assert.match(works, /全部作品/);
   assert.match(works, /温暖点评/);
+  assert.match(works, /这些作品来源于四座大陆/);
+  assert.match(works, /添加我的作品/);
+  assert.match(works, /\/api\/explorer\/works/);
   assert.match(works, /metricValue/);
   assert.match(styles, /\.sticker-picture[\s\S]*background:\s*transparent/);
   assert.match(styles, /\.collection-art[\s\S]*background:\s*transparent/);
