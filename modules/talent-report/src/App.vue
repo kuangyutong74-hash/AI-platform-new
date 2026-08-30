@@ -15,13 +15,15 @@ const exporting=ref(false);
 function setView(value:ViewMode){view.value=value;localStorage.setItem("ai-bole-report-view",value)}
 function goPlanet(){location.href="http://localhost:4173/?from=talent-report"}
 async function exportPdf(){
-  const target=document.querySelector<HTMLElement>(".report-main");
+  const formalDocument=document.querySelector<HTMLElement>(".formal-document");
+  const target=formalDocument||document.querySelector<HTMLElement>(".report-main");
   if(!target)return;
   const book=document.querySelector<HTMLElement>(".magic-book-app");
   exporting.value=true;
   try{
-    book?.classList.add("export-flat");await nextTick();await document.fonts?.ready;
-    const canvas=await html2canvas(target,{backgroundColor:"#FDF3E3",scale:1.6,useCORS:true});
+    if(!formalDocument)book?.classList.add("export-flat");
+    await nextTick();await document.fonts?.ready;
+    const canvas=await html2canvas(target,{backgroundColor:formalDocument?"#FFFFFF":"#FDF3E3",scale:formalDocument?2:1.6,useCORS:true,scrollX:0,scrollY:0,width:target.scrollWidth,height:target.scrollHeight,windowWidth:target.scrollWidth,windowHeight:target.scrollHeight});
     const pdf=new jsPDF("p","mm","a4");const width=190,height=canvas.height*width/canvas.width,page=277;
     let left=height,offset=10;const image=canvas.toDataURL("image/jpeg",.94);
     pdf.addImage(image,"JPEG",10,offset,width,height);left-=page;

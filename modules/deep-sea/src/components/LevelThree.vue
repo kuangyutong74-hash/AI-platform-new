@@ -1115,6 +1115,7 @@ async function goNextLevel() {
       solution_attempts: solutionAttempts.value,
       sentence_blocks_used: usedSentenceBlocks.value.length,
       card_selected: selectedCardId.value,
+      solution_summary: selectedSolutionSummary.value,
       keke_anger_final: kekeAnger.value,
       caicai_anger_final: caicaiAnger.value,
     },

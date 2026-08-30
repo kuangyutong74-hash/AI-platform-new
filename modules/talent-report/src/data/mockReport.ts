@@ -1,6 +1,13 @@
 export type EvidenceLevel = "strong" | "reference";
 export type Evidence = { id:string; behavior:string; source:string; continent:string; time:string; level:EvidenceLevel; raw:string; logTitle?:string; logSummary?:string; logDetails?:string[] };
-export type Moment = { id:string; kind:"story"|"base"|"chat"|"career"; title:string; caption:string; quote?:string; stickers?:string[]; source?:string; time?:string; evidenceId?:string; imageUrl?:string; isExample?:boolean };
+export type DeepSeaPipelineScene = { type:"deep_sea_pipeline";version:number;rows:number;cols:number;pipes:{row:number;col:number;def:string;rot:number;energized:boolean}[];obstacles:{row:number;col:number;kind:string}[];start:{row:number;col:number};end:{row:number;col:number};connected:boolean;rotateCount:number;checkAttempts:number|null };
+export type EcologyScene={type:"deep_sea_ecology";pairs:{label:string;done:boolean}[];adjustments:number;checks:number|null};
+export type MediationScene={type:"deep_sea_mediation";harmony:number;rounds:number;solution:string};
+export type StoryScene={type:"story";title:string;words:string;turns:number;mode:string};
+export type ChatScene={type:"chat";topic:string;words:string;turns:number};
+export type CareerScene={type:"career";career:string;completed:number;stages:number;adjustments:number;retries:number;hints:number};
+export type MomentSceneData=DeepSeaPipelineScene|EcologyScene|MediationScene|StoryScene|ChatScene|CareerScene;
+export type Moment = { id:string; kind:"story"|"base"|"chat"|"career"; title:string; caption:string; quote?:string; stickers?:string[]; source?:string; time?:string; evidenceId?:string; imageUrl?:string; sceneData?:MomentSceneData; isExample?:boolean };
 export type Talent = { key:string; adultName:string; childName:string; icon:string; label:string; color:string; relativeStrength:number; moduleUrl:string; continent:string; module:string; encouragement:string; evidence:Evidence[]; moments?:Moment[] };
 
 const e = (id:string, behavior:string, source:string, continent:string, time:string, level:EvidenceLevel, raw:string):Evidence => ({ id, behavior, source, continent, time, level, raw });

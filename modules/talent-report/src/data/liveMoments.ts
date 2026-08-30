@@ -1,5 +1,5 @@
 import type { CoreEvidence } from "../api/core";
-import type { Moment } from "./mockReport";
+import type { DeepSeaPipelineScene, Moment, MomentSceneData } from "./mockReport";
 
 const moduleMeta:Record<string,{kind:Moment["kind"];name:string}> = {
   story: { kind:"story", name:"故事共创" },
@@ -31,6 +31,34 @@ function imageFrom(event:CoreEvidence):string|undefined {
   return values.find(value=>typeof value==="string"&&/^https?:\/\//.test(value)) as string|undefined;
 }
 
+const numberValue=(value:unknown,fallback:number)=>typeof value==="number"&&Number.isFinite(value)?value:fallback;
+function pipelineSceneFrom(event:CoreEvidence):DeepSeaPipelineScene|undefined {
+  if(event.module!=="deep_sea"||event.event_type!=="spatial_solution")return undefined;
+  const raw=event.raw_evidence;
+  const pipes=Array.isArray(raw.pipe_layout)?raw.pipe_layout.filter(item=>item&&typeof item==="object").map(item=>{const value=item as Record<string,unknown>;return {row:numberValue(value.row,0),col:numberValue(value.col,0),def:typeof value.def==="string"?value.def:"─",rot:numberValue(value.rot,0),energized:Boolean(value.energized)}}):[];
+  if(!pipes.length)return undefined;
+  const obstacles=Array.isArray(raw.obstacle_layout)?raw.obstacle_layout.filter(item=>item&&typeof item==="object").map(item=>{const value=item as Record<string,unknown>;return {row:numberValue(value.row,0),col:numberValue(value.col,0),kind:typeof value.kind==="string"?value.kind:"rock"}}):[];
+  const start=(raw.start_cell&&typeof raw.start_cell==="object"?raw.start_cell:{}) as Record<string,unknown>;
+  const end=(raw.end_cell&&typeof raw.end_cell==="object"?raw.end_cell:{}) as Record<string,unknown>;
+  return {type:"deep_sea_pipeline",version:numberValue(raw.renderer_version,1),rows:numberValue(raw.grid_rows,8),cols:numberValue(raw.grid_cols,10),pipes,obstacles,start:{row:numberValue(start.row,0),col:numberValue(start.col,0)},end:{row:numberValue(end.row,7),col:numberValue(end.col,9)},connected:raw.connected!==false,rotateCount:numberValue(raw.rotate_count,0),checkAttempts:typeof raw.check_attempts==="number"?raw.check_attempts:null};
+}
+
+const stringValue=(value:unknown,fallback="")=>typeof value==="string"?value.trim():fallback;
+function sceneFrom(event:CoreEvidence):MomentSceneData|undefined {
+  const pipeline=pipelineSceneFrom(event);if(pipeline)return pipeline;
+  const raw=event.raw_evidence;
+  if(event.module==="deep_sea"&&event.event_type==="ecology_strategy"){
+    const details=Array.isArray(raw.pair_details)?raw.pair_details.filter(item=>item&&typeof item==="object").map(item=>{const value=item as Record<string,unknown>;return {label:stringValue(value.label),done:Boolean(value.done)}}):[];
+    const pairCount=numberValue(raw.successful_pairs,0);const pairs=details.length?details:Array.from({length:Math.max(1,pairCount)},(_,index)=>({label:`生态组合 ${index+1}`,done:true}));
+    return {type:"deep_sea_ecology",pairs,adjustments:numberValue(raw.meaningful_adjustments,0),checks:typeof raw.check_attempts==="number"?raw.check_attempts:null};
+  }
+  if(event.module==="deep_sea"&&event.event_type==="mediation_response")return {type:"deep_sea_mediation",harmony:numberValue(raw.harmony_final,raw.harmony_band==="high"?88:68),rounds:numberValue(raw.rounds_used,0),solution:stringValue(raw.solution_summary)};
+  if(event.module==="story")return {type:"story",title:stringValue(raw.title,"我的共创故事"),words:stringValue(raw.child_words),turns:numberValue(raw.turn_number,0),mode:stringValue(raw.completion_mode,"director")};
+  if(event.module==="chat")return {type:"chat",topic:stringValue(raw.topic,"最近的发现"),words:stringValue(raw.child_words),turns:numberValue(raw.turn_count,0)};
+  if(event.module==="career")return {type:"career",career:stringValue(raw.career_name,"职业体验"),completed:numberValue(raw.completed_stages,0),stages:numberValue(raw.stage_count,3),adjustments:numberValue(raw.adjustment_count,0),retries:numberValue(raw.retry_count,0),hints:numberValue(raw.hint_count,0)};
+  return undefined;
+}
+
 export function momentFromEvidence(event:CoreEvidence):Moment {
   const meta=moduleMeta[event.module]||{kind:"career" as const,name:event.module};
   const title=eventTitles[event.event_type]||"认真尝试的这一刻";
@@ -44,6 +72,7 @@ export function momentFromEvidence(event:CoreEvidence):Moment {
     time:event.occurred_at.replace("T"," ").slice(0,16),
     evidenceId:event.id,
     imageUrl:imageFrom(event),
+    sceneData:sceneFrom(event),
   };
 }
 

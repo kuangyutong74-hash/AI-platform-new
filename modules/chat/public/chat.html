@@ -33,7 +33,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 .weather-badge svg{stroke:#587594}
 .top-actions{height:100%;display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:0 16px}
 .top-button{min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 16px;border:1px solid var(--line2);border-radius:16px;background:#fffdfa;box-shadow:0 6px 16px rgba(98,62,42,.06);font-size:15px;font-weight:900;cursor:pointer;transition:.16s}
-.top-button img{width:22px;height:22px}.top-button:hover{transform:translateY(-2px);box-shadow:0 10px 23px rgba(98,62,42,.10)}.top-button.danger{color:#d94821;border-color:rgba(241,93,45,.72)}
+.top-button img{width:22px;height:22px}.top-button svg{width:22px;height:22px}.top-button:hover{transform:translateY(-2px);box-shadow:0 10px 23px rgba(98,62,42,.10)}.top-button.danger{color:#d94821;border-color:rgba(241,93,45,.72)}
 
 .workspace{height:calc(100% - 72px);display:grid;grid-template-columns:minmax(500px,1fr) 110px;background:rgba(255,253,249,.80)}
 
@@ -172,7 +172,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
   <script src="/assets/avatars/avatar-config.js"></script>
 </head>
 <body>
-  <a class="platform-return" href="http://localhost:4173/?from=chat" aria-label="返回 AI 伯乐探索星球">← 返回探索星球</a>
+  <a class="platform-return" id="platformReturnLink" href="http://localhost:4173/?from=chat" aria-label="返回 AI 伯乐探索星球">← 返回探索星球</a>
 
   <div class="app-shell">
    <main class="app-frame">
@@ -193,9 +193,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 	        <button class="top-button" id="moodButton" type="button">
 	          <img src="assets/icons/mood.svg" alt=""><span>选择心情</span>
 	        </button>
-	        <a class="top-button" href="/home.html">
-	          <img src="assets/icons/home.svg" alt=""><span>返回首页</span>
-	        </a>
+        <button class="top-button" id="btnReturnPlanet" type="button" aria-label="返回探索星球">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="6.5" fill="#9b7bff"/><ellipse cx="12" cy="12" rx="11" ry="4.2" stroke="#6b4bd6" stroke-width="1.7" transform="rotate(-18 12 12)"/><circle cx="7.6" cy="9.6" r="1.2" fill="#fff"/><circle cx="15" cy="14" r="0.9" fill="#fff" opacity=".85"/><circle cx="12" cy="6" r="0.7" fill="#fff" opacity=".7"/></svg>
+          <span>返回星球</span>
+        </button>
+        <a class="top-button" href="/home.html">
+          <img src="assets/icons/home.svg" alt=""><span>返回首页</span>
+        </a>
 	        <button class="top-button danger" id="btnEnd" type="button">
 	          <img src="assets/icons/end.svg" alt=""><span>结束聊天</span>
 	        </button>
@@ -973,7 +977,7 @@ msgInput.addEventListener('input',function(){autoResizeTextarea();updateCharCoun
 msgInput.addEventListener('paste',function(e){var cur=msgInput.value,cl=(e.clipboardData||window.clipboardData||{}).getData?e.clipboardData.getData('text/plain'):'';if(!cl)return;var avail=2000-cur.length;if(cl.length>avail){e.preventDefault();var tr=cl.slice(0,avail),st=msgInput.selectionStart,en=msgInput.selectionEnd;msgInput.value=cur.slice(0,st)+tr+cur.slice(en);var np=st+tr.length;msgInput.setSelectionRange(np,np);autoResizeTextarea();updateCharCount();var toast=document.createElement('div');toast.textContent='最多输入 2000 个字符，超出部分未输入';toast.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#51291f;color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;z-index:9999;opacity:1;transition:opacity .4s;pointer-events:none;';document.body.appendChild(toast);setTimeout(function(){toast.style.opacity='0'},1800);setTimeout(function(){if(toast.parentNode)toast.parentNode.removeChild(toast)},2300)}});
 
 // ===== End chat =====
-async function finalizeConversation(){if(turnCount===0||finalized)return;finalized=true;sessionStorage.setItem(XIAOXIN_SESSION_FINALIZED_KEY,'1');var b={sessionId:sessionId,messages:messages,turnCount:turnCount,weather:selectedWeather,weatherLabel:weatherLabel,completed:true};try{await fetch('/api/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}catch(e){}try{var childMessages=messages.filter(function(item){return item.role==='user'}),longTurns=childMessages.filter(function(item){return item.content.length>=20}).length,totalChars=childMessages.reduce(function(sum,item){return sum+item.content.length},0),longest=childMessages.reduce(function(best,item){return item.content.length>best.length?item.content:best},''),topic=conversationTopic();await window.AIBole?.emitEvidence({module:'chat',event_type:'narrative_evidence',evidence_level:longTurns>=2?'strong':'reference',intelligence_candidates:['linguistic','intrapersonal'],behavior_summary:longTurns>=2?'能围绕话题持续展开，并用较完整的话表达自己的经历与想法。':'在聊天中表达了自己的兴趣与想法，可作为后续观察线索。',raw_evidence:{completed:true,duration_seconds:conversationDurationSeconds(),turn_count:turnCount,long_turn_count:longTurns,total_child_chars:totalChars,topic_source:'free_conversation',topic:topic,title:'聊聊'+topic,child_words:longest.slice(0,60)},context:{activity_id:sessionId,session_id:sessionId,idempotency_key:sessionId+':completed'}})}catch(e){}}
+async function finalizeConversation(){if(turnCount===0||finalized)return;finalized=true;sessionStorage.setItem(XIAOXIN_SESSION_FINALIZED_KEY,'1');var b={sessionId:sessionId,messages:messages,turnCount:turnCount,weather:selectedWeather,weatherLabel:weatherLabel,completed:true};try{await fetch('/api/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}catch(e){}try{var childMessages=messages.filter(function(item){return item.role==='user'}),longTurns=childMessages.filter(function(item){return item.content.length>=10}).length,totalChars=childMessages.reduce(function(sum,item){return sum+item.content.length},0),longest=childMessages.reduce(function(best,item){return item.content.length>best.length?item.content:best},''),topic=conversationTopic();await window.AIBole?.emitEvidence({module:'chat',event_type:'narrative_evidence',evidence_level:longTurns>=2?'strong':'reference',intelligence_candidates:['linguistic','intrapersonal'],behavior_summary:longTurns>=2?'能围绕话题持续展开，并用较完整的话表达自己的经历与想法。':'在聊天中表达了自己的兴趣与想法，可作为后续观察线索。',raw_evidence:{completed:true,duration_seconds:conversationDurationSeconds(),turn_count:turnCount,long_turn_count:longTurns,total_child_chars:totalChars,topic_source:'free_conversation',topic:topic,title:'聊聊'+topic,child_words:longest.slice(0,60)},context:{activity_id:sessionId,session_id:sessionId,idempotency_key:sessionId+':completed'}})}catch(e){}}
 function buildEndUrl(){
   var params=new URLSearchParams();
   params.set('turns',turnCount);
@@ -988,8 +992,25 @@ btnEnd.addEventListener('click',async function(){
   // 跳转到独立的结束页面，URL 不同 → 刷新也不丢状态
   location.href=buildEndUrl();
 });
+// 离开聊天页前先上报对话证据，确保「聊天观察」能在天赋藏宝星图里留下回看记录
+function leaveChat(url){
+  if(turnCount>0&&!finalized){finalizeConversation().then(function(){location.href=url}).catch(function(){location.href=url})}else{location.href=url}
+}
+var btnReturnPlanet=document.getElementById('btnReturnPlanet');
+if(btnReturnPlanet)btnReturnPlanet.addEventListener('click',function(){leaveChat('http://localhost:4173/?from=chat')});
+var platformReturnLink=document.getElementById('platformReturnLink');
+if(platformReturnLink)platformReturnLink.addEventListener('click',function(e){e.preventDefault();leaveChat('http://localhost:4173/?from=chat')});
+var homeLinks=document.querySelectorAll('a[href="/home.html"]');
+homeLinks.forEach(function(homeLink){homeLink.addEventListener('click',function(e){if(turnCount>0&&!finalized){e.preventDefault();leaveChat('/home.html')}})});
 btnPinyin.addEventListener('click',function(){this.classList.toggle('on')});
-window.addEventListener('beforeunload',function(){if(turnCount>0&&!finalized){var b={sessionId:sessionId,messages:messages,turnCount:turnCount,weather:weatherLabel};fetch('/api/history/auto-save',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b),keepalive:true}).catch(function(){})}});
+window.addEventListener('beforeunload',function(){
+  if(turnCount>0&&!finalized){
+    var b={sessionId:sessionId,messages:messages,turnCount:turnCount,weather:weatherLabel};
+    fetch('/api/history/auto-save',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b),keepalive:true}).catch(function(){});
+    // 尽力补发证据（不依赖异步完成，浏览器可能中断）
+    try{finalizeConversation()}catch(_){}
+  }
+});
 console.log('Session:',sessionId);
   </script>
   <!-- 离线语音识别库（本地化文件，不依赖外部 CDN；识别全程本地运行） -->
