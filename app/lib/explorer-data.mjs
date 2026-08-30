@@ -170,6 +170,15 @@ function normalizeItem(item, index, kind) {
     scene: meta.scene,
     milestoneImage: meta.milestoneImage,
     tone: meta.tone,
+    isHighlight: item?.is_highlight === true || item?.isHighlight === true || itemKind === "highlight",
+    snapshotUrl: cleanText(item?.snapshot_url ?? item?.snapshotUrl),
+    comments: Array.isArray(item?.comments) ? item.comments.map((comment, commentIndex) => ({
+      id: cleanText(comment?.id, `comment-${index}-${commentIndex}`),
+      body: cleanText(comment?.body),
+      authorName: cleanText(comment?.author_name ?? comment?.authorName, "老师 / 家长"),
+      authorKind: cleanText(comment?.author_kind ?? comment?.authorKind),
+      createdAt: cleanText(comment?.created_at ?? comment?.createdAt),
+    })).filter(comment => comment.body) : [],
   };
 }
 
@@ -214,8 +223,8 @@ export function normalizeCollectionResponse(payload) {
   const works = worksAreDemo ? demo.works : realWorks;
   const milestones = timelineIsDemo ? demo.milestones : realMilestones;
   const worksNotice = worksAreDemo
-    ? "还没有足够的真实高光记录，这里先展示示例奖章。完成探索后，会自动换成你的代表性高光。"
-    : "每座大陆只保留一枚真实高光：表达最充分、参与最完整或过程最值得回看的一次。";
+    ? "还没有作品，这里先展示四座大陆的示例。你可以完成探索，也可以自己添加第一件作品。"
+    : "这里收着探索完成的作品，也收着你自己添加的创作。";
   const timelineNotice = timelineIsDemo
     ? "还没有收到账号使用历程，这里先展示清楚标注的示例。"
     : "这条星路从注册日开始，记录四个模块的首次完成、最近完成和累计次数。";

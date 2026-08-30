@@ -66,7 +66,16 @@ if ($platformService -and -not (Test-ServiceEndpoint $platformService.Url)) {
   Write-Host '[构建中] 整合平台前端' -ForegroundColor Yellow
   Push-Location $platformService.WorkingDirectory
   try {
-    & $platformCommand run build *> $platformBuildLog
+    # PowerShell 5.1 turns npm.cmd stderr lines into NativeCommandError records;
+    # with $ErrorActionPreference='Stop' the first one aborts the script mid-build.
+    # Downgrade to Continue for the build; real failures are caught via $LASTEXITCODE.
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+      & $platformCommand run build *> $platformBuildLog
+    } finally {
+      $ErrorActionPreference = $previousErrorActionPreference
+    }
     if ($LASTEXITCODE -ne 0) {
       throw "前端构建失败（退出码 $LASTEXITCODE），请查看：$platformBuildLog"
     }

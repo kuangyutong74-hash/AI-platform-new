@@ -18,6 +18,8 @@ test("normalizes account-owned works and milestones without replacing them with 
         occurred_at: "2026-08-20T08:00:00+00:00",
         quote: "这样它就不怕黑啦。",
         kind: "highlight",
+        is_highlight: true,
+        comments: [{ id: "c-1", body: "这个结尾很有想象力。", author_name: "李老师", author_kind: "teacher", created_at: "2026-08-21T08:00:00Z" }],
         metric_label: "故事长度",
         metric_value: "386 字",
       },
@@ -43,6 +45,8 @@ test("normalizes account-owned works and milestones without replacing them with 
   assert.equal(result.works[0].module, "story");
   assert.equal(result.works[0].quote, "这样它就不怕黑啦。");
   assert.equal(result.works[0].metricValue, "386 字");
+  assert.equal(result.works[0].isHighlight, true);
+  assert.equal(result.works[0].comments[0].authorName, "李老师");
   assert.equal(result.milestones.length, 1);
   assert.equal(result.milestones[0].module, "registration");
   assert.equal(result.milestones[0].durationSeconds, 0);

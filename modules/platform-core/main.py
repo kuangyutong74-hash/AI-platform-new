@@ -23,7 +23,7 @@ from typing import Literal
 from fastapi import Cookie, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from explorer_collection import build_explorer_collection
 
@@ -64,6 +64,7 @@ app.add_middleware(
         "http://localhost:4173", "http://localhost:3000", "http://localhost:5174",
         "http://localhost:3001", "http://localhost:8000", "http://localhost:5175",
     ],
+    allow_origin_regex=r"http://(?:localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type"],
@@ -115,8 +116,49 @@ def initialize_database() -> None:
             CREATE INDEX IF NOT EXISTS idx_sessions_token ON account_sessions(token_hash);
             CREATE INDEX IF NOT EXISTS idx_evidence_account_time ON evidence_events(account_id, occurred_at DESC);
             CREATE INDEX IF NOT EXISTS idx_evidence_account_module ON evidence_events(account_id, module);
+            CREATE TABLE IF NOT EXISTS adult_student_links (
+              adult_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+              student_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+              created_at TEXT NOT NULL,
+              PRIMARY KEY (adult_account_id, student_account_id)
+            );
+            CREATE TABLE IF NOT EXISTS work_comments (
+              id TEXT PRIMARY KEY,
+              student_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+              work_id TEXT NOT NULL,
+              author_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+              body TEXT NOT NULL,
+              created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS manual_works (
+              id TEXT PRIMARY KEY,
+              student_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+              module TEXT NOT NULL,
+              title TEXT NOT NULL,
+              description TEXT NOT NULL,
+              created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_adult_links_student ON adult_student_links(student_account_id);
+            CREATE INDEX IF NOT EXISTS idx_work_comments_student_work ON work_comments(student_account_id, work_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_manual_works_student_time ON manual_works(student_account_id, created_at DESC);
             """
         )
+        account_columns = {
+            row["name"] for row in db.execute("PRAGMA table_info(accounts)").fetchall()
+        }
+        for column, definition in (
+            ("role", "TEXT NOT NULL DEFAULT 'student'"),
+            ("adult_kind", "TEXT"),
+            ("recovery_hash", "TEXT"),
+            ("recovery_salt", "TEXT"),
+        ):
+            if column not in account_columns:
+                db.execute(f"ALTER TABLE accounts ADD COLUMN {column} {definition}")
+        session_columns = {
+            row["name"] for row in db.execute("PRAGMA table_info(account_sessions)").fetchall()
+        }
+        if "selected_student_id" not in session_columns:
+            db.execute("ALTER TABLE account_sessions ADD COLUMN selected_student_id TEXT")
         evidence_columns = {
             row["name"] for row in db.execute("PRAGMA table_info(evidence_events)").fetchall()
         }
@@ -152,6 +194,8 @@ def public_account(row: sqlite3.Row) -> dict:
         "display_name": row["display_name"],
         "age": row["age"],
         "created_at": row["created_at"],
+        "role": row["role"] or "student",
+        "adult_kind": row["adult_kind"],
     }
 
 
@@ -167,6 +211,38 @@ def require_account(token: str | None) -> sqlite3.Row:
     if not row:
         raise HTTPException(401, "登录状态已失效")
     return row
+
+
+def linked_students(db: sqlite3.Connection, adult_id: str) -> list[sqlite3.Row]:
+    return db.execute(
+        """SELECT s.* FROM adult_student_links l
+           JOIN accounts s ON s.id=l.student_account_id
+           WHERE l.adult_account_id=? ORDER BY l.created_at, s.username""",
+        (adult_id,),
+    ).fetchall()
+
+
+def resolve_subject(viewer: sqlite3.Row, token: str | None) -> sqlite3.Row:
+    """学生读取自己；成人只能读取已绑定且当前选中的学生。"""
+    if (viewer["role"] or "student") == "student":
+        return viewer
+    with connect() as db:
+        session = db.execute(
+            "SELECT selected_student_id FROM account_sessions WHERE token_hash=? AND expires_at>?",
+            (token_digest(token or ""), now_iso()),
+        ).fetchone()
+        students = linked_students(db, viewer["id"])
+        if not students:
+            raise HTTPException(409, "请先绑定至少一位学生")
+        selected_id = session["selected_student_id"] if session else None
+        return next((student for student in students if student["id"] == selected_id), students[0])
+
+
+def require_student_viewer(token: str | None) -> sqlite3.Row:
+    account = require_account(token)
+    if (account["role"] or "student") != "student":
+        raise HTTPException(403, "老师/家长账号不能进入学生探索模块")
+    return account
 
 
 def build_talent_eligibility(rows: list[sqlite3.Row]) -> list[dict]:
@@ -218,6 +294,7 @@ class AccountCredentialsIn(BaseModel):
     username: str = Field(min_length=2, max_length=30)
     # 兼容旧版本已创建的 4～5 位密码；新注册仍要求至少 6 位。
     password: str = Field(min_length=4, max_length=72)
+    expected_role: Literal["student", "adult"] | None = None
 
     @field_validator("username")
     @classmethod
@@ -225,18 +302,92 @@ class AccountCredentialsIn(BaseModel):
         return normalize_username(value)
 
 
-class AccountRegistrationIn(AccountCredentialsIn):
+class AccountRegistrationIn(BaseModel):
+    username: str | None = Field(default=None, max_length=30)
     password: str = Field(min_length=6, max_length=72)
     display_name: str = Field(min_length=1, max_length=30)
-    age: int = Field(ge=4, le=18)
+    age: int | None = None
+    role: Literal["student", "adult"] = "student"
+    adult_kind: Literal["parent", "teacher"] | None = None
+
+    @field_validator("username")
+    @classmethod
+    def normalize_optional_username(cls, value: str | None) -> str | None:
+        return normalize_username(value) if value and value.strip() else None
 
     @field_validator("display_name")
     @classmethod
     def normalize_display_name(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            raise ValueError("请填写孩子昵称")
+            raise ValueError("请填写昵称")
         return value
+
+    @model_validator(mode="after")
+    def validate_role_fields(self):
+        if self.role == "student":
+            if self.age is None or not 4 <= self.age <= 18:
+                raise ValueError("学生年龄需填写 4～18 岁")
+            self.adult_kind = None
+        else:
+            # 测试阶段统一使用成人端，不区分家长与老师。
+            self.adult_kind = None
+        return self
+
+
+class PasswordResetIn(BaseModel):
+    username: str = Field(min_length=2, max_length=30)
+    new_password: str = Field(min_length=6, max_length=72)
+
+    @field_validator("username")
+    @classmethod
+    def normalize_reset_username(cls, value: str) -> str:
+        return normalize_username(value)
+
+
+class StudentLinkIn(BaseModel):
+    username: str = Field(min_length=2, max_length=30)
+
+    @field_validator("username")
+    @classmethod
+    def normalize_student_username(cls, value: str) -> str:
+        return normalize_username(value)
+
+
+class StudentContextIn(BaseModel):
+    student_id: str = Field(min_length=1, max_length=80)
+
+
+class WorkCommentIn(BaseModel):
+    work_id: str = Field(min_length=1, max_length=180)
+    body: str = Field(min_length=1, max_length=300)
+
+    @field_validator("body")
+    @classmethod
+    def normalize_comment(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("请写下点评内容")
+        return value
+
+
+class ManualWorkIn(BaseModel):
+    module: Literal["story", "deep_sea", "career", "chat"]
+    title: str = Field(min_length=1, max_length=60)
+    description: str = Field(default="", max_length=1000)
+
+    @field_validator("title")
+    @classmethod
+    def normalize_manual_work_title(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("请填写作品名称")
+        return value
+
+    @field_validator("description")
+    @classmethod
+    def normalize_manual_work_description(cls, value: str) -> str:
+        return value.strip()
 
 
 class EvidenceIn(BaseModel):
@@ -377,7 +528,7 @@ def screenshot_library() -> FileResponse:
 
 @app.post("/api/evidence/snapshots")
 def create_snapshot(payload: SnapshotIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
-    require_account(ai_bole_session)
+    require_student_viewer(ai_bole_session)
     prefix = "data:image/jpeg;base64,"
     if not payload.data_url.startswith(prefix):
         raise HTTPException(400, "只支持 JPEG 体验快照")
@@ -406,9 +557,16 @@ def issue_session(db: sqlite3.Connection, account_id: str, response: Response, t
     db.execute("DELETE FROM account_sessions WHERE expires_at<=?", (timestamp,))
     token = secrets.token_urlsafe(32)
     expires = (datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)).isoformat()
+    first_student = db.execute(
+        "SELECT student_account_id FROM adult_student_links WHERE adult_account_id=? ORDER BY created_at LIMIT 1",
+        (account_id,),
+    ).fetchone()
     db.execute(
-        "INSERT INTO account_sessions VALUES (?,?,?,?,?)",
-        (str(uuid.uuid4()), account_id, token_digest(token), expires, timestamp),
+        """INSERT INTO account_sessions
+           (id, account_id, token_hash, expires_at, created_at, selected_student_id)
+           VALUES (?,?,?,?,?,?)""",
+        (str(uuid.uuid4()), account_id, token_digest(token), expires, timestamp,
+         first_student["student_account_id"] if first_student else None),
     )
     response.set_cookie(
         COOKIE_NAME, token, httponly=True, samesite="lax", secure=False,
@@ -416,25 +574,63 @@ def issue_session(db: sqlite3.Connection, account_id: str, response: Response, t
     )
 
 
+def generate_username(db: sqlite3.Connection, role: str) -> str:
+    prefix = ("S" if role == "student" else "A") + datetime.now(timezone.utc).strftime("%Y")
+    rows = db.execute(
+        "SELECT username FROM accounts WHERE username LIKE ?", (f"{prefix.lower()}%",)
+    ).fetchall()
+    used = {
+        int(suffix)
+        for row in rows
+        if (suffix := row["username"][len(prefix):]).isdigit()
+    }
+    number = next(value for value in range(1, 10_000) if value not in used)
+    return f"{prefix}{number:04d}".lower()
+
+
+def account_session_payload(viewer: sqlite3.Row, token: str | None = None) -> dict:
+    result = {"account": public_account(viewer)}
+    if (viewer["role"] or "student") != "adult":
+        result["selected_student"] = public_account(viewer)
+        result["students"] = []
+        return result
+    with connect() as db:
+        students = linked_students(db, viewer["id"])
+        session = db.execute(
+            "SELECT selected_student_id FROM account_sessions WHERE token_hash=?",
+            (token_digest(token or ""),),
+        ).fetchone()
+    selected_id = session["selected_student_id"] if session else None
+    selected = next((student for student in students if student["id"] == selected_id), students[0] if students else None)
+    result["students"] = [public_account(student) for student in students]
+    result["selected_student"] = public_account(selected) if selected else None
+    return result
+
+
 @app.post("/api/account/register", status_code=201)
 def register_account(payload: AccountRegistrationIn, response: Response) -> dict:
     timestamp = now_iso()
     with connect() as db:
-        if db.execute("SELECT 1 FROM accounts WHERE username=?", (payload.username,)).fetchone():
+        username = payload.username or generate_username(db, payload.role)
+        if db.execute("SELECT 1 FROM accounts WHERE username=?", (username,)).fetchone():
             raise HTTPException(409, "这个探索者账号已经存在，请直接登录")
         account_id = str(uuid.uuid4())
         salt = secrets.token_hex(16)
         try:
             db.execute(
-                "INSERT INTO accounts VALUES (?,?,?,?,?,?,?,?)",
-                (account_id, payload.username, payload.display_name, payload.age,
-                 password_digest(payload.password, salt), salt, timestamp, timestamp),
+                """INSERT INTO accounts
+                   (id,username,display_name,age,password_hash,password_salt,created_at,updated_at,
+                    role,adult_kind)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                (account_id, username, payload.display_name, payload.age or 0,
+                 password_digest(payload.password, salt), salt, timestamp, timestamp,
+                 payload.role, payload.adult_kind),
             )
         except sqlite3.IntegrityError as cause:
             raise HTTPException(409, "这个探索者账号已经存在，请直接登录") from cause
         issue_session(db, account_id, response, timestamp)
         account = db.execute("SELECT * FROM accounts WHERE id=?", (account_id,)).fetchone()
-    return {"account": public_account(account), "created": True}
+    return {"account": public_account(account), "created": True, "generated_username": payload.username is None}
 
 
 @app.post("/api/account/session")
@@ -447,14 +643,114 @@ def create_session(payload: AccountCredentialsIn, response: Response) -> dict:
         candidate = password_digest(payload.password, account["password_salt"])
         if not hmac.compare_digest(candidate, account["password_hash"]):
             raise HTTPException(401, "账号或密码不正确")
+        if payload.expected_role and (account["role"] or "student") != payload.expected_role:
+            label = "学生端" if (account["role"] or "student") == "student" else "老师/家长端"
+            raise HTTPException(403, f"这个账号属于{label}，请切换到对应入口登录")
         db.execute("UPDATE accounts SET updated_at=? WHERE id=?", (timestamp, account["id"]))
         issue_session(db, account["id"], response, timestamp)
-    return {"account": public_account(account), "created": False}
+    return {**account_session_payload(account), "created": False}
+
+
+@app.post("/api/account/password/reset")
+def reset_password(payload: PasswordResetIn) -> dict:
+    with connect() as db:
+        account = db.execute("SELECT * FROM accounts WHERE username=?", (payload.username,)).fetchone()
+        if not account:
+            raise HTTPException(404, "没有找到这个账号，请核对用户名")
+        salt = secrets.token_hex(16)
+        db.execute(
+            "UPDATE accounts SET password_hash=?,password_salt=?,updated_at=? WHERE id=?",
+            (password_digest(payload.new_password, salt), salt, now_iso(), account["id"]),
+        )
+        db.execute("DELETE FROM account_sessions WHERE account_id=?", (account["id"],))
+    return {"ok": True}
 
 
 @app.get("/api/account/me")
 def account_me(ai_bole_session: str | None = Cookie(default=None)) -> dict:
-    return {"account": public_account(require_account(ai_bole_session))}
+    return account_session_payload(require_account(ai_bole_session), ai_bole_session)
+
+
+@app.get("/api/account/students")
+def get_linked_students(ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    viewer = require_account(ai_bole_session)
+    if (viewer["role"] or "student") != "adult":
+        raise HTTPException(403, "只有老师/家长账号可以管理学生")
+    return account_session_payload(viewer, ai_bole_session)
+
+
+@app.post("/api/account/students/bind", status_code=201)
+def bind_student(payload: StudentLinkIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    viewer = require_account(ai_bole_session)
+    if (viewer["role"] or "student") != "adult":
+        raise HTTPException(403, "只有老师/家长账号可以绑定学生")
+    with connect() as db:
+        count = db.execute(
+            "SELECT COUNT(*) AS total FROM adult_student_links WHERE adult_account_id=?", (viewer["id"],)
+        ).fetchone()["total"]
+        student = db.execute("SELECT * FROM accounts WHERE username=?", (payload.username,)).fetchone()
+        if not student or (student["role"] or "student") != "student":
+            raise HTTPException(404, "没有找到这个学生账号，请核对后再试")
+        exists = db.execute(
+            "SELECT 1 FROM adult_student_links WHERE adult_account_id=? AND student_account_id=?",
+            (viewer["id"], student["id"]),
+        ).fetchone()
+        if exists:
+            raise HTTPException(409, "这位学生已经绑定")
+        if count >= 5:
+            raise HTTPException(409, "每个老师/家长账号最多绑定 5 位学生")
+        db.execute(
+            "INSERT INTO adult_student_links VALUES (?,?,?)", (viewer["id"], student["id"], now_iso())
+        )
+        db.execute(
+            """UPDATE account_sessions SET selected_student_id=COALESCE(selected_student_id, ?)
+               WHERE account_id=?""",
+            (student["id"], viewer["id"]),
+        )
+    return {"ok": True, "student": public_account(student), **account_session_payload(viewer, ai_bole_session)}
+
+
+@app.delete("/api/account/students/{student_id}")
+def unbind_student(student_id: str, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    viewer = require_account(ai_bole_session)
+    if (viewer["role"] or "student") != "adult":
+        raise HTTPException(403, "只有老师/家长账号可以解绑学生")
+    with connect() as db:
+        removed = db.execute(
+            "DELETE FROM adult_student_links WHERE adult_account_id=? AND student_account_id=?",
+            (viewer["id"], student_id),
+        ).rowcount
+        next_student = db.execute(
+            "SELECT student_account_id FROM adult_student_links WHERE adult_account_id=? ORDER BY created_at LIMIT 1",
+            (viewer["id"],),
+        ).fetchone()
+        db.execute(
+            "UPDATE account_sessions SET selected_student_id=? WHERE account_id=? AND selected_student_id=?",
+            (next_student["student_account_id"] if next_student else None, viewer["id"], student_id),
+        )
+    if not removed:
+        raise HTTPException(404, "没有找到这条学生绑定")
+    return {"ok": True, **account_session_payload(viewer, ai_bole_session)}
+
+
+@app.post("/api/account/context")
+def select_student(payload: StudentContextIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    viewer = require_account(ai_bole_session)
+    if (viewer["role"] or "student") != "adult":
+        raise HTTPException(403, "学生账号无需切换查看对象")
+    with connect() as db:
+        student = db.execute(
+            """SELECT s.* FROM adult_student_links l JOIN accounts s ON s.id=l.student_account_id
+               WHERE l.adult_account_id=? AND l.student_account_id=?""",
+            (viewer["id"], payload.student_id),
+        ).fetchone()
+        if not student:
+            raise HTTPException(403, "只能查看已经绑定的学生")
+        db.execute(
+            "UPDATE account_sessions SET selected_student_id=? WHERE token_hash=?",
+            (student["id"], token_digest(ai_bole_session or "")),
+        )
+    return {"ok": True, "selected_student": public_account(student)}
 
 
 @app.delete("/api/account/session")
@@ -468,7 +764,7 @@ def delete_session(response: Response, ai_bole_session: str | None = Cookie(defa
 
 @app.post("/api/evidence/events")
 def create_evidence(payload: EvidenceIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
-    account = require_account(ai_bole_session)
+    account = require_student_viewer(ai_bole_session)
     event_id = str(uuid.uuid4())
     idempotency_key = payload.context.get("idempotency_key")
     if not isinstance(idempotency_key, str) or not idempotency_key.strip():
@@ -505,7 +801,8 @@ def create_evidence(payload: EvidenceIn, ai_bole_session: str | None = Cookie(de
 
 @app.get("/api/evidence/events")
 def list_evidence(ai_bole_session: str | None = Cookie(default=None), limit: int = 200) -> dict:
-    account = require_account(ai_bole_session)
+    viewer = require_account(ai_bole_session)
+    account = resolve_subject(viewer, ai_bole_session)
     safe_limit = max(1, min(limit, 500))
     with connect() as db:
         rows = db.execute(
@@ -521,13 +818,14 @@ def list_evidence(ai_bole_session: str | None = Cookie(default=None), limit: int
             "behavior_summary": row["behavior_summary"], "raw_evidence": json.loads(row["raw_evidence"]),
             "context": json.loads(row["context"]),
         })
-    return {"account": public_account(account), "events": events}
+    return {"account": public_account(account), "viewer": public_account(viewer), "events": events}
 
 
 @app.get("/api/explorer/collection")
 def explorer_collection(ai_bole_session: str | None = Cookie(default=None)) -> dict:
-    """分别提供模块高光与账号使用历程，避免两个页面职责重复。"""
-    account = require_account(ai_bole_session)
+    """提供全部完成作品、模块高光、点评与账号使用历程。"""
+    viewer = require_account(ai_bole_session)
+    account = resolve_subject(viewer, ai_bole_session)
     with connect() as db:
         rows = db.execute(
             "SELECT * FROM evidence_events WHERE account_id=? ORDER BY occurred_at DESC",
@@ -546,13 +844,133 @@ def explorer_collection(ai_bole_session: str | None = Cookie(default=None)) -> d
         }
         for row in rows
     ]
-    return build_explorer_collection(public_account(account), events)
+    with connect() as db:
+        comments = db.execute(
+            """SELECT c.*,a.display_name AS author_name,a.adult_kind AS author_kind
+               FROM work_comments c JOIN accounts a ON a.id=c.author_account_id
+               WHERE c.student_account_id=? ORDER BY c.created_at""",
+            (account["id"],),
+        ).fetchall()
+        manual_works = db.execute(
+            "SELECT * FROM manual_works WHERE student_account_id=? ORDER BY created_at DESC",
+            (account["id"],),
+        ).fetchall()
+    result = build_explorer_collection(public_account(account), events)
+    result["works"].extend(manual_work_item(work) for work in manual_works)
+    by_work: dict[str, list[dict]] = {}
+    for comment in comments:
+        by_work.setdefault(comment["work_id"], []).append({
+            "id": comment["id"],
+            "body": comment["body"],
+            "author_name": comment["author_name"],
+            "author_kind": comment["author_kind"],
+            "created_at": comment["created_at"],
+        })
+    for work in result["works"]:
+        work["comments"] = by_work.get(work["id"], [])
+    result["viewer"] = public_account(viewer)
+    return result
+
+
+def manual_work_item(row: sqlite3.Row) -> dict:
+    return {
+        "id": f"manual-{row['id']}",
+        "module": row["module"],
+        "title": row["title"],
+        "summary": "这是我自己添加的作品。",
+        "detail": row["description"] or "这件作品由我自己添加到作品册。",
+        "quote": "",
+        "occurred_at": row["created_at"],
+        "status": "我添加的作品",
+        "unlocked": True,
+        "event_type": "manual_work_added",
+        "kind": "manual_work",
+        "is_highlight": False,
+        "snapshot_url": "",
+        "metric_label": "作品来源",
+        "metric_value": "自主添加",
+        "usage_count": 1,
+    }
+
+
+@app.post("/api/explorer/works", status_code=201)
+def create_manual_work(payload: ManualWorkIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    student = require_student_viewer(ai_bole_session)
+    work_id = str(uuid.uuid4())
+    created_at = now_iso()
+    with connect() as db:
+        db.execute(
+            "INSERT INTO manual_works (id,student_account_id,module,title,description,created_at) VALUES (?,?,?,?,?,?)",
+            (work_id, student["id"], payload.module, payload.title, payload.description, created_at),
+        )
+        row = db.execute("SELECT * FROM manual_works WHERE id=?", (work_id,)).fetchone()
+    return {"work": {**manual_work_item(row), "comments": []}}
+
+
+@app.delete("/api/explorer/works/{work_id}")
+def delete_manual_work(work_id: str, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    student = require_student_viewer(ai_bole_session)
+    raw_id = work_id.removeprefix("manual-")
+    with connect() as db:
+        removed = db.execute(
+            "DELETE FROM manual_works WHERE id=? AND student_account_id=?",
+            (raw_id, student["id"]),
+        ).rowcount
+        if removed:
+            db.execute(
+                "DELETE FROM work_comments WHERE student_account_id=? AND work_id=?",
+                (student["id"], f"manual-{raw_id}"),
+            )
+    if not removed:
+        raise HTTPException(404, "没有找到这件自主添加的作品")
+    return {"ok": True}
+
+
+@app.post("/api/explorer/comments", status_code=201)
+def create_work_comment(payload: WorkCommentIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    viewer = require_account(ai_bole_session)
+    if (viewer["role"] or "student") != "adult":
+        raise HTTPException(403, "只有老师/家长可以发表点评")
+    student = resolve_subject(viewer, ai_bole_session)
+    with connect() as db:
+        rows = db.execute(
+            "SELECT * FROM evidence_events WHERE account_id=? ORDER BY occurred_at DESC",
+            (student["id"],),
+        ).fetchall()
+        events = [{
+            "id": row["id"], "module": row["module"], "event_type": row["event_type"],
+            "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"],
+            "behavior_summary": row["behavior_summary"],
+            "raw_evidence": json.loads(row["raw_evidence"]), "context": json.loads(row["context"]),
+        } for row in rows]
+        valid_work_ids = {
+            work["id"] for work in build_explorer_collection(public_account(student), events)["works"]
+        }
+        valid_work_ids.update(
+            f"manual-{row['id']}"
+            for row in db.execute(
+                "SELECT id FROM manual_works WHERE student_account_id=?", (student["id"],)
+            ).fetchall()
+        )
+        if payload.work_id not in valid_work_ids:
+            raise HTTPException(404, "没有找到这件作品")
+        comment_id = str(uuid.uuid4())
+        created_at = now_iso()
+        db.execute(
+            "INSERT INTO work_comments VALUES (?,?,?,?,?,?)",
+            (comment_id, student["id"], payload.work_id, viewer["id"], payload.body, created_at),
+        )
+    return {"comment": {
+        "id": comment_id, "body": payload.body, "author_name": viewer["display_name"],
+        "author_kind": viewer["adult_kind"], "created_at": created_at,
+    }}
 
 
 @app.get("/api/explorer/talents")
 def explorer_talents(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     """返回六颗星的真实证据计数与收下资格，资格本身不持久化。"""
-    account = require_account(ai_bole_session)
+    viewer = require_account(ai_bole_session)
+    account = resolve_subject(viewer, ai_bole_session)
     with connect() as db:
         rows = db.execute(
             """SELECT id,module,intelligence_candidates,evidence_level
@@ -566,7 +984,8 @@ def explorer_talents(ai_bole_session: str | None = Cookie(default=None)) -> dict
 @app.get("/api/evidence/summary")
 def evidence_summary(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     """只统计频次和行为类型，不输出能力分数。"""
-    account = require_account(ai_bole_session)
+    viewer = require_account(ai_bole_session)
+    account = resolve_subject(viewer, ai_bole_session)
     with connect() as db:
         rows = db.execute(
             "SELECT intelligence_candidates,evidence_level,event_type,module FROM evidence_events WHERE account_id=?",

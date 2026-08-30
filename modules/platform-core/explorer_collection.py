@@ -1,4 +1,4 @@
-"""把统一证据整理成“模块高光”与“账号完成历程”。"""
+"""把统一证据整理成“全部完成作品 + 模块高光 + 账号完成历程”。"""
 
 from __future__ import annotations
 
@@ -245,7 +245,10 @@ def _activity_item(activity: dict[str, Any]) -> dict[str, Any]:
         if _text(event.get("behavior_summary"))
     ]
     summary = summaries[-1] if summaries else "这里收着一次认真尝试。"
-    detail = _first_text(raw.get("description"), context.get("description"), summary)
+    detail = _first_text(
+        raw.get("work_content"), raw.get("content"), raw.get("story"), raw.get("body"),
+        raw.get("description"), context.get("description"), summary,
+    )
     quote = _first_text(raw.get("child_words"), raw.get("quote"), context.get("child_words"), context.get("quote"))
     return {
         "id": f"activity-{module}-{activity['id']}",
@@ -255,14 +258,12 @@ def _activity_item(activity: dict[str, Any]) -> dict[str, Any]:
         "detail": detail,
         "quote": quote[:120],
         "occurred_at": activity["occurred_at"],
-        "status": (
-            "阶段重建高光"
-            if module == "deep_sea" and activity["levels"] != [1, 2, 3]
-            else module_copy["highlight"]
-        ),
+        "status": "阶段作品已收藏" if module == "deep_sea" and activity["levels"] != [1, 2, 3] else "完成作品已收藏",
         "unlocked": True,
         "event_type": str(latest.get("event_type") or "exploration_event"),
-        "kind": "highlight",
+        "kind": "work",
+        "is_highlight": False,
+        "snapshot_url": _first_text(context.get("snapshot_url"), raw.get("snapshot_url")),
     }
 
 
@@ -367,6 +368,24 @@ def _build_highlight(activities: list[dict[str, Any]]) -> dict[str, Any]:
         "metric_label": metric_label,
         "metric_value": metric_value,
         "usage_count": len(activities),
+        "kind": "highlight",
+        "is_highlight": True,
+        "status": (
+            "阶段重建高光"
+            if best["module"] == "deep_sea" and best["levels"] != [1, 2, 3]
+            else MODULE_COPY[best["module"]]["highlight"]
+        ),
+    })
+    return item
+
+
+def _build_work(activity: dict[str, Any]) -> dict[str, Any]:
+    item = _activity_item(activity)
+    metric_label, metric_value = _highlight_metric(activity)
+    item.update({
+        "metric_label": metric_label,
+        "metric_value": metric_value,
+        "usage_count": 1,
     })
     return item
 
@@ -450,7 +469,7 @@ def _module_summary(module: str, activities: list[dict[str, Any]]) -> dict[str, 
 
 
 def build_explorer_collection(account: dict[str, Any], events: list[dict[str, Any]]) -> dict[str, Any]:
-    """作品返回模块高光；足迹返回注册起点与四个模块的完成小结。"""
+    """作品返回每次完成成果并标出模块高光；足迹返回完成小结。"""
     grouped_events: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for event in events:
         module = event.get("module")
@@ -465,16 +484,27 @@ def build_explorer_collection(account: dict[str, Any], events: list[dict[str, An
         ]
         for module in MODULE_ORDER
     }
-    highlights = [
-        _build_highlight(grouped_activities[module])
-        for module in MODULE_ORDER
-        if grouped_activities[module]
-    ]
+    works: list[dict[str, Any]] = []
+    highlights: list[dict[str, Any]] = []
+    for module in MODULE_ORDER:
+        activities = grouped_activities[module]
+        if not activities:
+            continue
+        best = max(activities, key=_highlight_rank)
+        highlight = _build_highlight(activities)
+        highlights.append(highlight)
+        works.append(highlight)
+        works.extend(
+            _build_work(activity)
+            for activity in sorted(activities, key=lambda item: _timestamp(item["occurred_at"]), reverse=True)
+            if activity is not best
+        )
     milestones = [_registration_item(account)]
     milestones.extend(_module_summary(module, grouped_activities[module]) for module in MODULE_ORDER)
     return {
         "account": account,
-        "works": highlights,
+        "works": works,
+        "highlights": highlights,
         "milestones": milestones,
         "source": "activity_highlights_and_completion_summary",
     }

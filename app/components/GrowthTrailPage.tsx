@@ -279,9 +279,11 @@ function TrailDialog({
 export default function GrowthTrailPage({
   account,
   onNavigate,
+  perspective = "student",
 }: {
   account: Account;
   onNavigate: (view: NavigationView) => void;
+  perspective?: "student" | "adult";
 }) {
   const { data, loading, error, retry } = useExplorerCollection(account);
   const [selected, setSelected] = useState<ExplorerItem | null>(null);
@@ -302,6 +304,7 @@ export default function GrowthTrailPage({
       </section>
     );
   const milestones = data.milestones.slice(0, 8);
+  const adult = perspective === "adult";
   const usedModuleCount = milestones.filter(
     (item) => item.module !== "registration" && item.unlocked,
   ).length;
@@ -324,7 +327,7 @@ export default function GrowthTrailPage({
       <header className="growth-hero" aria-labelledby="growth-title">
         <button className="growth-back" onClick={() => onNavigate("planet")}>
           <ExplorerIcon name="compass" />
-          回探索星球
+          {adult ? "回天赋报告" : "回探索星球"}
         </button>
         <div className="growth-avatar" aria-hidden="true">
           <svg viewBox="0 0 120 120">
@@ -366,13 +369,13 @@ export default function GrowthTrailPage({
         <div className="growth-hero-copy">
           <div>
             <h1 id="growth-title">
-              {data.account.displayName}的星空漫游足迹
+              {data.account.displayName}的成长足迹
             </h1>
             <ExplorerIcon name="spark" size={28} />
           </div>
-          <p className="growth-promise">从第一天出发，看见自己走过的路。</p>
+          <p className="growth-promise">{adult ? "从第一天出发，看见孩子一步步走过的路。" : "从第一天出发，看见自己走过的路。"}</p>
           <p className="growth-summary">
-            从注册起点出发，你已经点亮了 <strong>{usedModuleCount}</strong>{" "}
+            从注册起点出发，{adult ? "孩子" : "你"}已经点亮了 <strong>{usedModuleCount}</strong>{" "}
             座探索大陆。
           </p>
           <p className="growth-source">
@@ -396,7 +399,7 @@ export default function GrowthTrailPage({
         <div className="growth-intro">
           <ExplorerIcon name="spark" />
           <p>
-            第一站，是你来到探索星球的那一天。往后每一站，都记录你在一座大陆完成了多少次探索。
+            第一站，是{adult ? "孩子" : "你"}来到探索星球的那一天。往后每一站，都记录在一座大陆完成了多少次探索。
           </p>
         </div>
         <TrailLine />

@@ -146,6 +146,8 @@ export default function StoryPlayPage() {
         : '孩子持续参与故事共创，并和故事导演一起完成了结局。',
       raw_evidence: {
         completed: true,
+        work_kind: 'co_created_story',
+        work_content: state.messages.map((message) => message.content).filter(Boolean).join('\n').slice(0, 6000),
         completion_mode: completionMode,
         duration_seconds: storyDurationSeconds(),
         ending_length: endingText.length,

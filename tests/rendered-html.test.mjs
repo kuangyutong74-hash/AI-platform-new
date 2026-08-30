@@ -21,8 +21,17 @@ test("server renders AI伯乐探索星球", async () => {
   assert.match(html, /<title>AI伯乐 · 探索星球<\/title>/i);
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /欢迎回到探索星球/);
-  assert.match(page, /注册新账号/);
+  assert.match(page, /创建探索账号/);
   assert.match(page, /\/api\/account\/register/);
+  assert.match(page, /\/api\/account\/password\/reset/);
+  assert.match(page, /我是学生/);
+  assert.match(page, /我是老师 \/ 家长/);
+  assert.doesNotMatch(page, /name="adultKind"/);
+  assert.doesNotMatch(page, /recoveryCode|找回码/);
+  assert.match(page, /暂不绑定，进入家长 \/ 老师端/);
+  assert.match(page, /没有学生账号也可以先进入/);
+  assert.match(page, /退出登录/);
+  assert.match(page, /管理学生/);
   assert.match(page, /两次输入的密码不一致/);
   assert.match(page, /http:\/\/localhost:8020/);
   assert.doesNotMatch(html, /codex-preview|SkeletonPreview|react-loading-skeleton/);
@@ -36,8 +45,11 @@ test("keeps four modules equal and preserves personal exploration nodes", async 
     assert.match(moduleConfig, new RegExp(name));
   }
   assert.equal((moduleConfig.match(/\{ id: "/g) ?? []).length, 4);
-  for (const label of ["我的作品", "成长足迹", "天赋报告"]) {
+  for (const label of ["我的作品", "天赋藏宝图"]) {
     assert.match(planet, new RegExp(label));
+  }
+  for (const label of ["天赋报告", "作品展柜", "成长足迹"]) {
+    assert.match(page, new RegExp(label));
   }
   assert.match(planet, /deep-space-nebula-bg-v1|nebula-background/);
   assert.match(planet, /space-dust/);
@@ -89,7 +101,11 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
   for (const moduleName of ["story", "ocean", "career", "listening"]) {
     assert.match(data, new RegExp(`highlight-${moduleName}-sticker-v1\\.webp`));
   }
-  assert.match(works, /高光收藏册/);
+  assert.match(works, /全部作品/);
+  assert.match(works, /温暖点评/);
+  assert.match(works, /这些作品来源于四座大陆/);
+  assert.match(works, /添加我的作品/);
+  assert.match(works, /\/api\/explorer\/works/);
   assert.match(works, /metricValue/);
   assert.match(styles, /\.sticker-picture[\s\S]*background:\s*transparent/);
   assert.match(styles, /\.collection-art[\s\S]*background:\s*transparent/);

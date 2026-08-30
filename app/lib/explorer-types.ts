@@ -23,6 +23,9 @@ export type ExplorerItem={
   scene:string;
   milestoneImage:string;
   tone:string;
+  isHighlight:boolean;
+  snapshotUrl:string;
+  comments:Array<{id:string;body:string;authorName:string;authorKind:string;createdAt:string}>;
 };
 
 export type ExplorerCollection={

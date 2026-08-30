@@ -2,12 +2,11 @@
 import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { PLATFORM_MODULES as modules } from "../config/modules";
 const ThreeGlobe = lazy(() => import("./ThreeGlobe"));
-type PlatformView = "planet" | "works" | "timeline" | "report";
+type PlatformView = "planet" | "works" | "treasure";
 
 const cosmicNodes: {view: PlatformView; label: string}[] = [
   {view: "works", label: "我的作品"},
-  {view: "timeline", label: "成长足迹"},
-  {view: "report", label: "天赋报告"},
+  {view: "treasure", label: "天赋藏宝图"},
 ];
 
 const starSpiritImg = "/assets/storybook/star-spirit.svg";
@@ -25,7 +24,7 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
   const [draggingOrbit, setDraggingOrbit] = useState(false);
   const dragState = useRef({x:0, y:0, rotation:0, moved:false});
   const ignoreClick = useRef(false);
-  const baseAngles = [155, 270, 25];
+  const baseAngles = [155, 25];
   useEffect(() => {
     if (draggingOrbit || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let frame = 0;
@@ -45,7 +44,7 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     setOrbitRotation(rotation+delta);
   };
   // 拖动星轨时不使用 setPointerCapture：指针捕获会把 click 事件重定向到轨道容器，
-  // 导致三颗星石按钮的 onClick 永远收不到点击。改为拖拽期间监听 window，
+  // 导致星石按钮的 onClick 永远收不到点击。改为拖拽期间监听 window，
   // 让松开后的 click 正常落在星石按钮上，点击星石即可跳转到对应页面。
   useEffect(() => {
     if (!draggingOrbit) return;

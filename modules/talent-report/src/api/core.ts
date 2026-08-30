@@ -7,7 +7,7 @@ export type ReportDimension = { key:string; name:string; status:string; evidence
 export type EvidenceExplanation = { evidence_ref:string|null;title:string;summary:string;details:string[] };
 export type GeneratedReport = { generated_at:string; rule:string; dimensions:ReportDimension[]; cross_insights:{text:string;evidence_refs:string[]}[]; evidence_explanations:EvidenceExplanation[]; recommendations:{family:string|string[];teacher:string|string[]} };
 async function coreFetch<T>(path:string):Promise<T|null>{try{const response=await fetch(`${CORE_URL}${path}`,{credentials:"include"});if(!response.ok)return null;return await response.json() as T}catch{return null}}
-export async function getAccount(){return coreFetch<{account:CoreAccount}>("/api/account/me")}
+export async function getAccount(){const payload=await coreFetch<{account:CoreAccount;selected_student?:CoreAccount|null}>("/api/account/me");return payload?{account:payload.selected_student||payload.account}:null}
 export async function getTalentEligibility(){return coreFetch<{account_id:string;talents:TalentEligibility[]}>("/api/explorer/talents")}
 export async function getEvidence(){return coreFetch<{account:CoreAccount;events:CoreEvidence[]}>("/api/evidence/events?limit=500")}
 export async function generateReport(childName:string,events:CoreEvidence[]):Promise<GeneratedReport|null>{try{const response=await fetch(`${REPORT_URL}/api/report/generate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({child_name:childName,events})});if(!response.ok)return null;return await response.json() as GeneratedReport}catch{return null}}

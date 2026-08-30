@@ -159,3 +159,8 @@
 /* 首屏封面紧凑排版：按视口高度控制书本，避免滚轮才能看到按钮 */
 .closed-book-view{min-height:calc(100vh - 150px);height:calc(100vh - 150px);box-sizing:border-box;padding:8px 0 18px;justify-content:center;gap:0;overflow:hidden}.closed-book-cover{width:auto!important;height:min(700px,64vh)!important;aspect-ratio:2/3;margin:0!important;flex:0 0 auto}.closed-book-cover img{transform:scale(1.08)}.closed-book-view h2{font-size:26px;margin:4px 0 3px}.closed-book-view>p{font-size:12px}.open-book-button{margin-top:10px;padding:9px 20px}
 
+.cosmos-shell.embedded{min-height:100vh;padding-top:0}
+.cosmos-shell.embedded .report-main{padding-top:0}
+.cosmos-shell.embedded .storybook-toolbar-actions .child-view-button,
+.cosmos-shell.embedded .storybook-toolbar-actions .ribbon-button{display:none}
+.cosmos-shell.embedded .treasure-actions .map-report{display:none}
