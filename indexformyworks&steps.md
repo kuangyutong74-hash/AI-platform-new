@@ -1,5 +1,7 @@
 # AI 伯乐 ·「我的作品 / 成长足迹」数据与指标映射方案
 
+> 历史资料（2026-08-30 起不再描述当前实现）：本文记录 V0 聚合方案与当时的问题审计。当前运行时只使用 V1 `artifacts`、`timeline`、`evidence-records` 与 `talents`；请以 [README](README.md)、[开发交接文档](docs/development-and-handover.md) 和 V1 OpenAPI 契约为准。
+
 > 调研范围：平台首页与个人页、四个探索模块（chat / story / deep-sea / career）、统一账号与证据中心（platform-core）、前后端数据契约与现有测试。
 >
 > 文档版本：v1.1 · 代码核对日期：2026-08-26

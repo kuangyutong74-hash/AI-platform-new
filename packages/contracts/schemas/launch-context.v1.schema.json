@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "launch-context.v1.schema.json",
+  "type": "object",
+  "required": ["sessionId", "moduleId", "moduleVersion", "launchCode", "launchCodeExpiresAt", "returnUrl", "contractVersion"],
+  "properties": {
+    "sessionId": {"type": "string", "minLength": 1},
+    "moduleId": {"type": "string"},
+    "moduleVersion": {"type": "string"},
+    "launchCode": {"type": "string", "minLength": 20},
+    "launchCodeExpiresAt": {"type": "string", "format": "date-time"},
+    "returnUrl": {"type": "string", "format": "uri"},
+    "contractVersion": {"const": "1.0"}
+  },
+  "additionalProperties": false
+}

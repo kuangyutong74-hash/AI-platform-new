@@ -133,35 +133,20 @@ export default function StoryPlayPage() {
     return Math.max(1, Math.round(activeMs / 1000));
   }
 
-  function emitStoryCompleted(completionMode: 'child' | 'director', ending = '') {
+  async function emitStoryCompleted(completionMode: 'child' | 'director', ending = '') {
     const activityId = `story-${id}`;
     const endingText = ending.trim();
-    void (window as any).AIBole?.emitEvidence({
-      module: 'story',
-      event_type: 'story_contribution',
-      evidence_level: completionMode === 'child' && endingText.length >= 40 ? 'strong' : 'reference',
-      intelligence_candidates: ['linguistic', 'intrapersonal'],
-      behavior_summary: completionMode === 'child'
+    const sdk = (window as any).AIBoleModuleSDK?.create({moduleId:'story'});
+    if (!sdk) return;
+    const connection = await sdk.connectOptional();
+    if (connection.notConnected) return;
+    const summary = completionMode === 'child'
         ? '孩子为共创故事独立写下结尾，并完成了一次完整作品。'
-        : '孩子持续参与故事共创，并和故事导演一起完成了结局。',
-      raw_evidence: {
-        completed: true,
-        work_kind: 'co_created_story',
-        work_content: state.messages.map((message) => message.content).filter(Boolean).join('\n').slice(0, 6000),
-        completion_mode: completionMode,
-        duration_seconds: storyDurationSeconds(),
-        ending_length: endingText.length,
-        turn_number: state.turnNumber + 1,
-        title: storyTitle.trim().slice(0, 30),
-        child_words: endingText.slice(0, 60),
-      },
-      context: {
-        activity_id: activityId,
-        subject_id: String(id),
-        story_id: id,
-        idempotency_key: `${activityId}:completed`,
-      },
-    }).catch(() => undefined);
+        : '孩子持续参与故事共创，并和故事导演一起完成了结局。';
+    await sdk.emitEvidence(sdk.makeEvent('story.contribution-completed.v1',{contributionCount:Math.max(1,state.turnNumber+1),completionSeconds:storyDurationSeconds(),storyTitle:storyTitle.trim().slice(0,120)||'故事共创'},`${activityId}:completed`));
+    const snapshot = await sdk.captureSnapshot('main').catch(() => null);
+    await sdk.publishArtifact({schemaVersion:'1.0',artifactId:activityId,type:'story',title:storyTitle.trim().slice(0,160)||'故事共创',summary,previewResourceId:snapshot?.id,sourceResourceId:`story:${id}`,createdAt:new Date().toISOString()});
+    await sdk.completeSession({completionMode,endingLength:endingText.length});
   }
 
   async function handleAIEnding() {

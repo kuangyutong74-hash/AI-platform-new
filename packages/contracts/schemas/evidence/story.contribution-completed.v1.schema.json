@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"evidence/story.contribution-completed.v1.schema.json","type":"object","required":["contributionCount","completionSeconds"],"properties":{"contributionCount":{"type":"integer","minimum":1},"completionSeconds":{"type":"integer","minimum":0},"storyTitle":{"type":"string","maxLength":120}},"additionalProperties":false}

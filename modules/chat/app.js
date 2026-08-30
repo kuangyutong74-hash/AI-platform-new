@@ -32,6 +32,7 @@ const DATA_DIR = resolveDataDir({
   envValue: process.env.DATA_DIR,
   projectRoot: __dirname,
 });
+fs.mkdirSync(DATA_DIR, { recursive: true });
 
 // trust proxy — 仅在显式配置时启用；禁止 true
 if (envConfig.TRUST_PROXY !== false) {

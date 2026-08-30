@@ -1,4 +1,5 @@
 import os
+import base64
 import tempfile
 import unittest
 from http.cookies import SimpleCookie
@@ -37,6 +38,9 @@ class AccountTests(unittest.TestCase):
         self.assertTrue(registered["created"])
         self.assertEqual(registered["account"]["username"], "little_star")
         self.assertEqual(registered["account"]["display_name"], "小星")
+        with main.connect() as db:
+            profile = db.execute("SELECT * FROM child_profiles WHERE account_id=?", (registered["account"]["id"],)).fetchone()
+        self.assertIsNotNone(profile)
 
         logged_in = main.create_session(
             main.AccountCredentialsIn(username="LITTLE_STAR", password="secret88"),
@@ -104,6 +108,35 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(session["students"], [])
         self.assertIsNone(session["selected_student"])
 
+    def test_adult_reads_selected_students_v1_data_but_cannot_launch_modules(self):
+        child_response = Response()
+        child = main.register_account(main.AccountRegistrationIn(
+            username="scope_child", display_name="小域", age=9, password="child888",
+            role="student",
+        ), child_response)["account"]
+        child_cookie = session_cookie(child_response)
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="story"), child_cookie)
+        token = main.exchange_module_authorization(
+            main.LaunchCodeExchangeIn(launchCode=context["launchCode"])
+        )["token"]
+        main.create_artifact_v1(main.ArtifactIn(
+            schemaVersion="1.0", artifactId="scope-story", type="story", title="作用域故事",
+            summary="只属于当前学生的作品", createdAt=main.now_iso(),
+        ), f"Bearer {token}")
+
+        adult_response = Response()
+        main.register_account(main.AccountRegistrationIn(
+            username="scope_adult", display_name="观察者", password="adult888", role="adult",
+        ), adult_response)
+        adult_cookie = session_cookie(adult_response)
+        main.bind_student(main.StudentLinkIn(username=child["username"]), adult_cookie)
+
+        artifacts = main.list_artifacts_v1(adult_cookie)["artifacts"]
+        self.assertEqual(artifacts[0]["id"], "scope-story")
+        with self.assertRaises(HTTPException) as forbidden:
+            main.create_assessment_session(main.AssessmentSessionIn(module_id="story"), adult_cookie)
+        self.assertEqual(forbidden.exception.status_code, 403)
+
     def test_password_reset_uses_username_and_invalidates_old_password(self):
         main.register_account(main.AccountRegistrationIn(
             username="reset_star", display_name="小重", age=7, password="before88",
@@ -133,17 +166,22 @@ class AccountTests(unittest.TestCase):
         ), student_cookie)["work"]
         self.assertEqual(created["kind"], "manual_work")
         self.assertEqual(created["title"], "我的纸飞机")
-        collection = main.explorer_collection(student_cookie)
-        self.assertIn(created["id"], {work["id"] for work in collection["works"]})
+        collection = main.list_artifacts_v1(student_cookie)
+        self.assertIn(created["id"], {work["id"] for work in collection["artifacts"]})
 
         with main.connect() as db:
             evidence_count = db.execute(
-                "SELECT COUNT(*) AS total FROM evidence_events WHERE account_id=?", (student["id"],)
+                """SELECT COUNT(*) AS total FROM evidence_records er
+                   JOIN source_events se ON se.id=er.source_event_id
+                   JOIN assessment_sessions s ON s.id=se.session_id
+                   JOIN child_profiles p ON p.id=s.child_profile_id
+                   WHERE p.account_id=?""",
+                (student["id"],),
             ).fetchone()["total"]
         self.assertEqual(evidence_count, 0)
         main.delete_manual_work(created["id"], student_cookie)
         self.assertNotIn(created["id"], {
-            work["id"] for work in main.explorer_collection(student_cookie)["works"]
+            work["id"] for work in main.list_artifacts_v1(student_cookie)["artifacts"]
         })
 
     def test_adult_comment_is_visible_to_the_bound_student(self):
@@ -153,13 +191,16 @@ class AccountTests(unittest.TestCase):
             role="student",
         ), child_response)["account"]
         child_cookie = session_cookie(child_response)
-        main.create_evidence(main.EvidenceIn(
-            module="story", event_type="story_contribution", evidence_level="strong",
-            intelligence_candidates=["linguistic"], behavior_summary="完成了一篇星光故事",
-            raw_evidence={"completed": True, "title": "星光故事", "work_content": "小星星找到了回家的路。"},
-            context={"activity_id": "comment-story", "idempotency_key": "comment-story:completed"},
-        ), child_cookie)
-        work_id = main.explorer_collection(child_cookie)["works"][0]["id"]
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="story"), child_cookie)
+        token = main.exchange_module_authorization(
+            main.LaunchCodeExchangeIn(launchCode=context["launchCode"])
+        )["token"]
+        work_id = "comment-story"
+        main.create_artifact_v1(main.ArtifactIn(
+            schemaVersion="1.0", artifactId=work_id, type="story", title="星光故事",
+            summary="小星星找到了回家的路。", sourceResourceId="story:comment",
+            createdAt=main.now_iso(),
+        ), f"Bearer {token}")
 
         adult_response = Response()
         main.register_account(main.AccountRegistrationIn(
@@ -174,11 +215,99 @@ class AccountTests(unittest.TestCase):
         ), adult_cookie)
         self.assertIsNone(created["comment"]["author_kind"])
 
-        student_collection = main.explorer_collection(child_cookie)
-        self.assertEqual(student_collection["works"][0]["comments"][0]["body"], created["comment"]["body"])
+        student_collection = main.list_artifacts_v1(child_cookie)
+        self.assertEqual(student_collection["artifacts"][0]["comments"][0]["body"], created["comment"]["body"])
         with self.assertRaises(HTTPException) as forbidden:
             main.create_work_comment(main.WorkCommentIn(work_id=work_id, body="学生不能点评"), child_cookie)
         self.assertEqual(forbidden.exception.status_code, 403)
+
+    def test_v1_standard_evidence_is_reportable_and_linkable(self):
+        registered = main.register_account(main.AccountRegistrationIn(username="v1_child", display_name="小河", age=9, password="secret99"), Response())
+        with main.connect() as db:
+            profile = main.profile_for_account(db, registered["account"]["id"])
+            manifest = main.module_manifest("career")
+            db.execute("INSERT INTO assessment_sessions (id,child_profile_id,module_id,module_version,status,created_at) VALUES (?,?,?,?,?,?)", ("session-v1", profile["id"], "career", manifest["version"], "completed", main.now_iso()))
+            db.execute("INSERT INTO source_events (id,session_id,idempotency_key,event_type,schema_version,payload_json,occurred_at,created_at) VALUES (?,?,?,?,?,?,?,?)", ("source-v1", "session-v1", "key-v1", "career.task-completed.v1", "1.0", '{"taskKey":"doctor","attemptCount":2,"hintCount":0,"completionSeconds":30,"adjustmentCount":1}', main.now_iso(), main.now_iso()))
+            db.execute("INSERT INTO evidence_records (id,source_event_id,evidence_level,constructs_json,behavior_summary,policy_version,construct_registry_version,derived_at) VALUES (?,?,?,?,?,?,?,?)", ("evidence-v1", "source-v1", "strong", '["problem_solving.planning"]', "完成职业任务并做出调整", "1.0", "1.0", main.now_iso()))
+            events, evidence_ids = main.standard_events_for_report(db, profile["id"])
+        self.assertEqual(events[0]["event_type"], "career.task-completed.v1")
+        self.assertEqual(events[0]["intelligence_candidates"], ["logical"])
+        self.assertEqual(events[0]["raw_evidence"]["attemptCount"], 2)
+        self.assertEqual(events[0]["raw_evidence"]["completionSeconds"], 30)
+        self.assertEqual(evidence_ids, ["evidence-v1"])
+
+    def test_new_account_can_create_and_exchange_v1_session_once(self):
+        response = Response()
+        registered = main.register_account(main.AccountRegistrationIn(username="launch_child", display_name="小帆", age=9, password="secret77"), response)
+        token = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="career"), token)
+        self.assertTrue(context["launchCode"])
+        exchanged = main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))
+        self.assertTrue(exchanged["token"])
+        with self.assertRaises(HTTPException) as repeated:
+            main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))
+        self.assertEqual(repeated.exception.status_code, 401)
+
+    def test_v1_event_artifact_and_completion_are_profile_scoped(self):
+        response = Response()
+        registered = main.register_account(main.AccountRegistrationIn(username="artifact_child", display_name="小岸", age=8, password="secret77"), response)
+        cookie = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="career"), cookie)
+        authorization = main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))["token"]
+        header = f"Bearer {authorization}"
+        event = main.EvidenceEnvelopeIn(schemaVersion="1.0", eventId="career-event", idempotencyKey="career-event", eventType="career.task-completed.v1", occurredAt=main.now_iso(), payload={"taskKey":"doctor","attemptCount":2,"hintCount":0,"completionSeconds":30,"adjustmentCount":1})
+        saved = main.create_evidence_events_v1(main.EvidenceBatchIn(events=[event]), header)
+        self.assertFalse(saved["saved"][0]["duplicate"])
+        snapshot = main.create_snapshot(
+            main.SnapshotIn(dataUrl="data:image/jpeg;base64," + base64.b64encode(b"test-jpeg").decode("ascii")),
+            header,
+        )
+        self.addCleanup(lambda: (main.SNAPSHOT_DIR / f"{snapshot['id']}.jpg").unlink(missing_ok=True))
+        artifact = main.ArtifactIn(schemaVersion="1.0", artifactId="career-artifact", type="other", title="小医生的一天", summary="完成职业体验", previewResourceId=snapshot["id"], sourceResourceId="career:demo", createdAt=main.now_iso())
+        main.create_artifact_v1(artifact, header)
+        changed = main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="completed", summary={"stages": 3}), header)
+        self.assertFalse(changed["duplicate"])
+        self.assertEqual(main.list_artifacts_v1(cookie)["artifacts"][0]["id"], "career-artifact")
+        timeline = main.timeline_v1(cookie)
+        self.assertEqual(timeline["sessions"][0]["evidenceCount"], 1)
+        self.assertEqual(timeline["moduleSummaries"][0]["completedCount"], 1)
+        self.assertTrue(timeline["moduleSummaries"][0]["firstUsedAt"])
+        self.assertEqual(timeline["moduleSummaries"][0]["lastUsedAt"], main.read_assessment_session(context["sessionId"], cookie)["endedAt"])
+        self.assertEqual(main.read_assessment_session(context["sessionId"], cookie)["summary"], {"stages": 3})
+        self.assertEqual(main.read_snapshot(snapshot["id"], cookie).media_type, "image/jpeg")
+
+    def test_v1_batch_is_atomic_and_invalid_transition_is_rejected(self):
+        response = Response()
+        main.register_account(main.AccountRegistrationIn(username="atomic_child", display_name="小舟", age=8, password="secret77"), response)
+        cookie = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="career"), cookie)
+        token = main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))["token"]
+        header = f"Bearer {token}"
+        valid = main.EvidenceEnvelopeIn(schemaVersion="1.0", eventId="atomic-valid", idempotencyKey="atomic-valid", eventType="career.task-completed.v1", occurredAt=main.now_iso(), payload={"taskKey":"doctor","attemptCount":1,"hintCount":0,"completionSeconds":3,"adjustmentCount":0})
+        invalid = main.EvidenceEnvelopeIn(schemaVersion="1.0", eventId="atomic-invalid", idempotencyKey="atomic-invalid", eventType="career.task-completed.v1", occurredAt=main.now_iso(), payload={"taskKey":"doctor"})
+        with self.assertRaises(HTTPException) as rejected:
+            main.create_evidence_events_v1(main.EvidenceBatchIn(events=[valid, invalid]), header)
+        self.assertEqual(rejected.exception.status_code, 422)
+        with main.connect() as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) AS n FROM source_events WHERE session_id=?", (context["sessionId"],)).fetchone()["n"], 0)
+        main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="interrupted", reason="test"), header)
+        with self.assertRaises(HTTPException) as transition:
+            main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="completed"), header)
+        self.assertEqual(transition.exception.status_code, 409)
+
+    def test_v1_evidence_records_and_talents_are_derived_from_standard_evidence(self):
+        response = Response()
+        main.register_account(main.AccountRegistrationIn(username="talent_child", display_name="小林", age=8, password="secret77"), response)
+        cookie = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="career"), cookie)
+        token = main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))["token"]
+        event = main.EvidenceEnvelopeIn(schemaVersion="1.0", eventId="talent-event", idempotencyKey="talent-event", eventType="career.task-completed.v1", occurredAt=main.now_iso(), payload={"taskKey":"doctor","attemptCount":2,"hintCount":0,"completionSeconds":30,"adjustmentCount":1})
+        main.create_evidence_events_v1(main.EvidenceBatchIn(events=[event]), f"Bearer {token}")
+        records = main.list_evidence_records_v1(500, cookie)["records"]
+        talents = {item["key"]: item for item in main.list_talents_v1(cookie)["talents"]}
+        self.assertEqual(records[0]["reportDimensions"], ["logical"])
+        self.assertTrue(talents["logical"]["eligible"])
+        self.assertEqual(talents["logical"]["strongCount"], 1)
 
 
 if __name__ == "__main__":

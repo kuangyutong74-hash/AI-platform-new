@@ -217,25 +217,26 @@ const syncMessage = computed(() => ({
   error: '这次记录还没有保存成功，请重新保存。',
 })[syncStatus.value] || '')
 
-function waitForPlatformBridge(timeoutMs = 3000) {
-  if (window.AIBole) return Promise.resolve(window.AIBole)
-  return new Promise((resolve, reject) => {
-    const startedAt = Date.now()
-    const timer = window.setInterval(() => {
-      if (window.AIBole) {
-        window.clearInterval(timer)
-        resolve(window.AIBole)
-      } else if (Date.now() - startedAt >= timeoutMs) {
-        window.clearInterval(timer)
-        reject(new Error('platform bridge unavailable'))
-      }
-    }, 100)
-  })
+let platformSdk = null
+async function platformConnection() {
+  if (!platformSdk && window.AIBoleModuleSDK) {
+    platformSdk = window.AIBoleModuleSDK.create({ moduleId: 'deep_sea' })
+    await platformSdk.connectOptional()
+  }
+  return platformSdk
 }
-
+function v1Event(event) {
+  const raw = event.raw_evidence || {}, context = event.context || {}
+  const terminal = event.event_type === 'deep_sea_session_completed'
+  return { type: terminal ? 'deep-sea.session-completed.v1' : 'deep-sea.spatial-task-completed.v1', key: context.idempotency_key, payload: terminal
+    ? { completedLevels: Number(raw.completed_levels) || 3, totalLevels: Number(raw.total_levels) || 3, completionSeconds: Number(raw.duration_seconds) || 0, adjustmentCount: Number(raw.meaningful_adjustments) || 0 }
+    : { level: Number(context.level) || 1, completionSeconds: Number(raw.duration_seconds) || 0, adjustmentCount: Number(raw.meaningful_adjustments || raw.rotate_count) || 0 } }
+}
 async function sendEvidence(event) {
-  const bridge = await waitForPlatformBridge()
-  return bridge.emitEvidence(event)
+  const sdk = await platformConnection()
+  if (!sdk || !sdk.connected()) { syncStatus.value = 'saved'; return { notConnected: true } }
+  const converted = v1Event(event)
+  return sdk.emitEvidence(sdk.makeEvent(converted.type, converted.payload, converted.key))
 }
 
 async function syncCompletion(event) {
@@ -243,6 +244,12 @@ async function syncCompletion(event) {
   syncStatus.value = 'saving'
   try {
     const result = await sendEvidence(event)
+    if (result?.notConnected) return
+    const sdk = await platformConnection()
+    const raw = event.raw_evidence || {}
+    const snapshot = await sdk.captureSnapshot('#app').catch(() => null)
+    await sdk.publishArtifact({ schemaVersion: '1.0', artifactId: `deep-sea:${gameState.studentId}`, type: 'game-result', title: raw.title || '深海基地完整重建', summary: event.behavior_summary, previewResourceId: snapshot?.id, sourceResourceId: `deep-sea:${gameState.studentId}`, createdAt: new Date().toISOString() })
+    await sdk.completeSession({ completedLevels: raw.completed_levels || 0 })
     syncStatus.value = result?.queued ? 'queued' : 'saved'
   } catch (_) {
     syncStatus.value = 'error'
