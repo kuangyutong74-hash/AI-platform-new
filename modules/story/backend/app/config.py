@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 PROJECT_DIR = BACKEND_DIR.parent
+PLATFORM_DIR = BACKEND_DIR.parents[2]
 
 
 class Settings(BaseSettings):
@@ -28,8 +29,8 @@ class Settings(BaseSettings):
     # App
     debug: bool = True
 
-    # Story 模块的密钥配置与其运行目录同级，避免错误读取项目根目录的 .env。
-    model_config = {"env_file": str(BACKEND_DIR / ".env"), "env_file_encoding": "utf-8", "extra": "ignore"}
+    # 四个探索模块统一读取整合平台根目录的 DeepSeek 配置。
+    model_config = {"env_file": str(PLATFORM_DIR / ".env"), "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 settings = Settings()

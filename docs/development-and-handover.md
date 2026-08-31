@@ -29,7 +29,7 @@ sequenceDiagram
 
 ## 3. 配置与密钥
 
-根目录 `.env` 使用 `DEEPSEEK_API_KEY`、`DEEPSEEK_BASE_URL` 和 `DEEPSEEK_MODEL`。chat、career、deep-sea 和 report-agent 读取该文件；报告服务可用 `REPORT_LLM_*` 覆盖通用配置。story backend 目前读取 `modules/story/backend/.env`，支持 `DEEPSEEK_*` 与 `LLM_*` 两组名称。
+根目录 `.env` 使用 `DEEPSEEK_API_KEY`、`DEEPSEEK_BASE_URL` 和 `DEEPSEEK_MODEL`。chat、story、career、deep-sea 和 report-agent 统一读取该文件；报告服务可用 `REPORT_LLM_*` 覆盖通用配置，story backend 兼容 `LLM_*` 变量名。
 
 `.env` 只在进程启动时读取。换 key 后运行 `.\一键启动.ps1 -Restart`，仅刷新浏览器不会改变旧进程中的配置。不得提交 `.env`，也不要在日志、issue 或测试快照中打印密钥。
 
