@@ -36,3 +36,6 @@ body{overflow:hidden}.cosmos-shell.child-theme{height:100dvh;min-height:0;overfl
 .progress-track{position:absolute;z-index:12;left:50%;bottom:13px;padding:7px 15px;border:1px solid rgba(111,81,106,.14);border-radius:14px;background:rgba(255,250,235,.9);box-shadow:0 8px 22px rgba(72,60,79,.16);backdrop-filter:blur(5px);transform:translateX(-50%)}.treasure-actions{position:absolute;z-index:13;right:18px;bottom:15px;left:18px;justify-content:space-between;pointer-events:none}.treasure-actions button{pointer-events:auto}.treasure-actions .map-report{margin-left:auto}
 @media(max-height:800px){.treasure-map-app{display:block}.child-theme .report-header{height:70px;min-height:70px}.child-theme .report-main{height:calc(100dvh - 70px)}.child-theme .title-block h1{font-size:21px}.child-theme .title-block p{font-size:12px}.progress-track{bottom:9px;padding-block:5px}.treasure-actions{bottom:10px}.map-star{width:72px;height:72px}}
 @media(max-width:900px){.child-theme .report-header{grid-template-columns:1fr auto}.child-theme .title-block{display:none}}
+
+/* 嵌入学生端时内部顶栏已隐藏，藏宝图应占满 iframe，不能再扣除顶栏高度。 */
+.cosmos-shell.embedded.child-theme .report-main{height:100dvh}
