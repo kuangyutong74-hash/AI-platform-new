@@ -57,7 +57,11 @@ test("keeps four modules equal and preserves personal exploration nodes", async 
   assert.match(planet, /onWheel=\{handleWheel\}/);
   assert.match(planet, /沿星轨缓慢环行 · 拖动选择/);
   assert.match(planet, /requestAnimationFrame\(revolve\)/);
-  assert.match(planet, /window\.location\.href=item\.url/);
+  assert.match(planet, /const launchModule = async/);
+  assert.match(planet, /\/api\/v1\/assessment-sessions/);
+  assert.match(planet, /ai-bole\.launch-context\.v1/);
+  assert.match(planet, /window\.location\.href = item\.url/);
+  assert.match(planet, /onClick=\{\(\)=>void launchModule\(item\)\}/);
   assert.match(page, /http:\/\/localhost:5175/);
   assert.match(page, /天赋报告/);
 });

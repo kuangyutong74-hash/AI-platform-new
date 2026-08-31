@@ -1,6 +1,6 @@
 "use client";
 import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
-import { PLATFORM_MODULES as modules } from "../config/modules";
+import { CORE_API_URL, PLATFORM_MODULES as modules } from "../config/modules";
 const ThreeGlobe = lazy(() => import("./ThreeGlobe"));
 type PlatformView = "planet" | "works" | "treasure";
 
@@ -12,7 +12,7 @@ const cosmicNodes: {view: PlatformView; label: string}[] = [
 const starSpiritImg = "/assets/storybook/star-spirit.svg";
 const floatStarsImg = "/assets/storybook/float-stars.svg";
 const floatCloudImg = "/assets/storybook/float-cloud.svg";
-const moduleNavArt:Record<(typeof modules)[number]["id"],string> = {
+const moduleNavArt:Record<string,string> = {
   chat:"/assets/module-nav-watercolor/nav-listening-v1.webp",
   story:"/assets/module-nav-watercolor/nav-story-v1.webp",
   build:"/assets/module-nav-watercolor/nav-build-v1.webp",
@@ -20,6 +20,7 @@ const moduleNavArt:Record<(typeof modules)[number]["id"],string> = {
 };
 
 export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=>void}) {
+  const [catalog, setCatalog] = useState(modules);
   const [orbitRotation, setOrbitRotation] = useState(0);
   const [draggingOrbit, setDraggingOrbit] = useState(false);
   const dragState = useRef({x:0, y:0, rotation:0, moved:false});
@@ -38,6 +39,20 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     frame = requestAnimationFrame(revolve);
     return () => cancelAnimationFrame(frame);
   }, [draggingOrbit]);
+  useEffect(() => {
+    let active = true;
+    fetch(`${CORE_API_URL}/api/v1/modules`)
+      .then(response => response.ok ? response.json() : Promise.reject())
+      .then(data => {
+        if (!active || !Array.isArray(data.modules)) return;
+        setCatalog(data.modules.map((manifest: {id:string;name:string;description?:string;entryUrl:string;healthUrl?:string}, index:number) => {
+          const existing = modules.find(item => (item.id === "build" ? "deep_sea" : item.id) === manifest.id);
+          return existing ? {...existing, name: manifest.name, desc: manifest.description || existing.desc, url: manifest.entryUrl, healthUrl: manifest.healthUrl || existing.healthUrl} : {id: manifest.id, name: manifest.name, module: manifest.name, icon: "✦", iconAsset: "", angle: (index * 73) % 360, latitude: index % 2 ? -22 : 22, url: manifest.entryUrl, healthUrl: manifest.healthUrl || "", color: "mint" as const, desc: manifest.description || "新的探索体验"};
+        }));
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
   const normalizeDelta = (value:number) => ((value + 540) % 360) - 180;
   const snapToFront = (rotation:number) => {
     const delta = baseAngles.map(angle=>normalizeDelta(90-(angle+rotation))).sort((a,b)=>Math.abs(a)-Math.abs(b))[0];
@@ -82,6 +97,19 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     event.preventDefault();
     setOrbitRotation(value=>value+(event.key==="ArrowLeft"?120:-120));
   };
+  const launchModule = async (item:(typeof catalog)[number]) => {
+    const moduleId = item.id === "build" ? "deep_sea" : item.id;
+    try {
+      const response = await fetch(`${CORE_API_URL}/api/v1/assessment-sessions`, {method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({module_id:moduleId})});
+      if (!response.ok) throw new Error("session unavailable");
+      const context = await response.json();
+      window.name = JSON.stringify({namespace:"ai-bole.launch-context.v1",context});
+    } catch (_) {
+      // Core 不可用时仍可直接体验模块，但不会写入孩子档案。
+      window.name = "";
+    }
+    window.location.href = item.url;
+  };
   return <section className="planet-page three-scene-page">
     <div className="nebula-background" aria-hidden="true"/>
     <div className="nebula-drift" aria-hidden="true"/>
@@ -109,8 +137,8 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     </nav>
     <div className="three-stage"><Suspense fallback={<div className="globe-loading">正在点亮探索星球…</div>}><ThreeGlobe/></Suspense><div className="drag-tip"><span>✥</span> 上下左右拖动 · 360° 探索 · 点击大陆进入</div></div>
     <nav className="module-dock" aria-label="四座探索大陆">
-      {modules.map(item=><button key={item.id} data-module={item.id} onClick={()=>window.location.href=item.url} aria-label={`进入${item.module}，${item.name}`}>
-        <i className={`module-icon ${item.color}`} aria-hidden="true"><img className="module-art" src={moduleNavArt[item.id]} alt="" draggable={false}/></i>
+      {catalog.map(item=><button key={item.id} data-module={item.id} onClick={()=>void launchModule(item)} aria-label={`进入${item.module}，${item.name}`}>
+        <i className={`module-icon ${item.color}`} aria-hidden="true">{moduleNavArt[item.id] && <img className="module-art" src={moduleNavArt[item.id]} alt="" draggable={false}/>}</i>
         <span className="module-label"><b>{item.module}</b><small>{item.name}</small></span>
       </button>)}
     </nav>

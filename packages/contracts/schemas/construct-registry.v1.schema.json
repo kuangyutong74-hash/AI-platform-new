@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "construct-registry.v1.schema.json",
+  "type": "object", "required": ["version", "constructs"],
+  "properties": {"version": {"type": "string"}, "constructs": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["key", "displayName", "reportDimension"], "properties": {"key": {"type": "string"}, "displayName": {"type": "string"}, "reportDimension": {"type": "string"}}, "additionalProperties": false}}},
+  "additionalProperties": false
+}

@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evidence-policy.v1.schema.json",
+  "type": "object", "required": ["version", "constructRegistryVersion", "rules"],
+  "properties": {"version": {"type": "string"}, "constructRegistryVersion": {"type": "string"}, "rules": {"type": "array", "items": {"type": "object", "required": ["eventType", "evidenceLevel", "constructs", "behaviorSummary"], "properties": {"eventType": {"type": "string"}, "evidenceLevel": {"enum": ["strong", "reference"]}, "constructs": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "behaviorSummary": {"type": "string"}}, "additionalProperties": false}}},
+  "additionalProperties": false
+}

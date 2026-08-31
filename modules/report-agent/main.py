@@ -5,6 +5,7 @@ import json
 import os
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 from urllib import error, request as urlrequest
 
@@ -20,6 +21,11 @@ INTELLIGENCE_NAMES = {
 }
 MODULE_NAMES = {"chat": "聊天观察", "story": "故事共创", "deep_sea": "深海基地重建", "career": "职业模拟器"}
 EVENT_NAMES = {
+    "chat.observation-shared.v1": "自由表达与交流",
+    "story.contribution-completed.v1": "故事创作与完成",
+    "deep-sea.spatial-task-completed.v1": "深海基地任务",
+    "deep-sea.session-completed.v1": "深海基地完整重建",
+    "career.task-completed.v1": "职业任务体验",
     "narrative_evidence": "自由表达与交流",
     "story_contribution": "故事创作与完成",
     "story_revision": "故事修改与完善",
@@ -30,6 +36,21 @@ EVENT_NAMES = {
     "decision_revision": "方案判断与调整",
 }
 REPORT_RULE = "只统计行为频次、类型和原始上下文，不换算能力分数，不输出排名。"
+PLATFORM_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+
+
+def platform_env() -> dict[str, str]:
+    """读取平台根目录的本地配置；进程环境变量始终拥有更高优先级。"""
+    if not PLATFORM_ENV_PATH.exists():
+        return {}
+    values: dict[str, str] = {}
+    for raw_line in PLATFORM_ENV_PATH.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
 
 
 class EvidenceEvent(BaseModel):
@@ -62,32 +83,25 @@ def explain_event(event: EvidenceEvent) -> dict[str, Any]:
     """把机器采集字段转换为成人可以直接阅读的过程回顾。"""
     raw = event.raw_evidence
     details: list[str] = []
-    if event.event_type == "narrative_evidence":
+    if event.event_type == "chat.observation-shared.v1":
         details = [
-            f"孩子共进行了 {raw.get('turn_count', 0)} 轮表达。",
-            f"其中有 {raw.get('long_turn_count', 0)} 次较完整的连续表达。",
-            f"孩子主动表达的文字约 {raw.get('total_child_chars', 0)} 个字。",
+            f"孩子共进行了 {raw.get('turnCount', 0)} 轮表达。",
+            f"围绕“{raw.get('topicKey', '当前话题')}”留下了可回溯的交流过程。",
         ]
-    elif event.event_type == "workday_process_summary":
+    elif event.event_type == "career.task-completed.v1":
         details = [
-            f"完成了 {raw.get('completed_stages', 0)} 个职业任务阶段。",
-            f"过程中主动尝试 {raw.get('interaction_count', 0)} 次，并调整或重试 {int(raw.get('adjustment_count', 0) or 0) + int(raw.get('retry_count', 0) or 0)} 次。",
-            f"遇到困难时查看提示 {raw.get('hint_count', 0)} 次。",
+            f"过程中主动尝试 {raw.get('attemptCount', 0)} 次，并调整 {raw.get('adjustmentCount', 0)} 次。",
+            f"遇到困难时查看提示 {raw.get('hintCount', 0)} 次，用时约 {raw.get('completionSeconds', 0)} 秒。",
         ]
-    elif event.event_type == "spatial_solution":
+    elif event.event_type == "deep-sea.spatial-task-completed.v1":
         details = [
-            f"搭建过程中旋转或调整管件 {raw.get('rotate_count', 0)} 次。",
-            "最终完成了线路连通。" if raw.get("connected") else "本次尚未完成线路连通，仍保留了尝试过程。",
+            f"完成第 {raw.get('level', 0)} 个深海任务，用时约 {raw.get('completionSeconds', 0)} 秒。",
+            f"根据反馈调整了 {raw.get('adjustmentCount', 0)} 次。",
         ]
-    elif event.event_type == "ecology_strategy":
-        details = [
-            f"成功完成 {raw.get('successful_pairs', 0)} 组生态配对。",
-            f"根据反馈重新调整了 {raw.get('meaningful_adjustments', 0)} 次判断。",
-        ]
-    elif event.event_type == "mediation_response":
-        details = ["孩子在角色分歧中尝试理解双方需要，并选择了支持协商的回应。"]
-    elif event.event_type == "story_contribution":
-        details = [f"孩子独立完成了约 {raw.get('ending_length', 0)} 字的故事结尾。", "本次故事已经完整收尾并保存。"]
+    elif event.event_type == "deep-sea.session-completed.v1":
+        details = [f"完成 {raw.get('completedLevels', 0)} / {raw.get('totalLevels', 0)} 个深海任务。", f"总用时约 {raw.get('completionSeconds', 0)} 秒，调整 {raw.get('adjustmentCount', 0)} 次。"]
+    elif event.event_type == "story.contribution-completed.v1":
+        details = [f"本次贡献了 {raw.get('contributionCount', 0)} 个故事片段。", f"故事《{raw.get('storyTitle', '故事共创')}》已完成并保存。"]
     if not details:
         details = ["系统保留了这次活动中的关键行为过程，供家长和老师后续对照观察。"]
     return {
@@ -171,7 +185,39 @@ logical_mathematical 归一化为 logical。
 用第二人称和一至两句儿童能读懂的话，只复述该维度已有的真实游戏表现，不得套用示例、虚构引语或泛泛夸奖；没有记录时说明
 还没有可回看的探索记录。另外返回 evidence_explanations 数组，
 每条包含 evidence_ref、中文 title、自然语言 summary 和 2 至 4 条 details；只能解释已有数据，不显示事件代码、字段名、
-会话编号或图片地址。只返回符合约定结构的 JSON。"""
+会话编号或图片地址。
+
+必须只返回一个 JSON 对象（不要 Markdown 代码块、说明文字或额外顶层字段），并严格使用下面的嵌套结构：
+{
+  "dimensions": [
+    {
+      "key": "linguistic | logical | spatial | interpersonal | intrapersonal | naturalistic",
+      "status": "证据丰富 | 证据均衡 | 采集行为较少",
+      "evidence_refs": ["输入事件中真实存在的 id"],
+      "analysis": "...",
+      "adult_observation": "...",
+      "child_story": "..."
+    }
+  ],
+  "cross_insights": [
+    {"text": "...", "evidence_refs": ["输入事件中真实存在的 id"]}
+  ],
+  "evidence_explanations": [
+    {
+      "evidence_ref": "输入事件中真实存在的 id",
+      "title": "...",
+      "summary": "...",
+      "details": ["...", "..."]
+    }
+  ],
+  "recommendations": {
+    "family": ["..."],
+    "teacher": ["..."]
+  }
+}
+dimensions 必须恰好包含上述六个 key，每个 key 各一次；即使没有对应证据也必须保留该维度并使用空 evidence_refs。
+不得把 linguistic、logical_mathematical、family 或 teacher 放在顶层；family 与 teacher 只能位于 recommendations 内。
+不得返回 generated_at 或 rule，这两个字段由服务端生成。"""
 
 
 class LLMAnalyzer:
@@ -180,7 +226,11 @@ class LLMAnalyzer:
 
     @classmethod
     def from_environment(cls) -> "LLMAnalyzer | None":
-        values = [os.getenv(name, "").strip() for name in ("REPORT_LLM_BASE_URL", "REPORT_LLM_API_KEY", "REPORT_LLM_MODEL")]
+        local = platform_env()
+        base_url = os.getenv("REPORT_LLM_BASE_URL") or os.getenv("DEEPSEEK_BASE_URL") or local.get("REPORT_LLM_BASE_URL") or local.get("DEEPSEEK_BASE_URL", "")
+        api_key = os.getenv("REPORT_LLM_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or local.get("REPORT_LLM_API_KEY") or local.get("DEEPSEEK_API_KEY", "")
+        model = os.getenv("REPORT_LLM_MODEL") or os.getenv("DEEPSEEK_MODEL") or local.get("REPORT_LLM_MODEL") or local.get("DEEPSEEK_MODEL", "")
+        values = [str(value).strip() for value in (base_url, api_key, model)]
         return cls(*values) if all(values) else None
 
     def analyze(self, events: list[EvidenceEvent]) -> dict[str, Any]:

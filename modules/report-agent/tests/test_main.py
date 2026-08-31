@@ -14,7 +14,7 @@ class ReportAnalyzerTests(unittest.TestCase):
         self.assertIn("logical", keys)
         self.assertNotIn("logical_mathematical", keys)
         self.assertIn("teacher", result["recommendations"])
-        self.assertIn("ev-1", result["recommendations"]["family"])
+        self.assertTrue(result["recommendations"]["family"])
 
     def test_normalizer_removes_fabricated_references(self):
         candidate = {"dimensions": [{"key": "logical", "analysis": "留意解题过程", "evidence_refs": ["fake", "ev-1"]}], "cross_insights": [{"text": "会反复尝试", "evidence_refs": ["fake", "ev-1"]}], "recommendations": {"family": "一起复盘", "teacher": "提供多种材料"}}
@@ -22,7 +22,8 @@ class ReportAnalyzerTests(unittest.TestCase):
         logical = next(item for item in result["dimensions"] if item["key"] == "logical")
         self.assertEqual(logical["evidence_refs"], ["ev-1"])
         self.assertEqual(result["cross_insights"][0]["evidence_refs"], ["ev-1"])
-        self.assertIn("ev-1", result["recommendations"]["family"])
+        self.assertNotIn("fake", str(result))
+        self.assertNotIn("ev-1", result["recommendations"]["family"])
 
 
 if __name__ == "__main__":

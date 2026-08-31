@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "module-manifest.v1.schema.json",
+  "type": "object",
+  "required": ["id", "version", "name", "entryUrl", "targetAge", "constructRegistryVersion", "constructs", "supportedEventTypes", "capabilities"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{1,63}$"},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "name": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "entryUrl": {"type": "string", "format": "uri"},
+    "healthUrl": {"type": "string", "format": "uri"},
+    "targetAge": {"type": "object", "required": ["min", "max"], "properties": {"min": {"type": "integer", "minimum": 4}, "max": {"type": "integer", "maximum": 18}}, "additionalProperties": false},
+    "constructRegistryVersion": {"type": "string"},
+    "constructs": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "supportedEventTypes": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*(\\.[a-z][a-z0-9_-]*)+\\.v[0-9]+$"}},
+    "capabilities": {"type": "object", "required": ["resumable", "producesArtifacts", "requiresAI", "supportsOfflineEvidence"], "properties": {"resumable": {"type": "boolean"}, "producesArtifacts": {"type": "boolean"}, "requiresAI": {"type": "boolean"}, "supportsOfflineEvidence": {"type": "boolean"}}, "additionalProperties": false}
+  },
+  "additionalProperties": false
+}

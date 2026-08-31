@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evidence/envelope.v1.schema.json",
+  "type": "object",
+  "required": ["schemaVersion", "eventId", "idempotencyKey", "eventType", "occurredAt", "payload"],
+  "properties": {"schemaVersion": {"const": "1.0"}, "eventId": {"type": "string"}, "idempotencyKey": {"type": "string", "minLength": 1, "maxLength": 160}, "eventType": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*(\\.[a-z][a-z0-9_-]*)+\\.v[0-9]+$"}, "occurredAt": {"type": "string", "format": "date-time"}, "sequenceNo": {"type": "integer", "minimum": 0}, "payload": {"type": "object"}},
+  "additionalProperties": false
+}

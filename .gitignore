@@ -23,6 +23,10 @@
 **/.pytest_cache/
 **/.venv/
 *.py[cod]
+/modules/platform-core/data/*.db
+/modules/platform-core/data/*.db-wal
+/modules/platform-core/data/*.db-shm
+/modules/platform-core/data/backups/
 /.wrangler/
 /.runtime/
 /outputs/
@@ -36,6 +40,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .env*
+!**/.env.example
 .vercel
 /.claude/
 /.workbuddy/

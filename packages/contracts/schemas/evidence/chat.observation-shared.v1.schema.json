@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"evidence/chat.observation-shared.v1.schema.json","type":"object","required":["turnCount"],"properties":{"turnCount":{"type":"integer","minimum":1},"topicKey":{"type":"string","maxLength":80}},"additionalProperties":false}
