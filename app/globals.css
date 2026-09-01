@@ -4429,3 +4429,17 @@ html {
 @media(max-width:900px){.student-switcher select{max-width:min(34vw,250px)}.role-choice{grid-template-columns:1fr}.manage-students-button{font-size:0}.manage-students-button:after{content:"管理";font-size:12px}}
 @media(max-width:850px){.report-frame-shell{height:calc(100dvh - 138px)}}
 @media(max-width:520px){.report-frame-shell{height:calc(100dvh - 126px)}}
+
+/* 星球两侧的个人入口：固定陈列，不再参与轨道旋转。 */
+.three-scene-page .personal-landmarks{position:absolute;z-index:14;top:clamp(248px,34vh,360px);left:50%;width:min(1180px,94vw);height:190px;transform:translateX(-50%);pointer-events:none}
+.three-scene-page .personal-landmark{position:absolute;top:50%;display:flex;align-items:center;gap:4px;min-width:190px;min-height:148px;padding:0;border:0;background:transparent;color:#574967;cursor:pointer;pointer-events:auto;transform:translateY(-50%);transition:transform .28s cubic-bezier(.16,1,.3,1),filter .28s ease}
+.three-scene-page .personal-landmark-left{left:0;flex-direction:row-reverse}.three-scene-page .personal-landmark-right{right:0}
+.three-scene-page .personal-landmark i{width:154px;height:144px;flex:0 0 auto;background:url("/assets/storybook-orbit-landmarks-v5.png") 0 center/300% auto no-repeat;filter:drop-shadow(0 10px 15px rgba(93,77,105,.16))}
+.three-scene-page .personal-landmark-right i{background-position-x:50%}
+.three-scene-page .personal-landmark span{position:relative;z-index:1;min-width:98px;margin-inline:-16px 0;padding:9px 15px;border:1px solid rgba(193,153,117,.24);border-radius:12px;background:rgba(255,249,232,.96);box-shadow:0 7px 16px rgba(83,66,100,.13);font-family:"Noto Serif SC","Microsoft YaHei",serif;font-size:13px;font-weight:700;white-space:nowrap}
+.three-scene-page .personal-landmark-left span{margin-inline:0 -16px}
+.three-scene-page .personal-landmark:hover,.three-scene-page .personal-landmark:focus-visible{transform:translateY(-54%);filter:brightness(1.04) saturate(1.03)}
+.three-scene-page .personal-landmark:focus-visible{outline:3px solid #f0cb70;outline-offset:3px;border-radius:16px}
+@media(max-width:850px){.three-scene-page .personal-landmarks{top:250px;width:98vw;height:140px}.three-scene-page .personal-landmark{min-width:132px;min-height:108px}.three-scene-page .personal-landmark i{width:112px;height:104px}.three-scene-page .personal-landmark span{min-width:78px;margin-inline-start:-20px;padding:7px 10px;font-size:11px}.three-scene-page .personal-landmark-left span{margin-inline:0 -20px}}
+@media(max-width:520px){.three-scene-page .personal-landmarks{position:relative;top:auto;left:auto;width:min(360px,94vw);height:auto;margin:-12px auto 2px;transform:none;display:grid;grid-template-columns:1fr 1fr;gap:10px}.three-scene-page .personal-landmark{position:relative;inset:auto;min-width:0;min-height:78px;justify-content:center;transform:none}.three-scene-page .personal-landmark-left{flex-direction:row-reverse}.three-scene-page .personal-landmark i{width:78px;height:72px}.three-scene-page .personal-landmark span,.three-scene-page .personal-landmark-left span{min-width:0;margin-inline:-14px 0;padding:7px 9px;font-size:10px}.three-scene-page .personal-landmark-left span{margin-inline:0 -14px}.three-scene-page .personal-landmark:hover,.three-scene-page .personal-landmark:focus-visible{transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){.three-scene-page .personal-landmark{transition:none}}

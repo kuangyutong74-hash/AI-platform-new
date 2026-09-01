@@ -16,6 +16,7 @@
 <div class="modal-career-info"><span class="modal-icon" id="modal-icon"></span><h2 id="modal-name"></h2><p id="modal-tagline"></p></div>
 <p class="modal-description" id="modal-description"></p><p class="modal-skills" id="modal-skills"></p>
 <div class="modal-scenarios" id="modal-scenarios"></div>
+<p id="workday-bridge-note" class="workday-bridge-note" style="display:none">已保存刚才的职业日常参与小记。完成情境体验后，它会和你的思考过程一起出现在报告中。</p>
 
 <div class="mode-choose"><p class="mode-label">选择体验方式</p>
 <div class="mode-buttons">
@@ -33,28 +34,24 @@
   </div>
 </div></div>
 
-<form id="session-form" class="session-form" onsubmit="startSession(event)" style="display:none">
-<input type="hidden" id="career-id-input" name="career_id">
-<input type="hidden" id="student-token-input" name="student_token">
-<p id="workday-bridge-note" class="workday-bridge-note" style="display:none">🌱 已保存刚才的职业日常参与小记。完成情境体验后，它会和你的思考过程一起出现在报告中。</p>
-<div class="form-group"><label for="student-name">你的名字（或昵称）</label><input type="text" id="student-name" name="student_name" placeholder="输入你的名字" maxlength="30" required></div>
-<div class="form-group"><label for="student-age">你的年龄</label><select id="student-age" name="age" required>
-<option value="">请选择年龄</option>{% for a in range(6, 15) %}<option value="{{ a }}">{{ a }}岁</option>{% endfor %}</select></div>
-<button type="submit" class="start-session-btn">开始情境对话 <span class="btn-arrow">&#10132;</span></button>
-<button type="button" class="back-to-modes" onclick="backToModes()">&#8592; 重新选择模式</button></form>
-
-<p class="modal-note">* 你的信息仅用于本次体验，不会被保存或分享</p></div></div>
+</div></div>
 <div id="loading-overlay" class="loading-overlay" style="display:none"><div class="loading-content"><div class="loading-spinner"></div><p id="loading-msg">正在准备你的体验之旅...</p></div></div>
 </div>{% endblock %}
 {% block extra_js %}<script>
 const careersData={{ careers | tojson | safe }};
 let selectedCareerId = '';
-
-// 轻量学生身份标识：同一浏览器自动生成，跨会话关联。
-// 已知限制：更换浏览器或清除缓存后 token 丢失，历史记录无法关联。
-// 后续如需正式的账号系统，可将此机制替换为 user_id。
-(function(){var K='career-student-token-v1';if(!localStorage.getItem(K)){localStorage.setItem(K,'st_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10));}})();
-function getStudentToken(){return localStorage.getItem('career-student-token-v1')||'';}
+const platformConnection = new Promise(function(resolve){
+  let settled=false;
+  function finish(value){if(settled)return;settled=true;clearTimeout(timeout);resolve(value);}
+  const timeout=setTimeout(function(){finish({notConnected:true});},3000);
+  function connect(){
+    if(settled)return;
+    if(!window.AIBoleModuleSDK){setTimeout(connect,20);return;}
+    window.AIBoleCareerSDK=window.AIBoleModuleSDK.create({moduleId:'career'});
+    window.AIBoleCareerSDK.connectOptional().then(finish).catch(function(){finish({notConnected:true});});
+  }
+  connect();
+});
 
 function selectCareer(id){
   const c=careersData.find(x=>x.id===id);if(!c)return;
@@ -64,28 +61,15 @@ function selectCareer(id){
   document.getElementById('modal-tagline').textContent=c.tagline;
   document.getElementById('modal-description').textContent=c.description;
   document.getElementById('modal-skills').textContent=c.skills_intro;
-  document.getElementById('career-id-input').value=id;
   document.getElementById('modal-scenarios').innerHTML='<h4>情境对话预览：</h4>'+c.scenario_titles.map((t,i)=>'<div class="scenario-preview-item"><span class="sp-num">'+(i+1)+'</span> '+t+'</div>').join('');
   // Reset to mode selection
   backToModes();
   document.getElementById('career-modal').style.display='flex';
 }
 
-function showSessionForm(){
-  document.querySelector('.mode-choose').style.display='none';
-  document.getElementById('modal-scenarios').style.display='none';
-  document.getElementById('session-form').style.display='flex';
-  document.getElementById('modal-description').style.display='none';
-  document.getElementById('modal-skills').style.display='none';
-  document.getElementById('student-name').readOnly = false;
-  document.getElementById('student-age').disabled = false;
-  document.getElementById('student-name').focus();
-}
-
 function backToModes(){
   document.querySelector('.mode-choose').style.display='block';
   document.getElementById('modal-scenarios').style.display='block';
-  document.getElementById('session-form').style.display='none';
   document.getElementById('modal-description').style.display='block';
   document.getElementById('modal-skills').style.display='block';
 }
@@ -97,13 +81,24 @@ function goWorkday(){
   window.location.href='/workday/'+selectedCareerId;
 }
 
-async function startSession(e){
-  e.preventDefault();
-  document.getElementById('student-token-input').value = getStudentToken();
-  const fd=new FormData(document.getElementById('session-form'));
+async function startSession(){
+  if(!selectedCareerId)return;
   document.getElementById('loading-overlay').style.display='flex';
   document.getElementById('loading-msg').textContent='正在准备你的体验之旅...';
   try{
+    const connection=await platformConnection;
+    const student=connection&&connection.context&&connection.context.student;
+    if(!student||!student.displayName||!student.age){
+      alert('请先从 AI 伯乐探索星球登录并进入职业模拟器');
+      document.getElementById('loading-overlay').style.display='none';
+      window.location.href='http://localhost:4173/?from=career';
+      return;
+    }
+    const fd=new FormData();
+    fd.set('career_id',selectedCareerId);
+    fd.set('student_name',student.displayName);
+    fd.set('age',String(student.age));
+    fd.set('student_token',student.id||connection.context.sessionId);
     const r=await fetch('/api/session/start',{method:'POST',body:fd});
     if(!r.ok){const err=await r.json();const detail=err.error||err.detail||err;
       const message=Array.isArray(detail)?detail.map(x=>x.msg||x.message||'提交信息不完整').join('；'):(typeof detail==='object'?(detail.message||'创建体验失败，请检查填写的信息'):String(detail));
@@ -113,7 +108,7 @@ async function startSession(e){
 }
 
 // Bind mode cards
-document.getElementById('mode-scenario').addEventListener('click', showSessionForm);
+document.getElementById('mode-scenario').addEventListener('click', startSession);
 document.getElementById('mode-workday').addEventListener('click', goWorkday);
 document.getElementById('career-modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()});
@@ -123,7 +118,6 @@ const bridgeCareerId=bridgeParams.get('career_id');
 if(bridgeParams.get('mode')==='scenario' && careersData.some(c=>c.id===bridgeCareerId)){
   setTimeout(function(){
     selectCareer(bridgeCareerId);
-    showSessionForm();
     if(bridgeParams.get('from_workday')==='1') document.getElementById('workday-bridge-note').style.display='block';
   },120);
 }
