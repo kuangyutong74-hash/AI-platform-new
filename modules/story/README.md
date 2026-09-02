@@ -76,11 +76,10 @@
 cd backend
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item .env.example .env
 ```
 
-如需使用 AI 故事导演与词语查询，请编辑 `backend/.env`，将 DeepSeek 密钥填写到
-`LLM_API_KEY=` 后面（未配置时后端可启动，但涉及 LLM 的功能会提示不可用）。
+如需使用 AI 故事导演与词语查询，请编辑整合平台根目录 `.env`，填写
+`DEEPSEEK_API_KEY`（未配置时后端可启动，但涉及 LLM 的功能会提示不可用）。
 **请勿把包含真实密钥的 `.env` 提交到仓库。**
 
 ```powershell
@@ -120,13 +119,13 @@ npm run dev
 
 ## 环境变量
 
-后端通过 `backend/.env` 读取配置（详见 `.env.example`）：
+后端通过整合平台根目录 `.env` 读取配置：
 
 | 变量 | 说明 | 默认值 |
 | --- | --- | --- |
-| `LLM_API_KEY` | DeepSeek API 密钥 | 空（LLM 功能不可用） |
-| `LLM_BASE_URL` | LLM 接口地址 | `https://api.deepseek.com/v1` |
-| `LLM_MODEL` | 使用的模型 | `deepseek-chat` |
+| `DEEPSEEK_API_KEY` | DeepSeek API 密钥 | 空（LLM 功能不可用） |
+| `DEEPSEEK_BASE_URL` | LLM 接口地址 | `https://api.deepseek.com/v1` |
+| `DEEPSEEK_MODEL` | 使用的模型 | `deepseek-chat` |
 
 ## API 概览
 

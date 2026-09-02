@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI 伯乐 · 探索星球 · 伙伴破冰 + 线索贯穿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --starry-indigo:#21183d;--deep-night:#172342;--parchment:#fff8e8;--ink-plum:#40374e;
+    --gold:#f0cb70;--peach:#f8e4e5;--blue:#dcebf0;--amber:#f0d9a0;--quiet:#5f5562;
+    --display:"Ma Shan Zheng","ZCOOL KuaiLe","KaiTi","STKaiti",cursive;
+    --body:"LXGW WenKai","KaiTi","STKaiti","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:var(--body);color:var(--ink-plum);
+    background:radial-gradient(120% 120% at 50% 0%,#2a1f4d 0%,var(--starry-indigo) 45%,var(--deep-night) 100%);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;
+    padding:18px 14px 40px;position:relative;overflow-x:hidden;
+  }
+  #stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+  .wrap{position:relative;z-index:1;width:100%;max-width:560px;display:flex;flex-direction:column;gap:16px;}
+  .brand{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--gold);font-family:var(--display);font-size:20px;letter-spacing:2px;}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold);}
+
+  .card{background:var(--parchment);border-radius:26px 30px 27px 31px/12px 14px 13px 15px;
+    padding:24px 22px;box-shadow:0 18px 40px rgba(10,8,24,.45);}
+
+  .companion-row{display:flex;gap:14px;align-items:flex-start;}
+  .companion{flex:0 0 92px;width:92px;height:92px;}
+  .companion svg{width:100%;height:100%;display:block;}
+  .bubble{position:relative;background:#fffdf6;border:2px solid #efe2c4;border-radius:18px;
+    padding:14px 16px;font-size:15px;line-height:1.7;color:var(--ink-plum);flex:1;}
+  .bubble:after{content:"";position:absolute;left:-10px;top:26px;width:0;height:0;
+    border-top:8px solid transparent;border-bottom:8px solid transparent;border-right:10px solid #efe2c4;}
+
+  .object{margin-top:16px;text-align:center;}
+  .glow-star{width:110px;height:110px;margin:0 auto;animation:breathe 3.2s ease-in-out infinite;}
+  @keyframes breathe{0%,100%{transform:scale(1);filter:drop-shadow(0 0 6px rgba(240,203,112,.5));}50%{transform:scale(1.06);filter:drop-shadow(0 0 18px rgba(240,203,112,.9));}}
+  .question{margin-top:10px;font-size:18px;font-family:var(--display);color:var(--ink-plum);}
+  .hint{margin-top:4px;font-size:13px;color:var(--quiet);}
+  .sound-btn{margin:14px auto 0;display:flex;align-items:center;gap:8px;justify-content:center;
+    background:var(--blue);color:var(--ink-plum);border:none;border-radius:999px;padding:10px 18px;
+    font-family:var(--body);font-size:14px;cursor:pointer;min-height:44px;}
+  .sound-btn:focus-visible{outline:3px solid var(--gold);outline-offset:3px;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;justify-content:center;}
+  .chip{background:#fffdf6;border:1.5px solid #e6d6b0;color:var(--ink-plum);border-radius:999px;
+    padding:11px 16px;font-size:14px;font-family:var(--body);cursor:pointer;min-height:44px;
+    transition:transform .18s ease,background .18s ease;}
+  .chip:hover{transform:scale(1.04);background:#fff4d6;}
+  .chip:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+
+  .say{display:flex;gap:8px;margin-top:14px;}
+  .say input{flex:1;border:1.5px solid #e0d2af;border-radius:14px;padding:12px 14px;font-size:14px;
+    font-family:var(--body);background:#fffdf6;color:var(--ink-plum);min-height:46px;}
+  .say input:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  .say button{background:var(--gold);color:var(--ink-plum);border:none;border-radius:14px;padding:0 18px;
+    font-family:var(--body);font-size:14px;font-weight:700;cursor:pointer;min-height:46px;}
+  .say button:focus-visible{outline:3px solid #fff;outline-offset:2px;}
+
+  .treasure{margin-top:12px;text-align:center;font-size:12.5px;color:var(--quiet);}
+
+  .next{margin-top:6px;display:none;flex-direction:column;gap:12px;}
+  .next.show{display:flex;animation:fade .4s ease both;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .next-title{font-family:var(--display);font-size:17px;color:var(--ink-plum);text-align:center;}
+  .module{display:flex;align-items:center;gap:12px;background:#fffdf6;border:1.5px solid #ece0c2;
+    border-radius:18px;padding:14px 16px;cursor:pointer;text-align:left;min-height:48px;
+    transition:transform .18s ease,background .18s ease;}
+  .module:hover{transform:translateY(-2px);background:#fff6da;}
+  .module:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  .module .ic{flex:0 0 40px;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .module .txt b{font-size:15px;font-family:var(--body);color:var(--ink-plum);}
+  .module .txt span{display:block;font-size:12px;color:var(--quiet);margin-top:2px;}
+  .m1 .ic{background:var(--peach);} .m2 .ic{background:var(--blue);} .m3 .ic{background:var(--amber);}
+
+  /* 小星手账 */
+  .journal{margin-top:14px;border-top:1px dashed #e3d4b0;padding-top:14px;display:none;}
+  .journal.show{display:block;}
+  .journal h3{font-family:var(--display);font-size:15px;color:var(--ink-plum);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .journal h3 .pin{width:9px;height:9px;border-radius:2px;background:var(--gold);transform:rotate(12deg);}
+  .entry{display:flex;gap:10px;align-items:flex-start;background:#fffdf6;border-radius:14px;
+    padding:10px 12px;margin-bottom:10px;border-left:5px solid var(--gold);animation:pop .35s ease both;}
+  @keyframes pop{from{opacity:0;transform:translateX(-6px);}to{opacity:1;transform:none;}}
+  .entry .tag{flex:0 0 auto;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;color:var(--ink-plum);}
+  .entry .body{font-size:14px;line-height:1.6;color:var(--ink-plum);}
+  .tag-破冰{background:var(--gold);} .tag-故事{background:var(--peach);}
+  .tag-深海{background:var(--blue);} .tag-职业{background:var(--amber);}
+
+  /* 模块视图 */
+  #moduleView{display:none;}
+  .mod-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .back{border:1.5px solid #e0d2af;background:#fffdf6;color:var(--ink-plum);border-radius:999px;
+    padding:8px 14px;font-size:13px;cursor:pointer;min-height:42px;font-family:var(--body);}
+  .back:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  .mod-title{font-family:var(--display);font-size:20px;color:var(--ink-plum);}
+  .seed-line{background:var(--blue);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.7;color:var(--ink-plum);margin-bottom:14px;}
+  .seed-line b{color:#2a4a6a;}
+  .mod-text{width:100%;border:1.5px solid #e0d2af;border-radius:14px;padding:12px 14px;font-size:14px;
+    font-family:var(--body);background:#fffdf6;color:var(--ink-plum);min-height:96px;resize:vertical;line-height:1.7;}
+  .mod-text:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  .mod-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .mod-chips .chip{font-size:13px;padding:9px 13px;}
+  .done{margin-top:16px;width:100%;background:var(--gold);color:var(--ink-plum);border:none;border-radius:14px;
+    padding:13px;font-family:var(--body);font-size:15px;font-weight:700;cursor:pointer;min-height:50px;}
+  .done:focus-visible{outline:3px solid #fff;outline-offset:2px;}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink-plum);color:var(--parchment);padding:12px 20px;border-radius:999px;
+    font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;z-index:5;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .foot{color:#b9aed0;font-size:11.5px;text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){
+    .glow-star,.next.show,.entry{animation:none;} .chip,.module{transition:none;}
+  }
+</style>
+</head>
+<body>
+<svg id="stars" aria-hidden="true"></svg>
+
+<div class="wrap">
+  <div class="brand"><span class="dot"></span>AI 伯乐 · 探索星球</div>
+
+  <!-- 入口视图 -->
+  <section class="card" id="entryView" aria-label="伙伴破冰入口">
+    <div class="companion-row">
+      <div class="companion" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <path d="M60,14 L71.8,43.8 L103.7,45.8 L79.0,66.2 L87.0,97.2 L60,80 L33.0,97.2 L41.0,66.2 L16.3,45.8 L48.2,43.8 Z"
+                fill="#f0cb70" stroke="#e0b24e" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="48" cy="54" r="4" fill="#40374e"/>
+          <circle cx="72" cy="54" r="4" fill="#40374e"/>
+          <circle cx="40" cy="64" r="5" fill="#f8c9cd" opacity=".8"/>
+          <circle cx="80" cy="64" r="5" fill="#f8c9cd" opacity=".8"/>
+          <path d="M50,68 Q60,77 70,68" fill="none" stroke="#40374e" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="bubble" id="bubble">嗨，我是小星，一颗会陪你玩的星星伙伴！今天我身边这颗小星星有点不一样，你瞧——</div>
+    </div>
+
+    <div class="object">
+      <svg class="glow-star" viewBox="0 0 120 120" aria-hidden="true">
+        <path d="M60,16 L70.6,45.4 L101,46.6 L76.4,65.4 L85,94 L60,76 L35,94 L43.6,65.4 L19,46.6 L49.4,45.4 Z"
+              fill="#f0cb70" stroke="#e6bd55" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+      <div class="question">你猜，它为什么在发光？</div>
+      <div class="hint">不用想太久，凭感觉说就好～</div>
+      <button class="sound-btn" id="soundBtn" aria-label="听一听，这是什么声音">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#40374e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 8a5 5 0 0 1 0 8"/></svg>
+        听一听，这是什么声音？
+      </button>
+    </div>
+
+    <div class="chips" id="chips" role="group" aria-label="选一个反应">
+      <button class="chip" data-r="它在睡觉">它在睡觉</button>
+      <button class="chip" data-r="它在许愿">它在许愿</button>
+      <button class="chip" data-r="它找到了朋友">它找到了朋友</button>
+      <button class="chip" data-r="我也不知道">我也不知道</button>
+    </div>
+
+    <div class="say">
+      <input id="sayInput" type="text" placeholder="或者，你想说点别的…" aria-label="自己说一句话" />
+      <button id="sayBtn">说给星星听</button>
+    </div>
+
+    <div class="treasure">你说的每一句，都会变成星球上的小宝藏，并被带进你要去的地方 💛</div>
+
+    <div class="next" id="next" aria-live="polite">
+      <div class="next-title">那我们带着这个想法，去星球上玩点什么吧？</div>
+      <button class="module m1" data-m="story"><span class="ic">📖</span><span class="txt"><b>故事共创</b><span>续写你刚才想到的开头</span></span></button>
+      <button class="module m2" data-m="deepsea"><span class="ic">🌊</span><span class="txt"><b>深海基地</b><span>用你的想法帮小章鱼</span></span></button>
+      <button class="module m3" data-m="career"><span class="ic">🚀</span><span class="txt"><b>职业模拟</b><span>把你说的变成想试的职业</span></span></button>
+    </div>
+
+    <div class="journal" id="journal" aria-live="polite">
+      <h3><span class="pin"></span>小星手账 · 越玩越长的线索</h3>
+      <div id="entries"></div>
+    </div>
+  </section>
+
+  <!-- 模块视图 -->
+  <section class="card" id="moduleView" aria-label="探索模块">
+    <div class="mod-head">
+      <button class="back" id="backBtn">← 回到星球</button>
+      <div class="mod-title" id="modTitle">故事共创</div>
+    </div>
+    <div class="seed-line" id="seedLine"></div>
+    <textarea class="mod-text" id="modText" aria-label="在这里续写或记录"></textarea>
+    <div class="mod-chips" id="modChips"></div>
+    <button class="done" id="doneBtn">记一笔，回到星球</button>
+  </section>
+
+  <div class="foot">演示页面 · 聊天观察是贯穿线索：破冰→接住→续写→回写，四个模块因此串成一次探险</div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+  (function(){
+    const svg = document.getElementById('stars');
+    const ns = 'http://www.w3.org/2000/svg';
+    for(let i=0;i<60;i++){
+      const c = document.createElementNS(ns,'circle');
+      c.setAttribute('cx', Math.random()*100+'%');
+      c.setAttribute('cy', Math.random()*100+'%');
+      c.setAttribute('r', (Math.random()*1.4+0.4).toFixed(2));
+      c.setAttribute('fill', '#f0cb70');
+      c.setAttribute('opacity', (Math.random()*0.5+0.1).toFixed(2));
+      svg.appendChild(c);
+    }
+  })();
+
+  const bubble = document.getElementById('bubble');
+  const next = document.getElementById('next');
+  const journal = document.getElementById('journal');
+  const entries = document.getElementById('entries');
+  const chips = document.getElementById('chips');
+  const sayInput = document.getElementById('sayInput');
+  const sayBtn = document.getElementById('sayBtn');
+  const toast = document.getElementById('toast');
+  const entryView = document.getElementById('entryView');
+  const moduleView = document.getElementById('moduleView');
+
+  let seed = '';
+  let reacted = false;
+
+  function fmt(s, r){ return s.replace(/\{s\}/g, r); }
+
+  function addEntry(cat, text){
+    const d = document.createElement('div');
+    d.className = 'entry';
+    const tag = document.createElement('span');
+    tag.className = 'tag tag-' + cat;
+    tag.textContent = cat;
+    const body = document.createElement('div');
+    body.className = 'body';
+    body.textContent = text;
+    d.appendChild(tag); d.appendChild(body);
+    entries.appendChild(d);
+  }
+
+  function reveal(r){
+    if(reacted) return;
+    reacted = true;
+    seed = r;
+    bubble.textContent = '哇，你的想法真好！小星把「' + r + '」记在小星手账里了～ 那我们带着它，去星球上玩点什么吧？';
+    next.classList.add('show');
+    journal.classList.add('show');
+    addEntry('破冰', '你说：' + r);
+    journal.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  chips.querySelectorAll('.chip').forEach(b=> b.addEventListener('click', ()=> reveal(b.dataset.r)));
+  function sendSay(){
+    const v = sayInput.value.trim();
+    if(!v) return;
+    reveal(v);
+    sayInput.value = '';
+  }
+  sayBtn.addEventListener('click', sendSay);
+  sayInput.addEventListener('keydown', e=>{ if(e.key==='Enter') sendSay(); });
+
+  document.getElementById('soundBtn').addEventListener('click', ()=>{
+    try{
+      const ac = new (window.AudioContext||window.webkitAudioContext)();
+      [523.25, 659.25].forEach((f,i)=>{
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type='sine'; o.frequency.value=f; o.connect(g); g.connect(ac.destination);
+        const t = ac.currentTime + i*0.18;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.18, t+0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+0.32);
+        o.start(t); o.stop(t+0.34);
+      });
+    }catch(e){}
+  });
+
+  const MOD = {
+    story:{ name:'故事共创', cat:'故事',
+      intro:'你刚才说星星在「{s}」，我们就从这里开始编故事吧！',
+      seed:'从前有一颗小星星，它每天都在{s}，因为它想……',
+      choices:['它想找到会发光的小伙伴','它想把愿望送给迷路的人','它想学会第一种颜色'] },
+    deepsea:{ name:'深海基地', cat:'深海',
+      intro:'你说星星在「{s}」。深海的小章鱼也在找会发光的东西，一起帮它！',
+      seed:'我想这样帮小章鱼：',
+      choices:['用我的想法给发光石指路','先听小章鱼讲讲它的烦恼','把星星的光借给它'] },
+    career:{ name:'职业模拟', cat:'职业',
+      intro:'如果由你来实现星星的「{s}」，你最想当什么？',
+      seed:'我想当：',
+      choices:['小小天文学家','故事作家','海洋守护员'] }
+  };
+
+  let activeCat = '';
+  function openModule(key){
+    const m = MOD[key];
+    activeCat = m.cat;
+    document.getElementById('modTitle').textContent = m.name;
+    document.getElementById('seedLine').innerHTML = fmt(m.intro, '<b>'+seed+'</b>');
+    const ta = document.getElementById('modText');
+    ta.value = fmt(m.seed, seed);
+    const mc = document.getElementById('modChips');
+    mc.innerHTML = '';
+    m.choices.forEach(c=>{
+      const b = document.createElement('button');
+      b.className = 'chip'; b.textContent = c;
+      b.addEventListener('click', ()=>{ ta.value = (ta.value ? ta.value + '\n' : '') + c; ta.focus(); });
+      mc.appendChild(b);
+    });
+    entryView.style.display = 'none';
+    moduleView.style.display = 'block';
+    moduleView.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function closeModule(){
+    moduleView.style.display = 'none';
+    entryView.style.display = 'block';
+    entryView.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  next.querySelectorAll('.module').forEach(b=> b.addEventListener('click', ()=> openModule(b.dataset.m)));
+  document.getElementById('backBtn').addEventListener('click', closeModule);
+  document.getElementById('doneBtn').addEventListener('click', ()=>{
+    const v = document.getElementById('modText').value.trim();
+    if(v) addEntry(activeCat, v);
+    showToast('已记一笔到小星手账 💛');
+    closeModule();
+    journal.scrollIntoView({behavior:'smooth', block:'nearest'});
+  });
+
+  let toastTimer;
+  function showToast(msg){
+    toast.textContent = msg; toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toast.classList.remove('show'), 1800);
+  }
+</script>
+</body>
+</html>

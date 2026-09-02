@@ -41,7 +41,7 @@ python -m pip install -r server/requirements.txt
 
 ### 3. 配置可选的 AI 能力
 
-复制 `server/.env.example` 为 `server/.env`，然后填写自己的 DeepSeek API Key。未配置密钥时，角色系统会使用内置降级模式，游戏仍可运行。
+在整合平台根目录 `.env` 中填写自己的 DeepSeek API Key。未配置密钥时，角色系统会使用内置降级模式，游戏仍可运行。
 
 ### 4. 启动后端
 
@@ -88,4 +88,4 @@ git status
 npm run build
 ```
 
-不要提交 `server/.env`、`node_modules/`、`dist/`、日志文件或本地编辑器配置。
+不要提交平台根目录 `.env`、`node_modules/`、`dist/`、日志文件或本地编辑器配置。

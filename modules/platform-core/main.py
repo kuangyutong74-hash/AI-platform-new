@@ -815,7 +815,7 @@ def create_assessment_session(payload: AssessmentSessionIn, ai_bole_session: str
             (str(uuid.uuid4()), session_id, token_digest(launch_code), expires,
              json.dumps(["evidence:write", "artifact:write", "session:complete", "session:interrupt"])),
         )
-    return {"sessionId": session_id, "moduleId": manifest["id"], "moduleVersion": manifest["version"], "launchCode": launch_code, "launchCodeExpiresAt": expires, "returnUrl": "http://localhost:4173/?from=module", "contractVersion": "1.0"}
+    return {"sessionId": session_id, "moduleId": manifest["id"], "moduleVersion": manifest["version"], "launchCode": launch_code, "launchCodeExpiresAt": expires, "returnUrl": "http://localhost:4173/?from=module", "contractVersion": "1.0", "student": {"id": account["id"], "displayName": account["display_name"], "age": profile["age"]}}
 
 
 @app.post("/api/v1/module-authorizations:exchange")

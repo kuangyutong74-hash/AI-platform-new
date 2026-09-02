@@ -65,10 +65,9 @@ test("keeps four modules equal and preserves personal exploration nodes", async 
   }
   assert.match(planet, /deep-space-nebula-bg-v1|nebula-background/);
   assert.match(planet, /space-dust/);
-  assert.match(planet, /window\.addEventListener\("pointermove",onPointerMove\)/);
-  assert.match(planet, /onWheel=\{handleWheel\}/);
-  assert.match(planet, /沿星轨缓慢环行 · 拖动选择/);
-  assert.match(planet, /requestAnimationFrame\(revolve\)/);
+  assert.match(planet, /className="personal-landmarks"/);
+  assert.match(planet, /personal-landmark-\$\{index===0\?"left":"right"\}/);
+  assert.doesNotMatch(planet, /handleOrbitPointerDown|handleWheel|requestAnimationFrame\(revolve\)/);
   assert.match(planet, /const launchModule = async/);
   assert.match(planet, /\/api\/v1\/assessment-sessions/);
   assert.match(planet, /ai-bole\.launch-context\.v1/);

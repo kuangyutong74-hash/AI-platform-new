@@ -39,11 +39,7 @@ npm run fetch-vosk-model
 
 ## 环境变量说明
 
-复制 `.env.example` 为 `.env`，按需修改：
-
-```bash
-cp .env.example .env
-```
+所有 API 配置统一填写在整合平台根目录 `.env` 中；模块目录内不再单独维护密钥文件。
 
 ### 必填项
 
@@ -75,7 +71,7 @@ cp .env.example .env
 | `DATA_DIR` | `./data` | 数据存储目录（相对路径基于项目根目录） |
 | `TRUST_PROXY` | `false` | 反向代理信任级别，可选 `1`/`2`/`3`/`loopback`/`linklocal`/`uniquelocal`。禁止设为 `true` |
 
-> ⚠️ **安全注意**：`.env` 含 API 密钥、`data/` 含对话数据，均已被 `.gitignore` 忽略。
+> ⚠️ **安全注意**：平台根目录 `.env` 含 API 密钥、`data/` 含对话数据，均已被 `.gitignore` 忽略。
 > **切勿将 `.env` 或 `data/` 中的文件上传到公开仓库**。
 
 ---

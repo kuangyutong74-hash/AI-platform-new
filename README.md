@@ -136,7 +136,7 @@ DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
 DEEPSEEK_MODEL=deepseek-chat
 ```
 
-聊天、职业、深海和报告服务读取根目录 `.env`。故事后端目前还需把同样配置写入 `modules/story/backend/.env`，字段可使用 `DEEPSEEK_*` 或兼容名称 `LLM_*`。所有 `.env` 均被 Git 忽略；不要提交密钥、粘贴到前端代码或写入日志。
+聊天、故事、职业、深海和报告服务统一读取根目录 `.env`。故事后端也兼容 `LLM_*` 变量名，但建议四个模块统一使用 `DEEPSEEK_*`。所有 `.env` 均被 Git 忽略；不要提交密钥、粘贴到前端代码或写入日志。
 
 环境变量只在进程启动时读取。修改 key 后必须重启对应服务：
 

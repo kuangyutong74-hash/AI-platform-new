@@ -14,10 +14,6 @@
   <button id="font-larger" class="font-size-btn" type="button" title="放大字体" aria-label="放大字体">A<sup>+</sup></button>
 </div>
 <script>
-// 轻量学生身份标识：同一浏览器自动生成，跨会话关联。
-// 已知限制：更换浏览器或清除缓存后 token 丢失，历史记录无法关联。
-// 后续如需正式的账号系统，可将此机制替换为 user_id。
-(function(){var K='career-student-token-v1';if(!localStorage.getItem(K)){localStorage.setItem(K,'st_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10));}})();
 (function(){
   var SCALES = {smaller: 14, default: 16, larger: 18};
   var saved = localStorage.getItem('font-size-scale');
