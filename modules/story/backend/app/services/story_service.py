@@ -60,6 +60,32 @@ def _extract_narrative(msg: StoryMessage) -> str:
     return content
 
 
+def build_complete_story_text(messages: list[StoryMessage]) -> str:
+    """Project the co-creation transcript into one continuous story.
+
+    Each child contribution is normally incorporated into the director's next
+    narrative, so repeating both sides would turn the saved work back into a
+    chat transcript.  A child-authored ending has no matching AI message and is
+    therefore appended as the final paragraph.
+    """
+    ai_turns = {
+        message.turn_number
+        for message in messages
+        if message.role == "ai" and _extract_narrative(message).strip()
+    }
+    paragraphs: list[str] = []
+    for message in messages:
+        if message.role == "ai":
+            paragraph = _extract_narrative(message).strip()
+        elif message.turn_number not in ai_turns:
+            paragraph = (message.content or "").strip()
+        else:
+            paragraph = ""
+        if paragraph:
+            paragraphs.append(paragraph)
+    return "\n\n".join(paragraphs)
+
+
 async def save_child_message(
     db: AsyncSession, story_id: int, turn_number: int, content: str
 ) -> StoryMessage:
@@ -122,12 +148,7 @@ async def complete_story(db: AsyncSession, story_id: int):
     )
     messages = result.scalars().all()
 
-    parts = []
-    for msg in messages:
-        role_label = "【AI故事导演】" if msg.role == "ai" else "【小作家】"
-        parts.append(f"{role_label}\n{msg.content}")
-
-    story.full_text = "\n\n".join(parts)
+    story.full_text = build_complete_story_text(messages)
     story.status = "completed"
     story.completed_at = datetime.utcnow()
     await db.commit()

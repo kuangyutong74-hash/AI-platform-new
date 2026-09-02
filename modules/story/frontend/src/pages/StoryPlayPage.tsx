@@ -7,7 +7,8 @@ import {
   shouldBlockChildInput,
 } from '../utils/childInputGuard';
 import { useStoryState, type ChatMessage } from '../contexts/StoryContext';
-import { getStory, getStoryMessages, updateStory, type StoryMessage } from '../api/endpoints';
+import { completeStory, getStory, getStoryMessages, updateStory, type StoryMessage } from '../api/endpoints';
+import { addStoryToMyWorks, listCollectedStoryIds } from '../api/platformWorks';
 import ChatBubble from '../components/Story/ChatBubble';
 import StoryInput from '../components/Story/StoryInput';
 import TypingIndicator from '../components/Story/TypingIndicator';
@@ -25,6 +26,10 @@ function extractStoredPraise(message: StoryMessage): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+function compactText(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
 }
 
 export default function StoryPlayPage() {
@@ -80,6 +85,7 @@ export default function StoryPlayPage() {
         .filter((praise): praise is string => Boolean(praise));
       dispatch({
         type: 'RESTORE_MESSAGES',
+        storyId: id,
         messages: chatMessages,
         turnNumber: story.turn_count,
         isEnding: story.status === 'completed',
@@ -126,6 +132,16 @@ export default function StoryPlayPage() {
   const [storyTitle, setStoryTitleState] = useState('');
   const [showPinyin, setShowPinyin] = useState(false);
   const [fontSize, setFontSize] = useState<'s' | 'm' | 'l'>('m');
+  const [completionLoading, setCompletionLoading] = useState(false);
+  const [workSaveState, setWorkSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [workSaveError, setWorkSaveError] = useState('');
+
+  useEffect(() => {
+    if (!id) return;
+    listCollectedStoryIds()
+      .then((ids) => { if (ids.has(id)) setWorkSaveState('saved'); })
+      .catch(() => undefined);
+  }, [id]);
 
   function storyDurationSeconds() {
     const activeMs = storyActiveMsRef.current
@@ -136,41 +152,70 @@ export default function StoryPlayPage() {
   async function emitStoryCompleted(completionMode: 'child' | 'director', ending = '') {
     const activityId = `story-${id}`;
     const endingText = ending.trim();
+    const [savedStory, savedMessages] = await Promise.all([
+      getStory(id),
+      getStoryMessages(id),
+    ]);
+    const savedTitle = compactText(savedStory.title || storyTitle) || '故事共创';
+    const contributionCount = savedMessages.filter((message) => message.role === 'child').length;
     const sdk = (window as any).AIBoleModuleSDK?.create({moduleId:'story'});
     if (!sdk) return;
     const connection = await sdk.connectOptional();
     if (connection.notConnected) return;
-    const summary = completionMode === 'child'
-        ? '孩子为共创故事独立写下结尾，并完成了一次完整作品。'
-        : '孩子持续参与故事共创，并和故事导演一起完成了结局。';
-    await sdk.emitEvidence(sdk.makeEvent('story.contribution-completed.v1',{contributionCount:Math.max(1,state.turnNumber+1),completionSeconds:storyDurationSeconds(),storyTitle:storyTitle.trim().slice(0,120)||'故事共创'},`${activityId}:completed`));
-    const snapshot = await sdk.captureSnapshot('main').catch(() => null);
-    await sdk.publishArtifact({schemaVersion:'1.0',artifactId:activityId,type:'story',title:storyTitle.trim().slice(0,160)||'故事共创',summary,previewResourceId:snapshot?.id,sourceResourceId:`story:${id}`,createdAt:new Date().toISOString()});
+    await sdk.emitEvidence(sdk.makeEvent('story.contribution-completed.v1',{contributionCount:Math.max(1,contributionCount),completionSeconds:storyDurationSeconds(),storyTitle:savedTitle.slice(0,120)},`${activityId}:completed`));
     await sdk.completeSession({completionMode,endingLength:endingText.length});
   }
 
+  async function handleAddToMyWorks() {
+    if (!id || workSaveState !== 'idle') return;
+    setWorkSaveError('');
+    setWorkSaveState('saving');
+    try {
+      await addStoryToMyWorks(id);
+      setWorkSaveState('saved');
+    } catch (cause) {
+      setWorkSaveState('idle');
+      setWorkSaveError(cause instanceof Error ? cause.message : '暂时没有添加成功，请稍后再试。');
+    }
+  }
+
   async function handleAIEnding() {
-    if (!id) return;
+    if (!id || completionLoading) return;
     setShowEndModal(false);
-    // Keep the story active until the director has written and saved the ending.
-    await startTurn(id, '请从刚才的情节继续，给这个故事写一个完整的大结局吧！', true);
-    emitStoryCompleted('director');
+    setCompletionLoading(true);
+    try {
+      // Keep the story active until the director has written and saved the ending.
+      const completed = await startTurn(id, '请从刚才的情节继续，给这个故事写一个完整的大结局吧！', true);
+      if (completed) await emitStoryCompleted('director');
+    } finally {
+      setCompletionLoading(false);
+    }
   }
 
   async function handleChildEnding() {
-    if (!id || !childEnding.trim()) return;
+    if (!id || !childEnding.trim() || completionLoading) return;
     if (shouldBlockChildInput(childEnding)) {
       window.alert(CHILD_INPUT_BLOCK_MESSAGE);
       return;
     }
-    // Send child's ending as final message, then mark complete
-    dispatch({ type: 'ADD_CHILD_MESSAGE', content: childEnding.trim() });
-    await updateStory(id, { status: 'completed' });
-    // 只上报完成作品所需的最小行为证据，不上传故事全文。
-    emitStoryCompleted('child', childEnding);
-    dispatch({ type: 'FINISH_TURN', turnNumber: state.turnNumber + 1, isEnding: true });
-    setShowEndModal(false);
-    setChildEnding('');
+    setCompletionLoading(true);
+    try {
+      const ending = childEnding.trim();
+      const completedStory = await completeStory(id, ending);
+      dispatch({ type: 'ADD_CHILD_MESSAGE', content: ending });
+      dispatch({ type: 'FINISH_TURN', turnNumber: completedStory.turn_count, isEnding: true });
+      await emitStoryCompleted('child', ending);
+      setShowEndModal(false);
+      setChildEnding('');
+    } catch (cause) {
+      dispatch({
+        type: 'SHOW_SAFETY_NOTICE',
+        message: cause instanceof Error ? cause.message : '故事结尾没有保存成功，请再试一次',
+        level: 'moderate',
+      });
+    } finally {
+      setCompletionLoading(false);
+    }
   }
 
   if (state.storyId === null && state.messages.length === 0 && loadingRef.current === false) {
@@ -257,6 +302,14 @@ export default function StoryPlayPage() {
             <h3>故事创作完成！</h3>
             <p>太棒了！你们一起创造了一个精彩的故事~</p>
             <div className="story-ended-actions">
+              <Button
+                variant="accent"
+                onClick={handleAddToMyWorks}
+                disabled={workSaveState !== 'idle'}
+              >
+                {workSaveState === 'saving' ? '添加中...'
+                  : workSaveState === 'saved' ? '✓ 已添加到我的作品' : '+ 添加到我的作品'}
+              </Button>
               <Button variant="primary" onClick={() => id && navigate(`/story-create/talent/${id}`)}>
                 <PngIcon name="celebration" size={28} /> 查看创作回顾
               </Button>
@@ -264,6 +317,7 @@ export default function StoryPlayPage() {
                 <PngIcon name="story-book" size={28} /> 我的故事书架
               </Button>
             </div>
+            {workSaveError && <p className="story-work-save-error" role="alert">{workSaveError}</p>}
           </div>
         ) : (
           <StoryInput
@@ -288,7 +342,7 @@ export default function StoryPlayPage() {
             <div className="end-modal animate-pop-in" onClick={e => e.stopPropagation()}>
               <h3><PngIcon name="story-director" size={32} /> 故事结局</h3>
               <div className="end-options">
-                <button className="end-option-btn" onClick={handleAIEnding}>
+                <button className="end-option-btn" onClick={handleAIEnding} disabled={completionLoading}>
                   <span className="end-option-icon"><PngIcon name="avatar-robot" size={48} /></span>
                   <span className="end-option-title">让故事导演写结局</span>
                   <span className="end-option-desc">AI根据剧情发展，给出一个温暖的结尾</span>
@@ -306,7 +360,7 @@ export default function StoryPlayPage() {
                   />
                   <button
                     className="end-child-submit"
-                    disabled={!childEnding.trim()}
+                    disabled={!childEnding.trim() || completionLoading}
                     onClick={handleChildEnding}
                   >
                     <PngIcon name="celebration" size={26} /> 提交我的结局

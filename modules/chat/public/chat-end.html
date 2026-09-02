@@ -56,7 +56,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 .end-note-content{position:absolute;z-index:3;inset:17% 9% 10%;text-align:center}
 .end-note-content h2{margin:0 0 23px;font-size:22px;font-weight:950}
 .end-note-content p{margin:14px 0;color:#755247;font-size:14px;font-weight:600;line-height:1.7}
-.end-bottom-actions{position:absolute;z-index:8;left:23.2%;right:23.4%;bottom:5.6%;display:grid;grid-template-columns:1fr 1fr 1fr;gap:28px}
+.end-bottom-actions{position:absolute;z-index:8;left:16%;right:16%;bottom:5.6%;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
 .end-action-card{min-height:112px;position:relative;display:flex;align-items:center;gap:18px;padding:20px 28px;text-decoration:none;color:inherit;cursor:pointer;transition:transform .16s ease;font-family:inherit;font-size:inherit;border:none;background:none}
 .end-action-card:hover{transform:translateY(-2px)}
 .end-act-bg{position:absolute;inset:0;z-index:0;width:100%;height:100%}
@@ -67,7 +67,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 
 /* ==== Responsive ==== */
 @media(max-width:1100px){.end-bottom-actions{gap:14px}.end-action-card{min-height:90px;padding:16px 20px;gap:14px}.end-act-icon{width:48px;height:48px;font-size:26px}.end-act-text strong{font-size:16px}}
-@media(max-width:760px){.end-hero{top:8%;max-width:86%;width:86%}.end-mascot-area{left:0;top:28%;bottom:auto;width:32%;height:48%}.end-summary-card{left:28%;top:38%;width:68%;height:35%}.end-tomorrow-note{left:5%;right:auto;top:66%;width:34%;height:25%}.end-bottom-actions{left:40%;right:4%;bottom:4%;grid-template-columns:1fr;gap:14px}.end-action-card{min-height:72px}.end-rainbow-clouds{width:36%}.end-cloud-smile{width:19%}.end-butterfly{width:13%}}
+@media(max-width:760px){.end-hero{top:8%;max-width:86%;width:86%}.end-mascot-area{left:0;top:28%;bottom:auto;width:32%;height:48%}.end-summary-card{left:28%;top:38%;width:68%;height:35%}.end-tomorrow-note{left:5%;right:auto;top:66%;width:34%;height:25%}.end-note-content{inset:12% 8% 5%}.end-note-content h2{margin:0 0 4px;font-size:16px;line-height:1.15}.end-note-content p{margin:3px 0;font-size:10px;line-height:1.3}.end-bottom-actions{left:38%;right:3%;bottom:3%;grid-template-columns:1fr 1fr;gap:8px}.end-action-card{min-height:68px;padding:8px;gap:6px}.end-act-icon{width:30px;height:30px;font-size:20px}.end-act-text strong{margin:0;font-size:12px}.end-act-text small{display:none}.end-rainbow-clouds{width:36%}.end-cloud-smile{width:19%}.end-butterfly{width:13%}}
   </style>
   <script src="assets/avatars/avatar-config.js"></script>
 </head>
@@ -105,11 +105,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
     <aside class="end-tomorrow-note">
       <img class="end-note-bg" src="assets/end/ui/note-paper.svg" alt="">
       <div class="end-note-tape"><img src="assets/end/ui/green-tape.svg" alt=""></div>
-      <div class="end-note-content"><h2>致每天的你 ☀️</h2><p>每一天都是新的开始，</p><p>你一定会越来越勇敢、</p><p>越来越懂自己！</p></div>
+      <div class="end-note-content"><h2>怎样算完成一次？</h2><p>至少发送 1 条消息，</p><p>再点击“结束聊天”。</p><p>从探索星球进入，会自动保存到“我的作品”。</p></div>
     </aside>
     <nav class="end-bottom-actions">
       <a class="end-action-card" href="/home.html"><img class="end-act-bg" src="assets/end/ui/action-card-bg.svg" alt=""><span class="end-act-icon">🏠</span><span class="end-act-text"><strong>返回首页</strong><small>回到小新家</small></span></a>
       <a class="end-action-card" href="/journal.html"><img class="end-act-bg" src="assets/end/ui/action-card-bg.svg" alt=""><span class="end-act-icon">📔</span><span class="end-act-text"><strong>写手账</strong><small>记录今天的心情</small></span></a>
+      <a class="end-action-card" href="http://localhost:4173/?view=works"><img class="end-act-bg" src="assets/end/ui/action-card-bg.svg" alt=""><span class="end-act-icon">📚</span><span class="end-act-text"><strong>查看我的作品</strong><small>回看本次聊天观察</small></span></a>
       <button class="end-action-card" id="btnRestart" type="button"><img class="end-act-bg" src="assets/end/ui/action-card-bg.svg" alt=""><span class="end-act-icon">💬</span><span class="end-act-text"><strong>继续和小新聊天</strong><small>再聊一会儿吧</small></span></button>
     </nav>
   </section>

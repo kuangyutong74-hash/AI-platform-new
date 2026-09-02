@@ -153,6 +153,46 @@ class AccountTests(unittest.TestCase):
         )
         self.assertEqual(logged_in["account"]["display_name"], "小重")
 
+    def test_generated_account_typo_is_corrected_for_login_reset_and_binding(self):
+        padded = main.register_account(main.AccountRegistrationIn(
+            username="S2026007", display_name="小七", age=8, password="before77",
+            role="student",
+        ), Response())["account"]
+        self.assertEqual(padded["username"], "s20260007")
+        logged_in = main.create_session(
+            main.AccountCredentialsIn(username="S2026007", password="before77", expected_role="student"),
+            Response(),
+        )
+        self.assertEqual(logged_in["account"]["id"], padded["id"])
+
+        reset = main.reset_password(main.PasswordResetIn(username="S2026-007", new_password="after777"))
+        self.assertEqual(reset["username"], "s20260007")
+        main.create_session(
+            main.AccountCredentialsIn(username="s2026007", password="after777", expected_role="student"),
+            Response(),
+        )
+
+        adult_response = Response()
+        main.register_account(main.AccountRegistrationIn(
+            username="alias_adult", display_name="小七家长", password="adult888", role="adult",
+        ), adult_response)
+        linked = main.bind_student(main.StudentLinkIn(username="S2026007"), session_cookie(adult_response))
+        self.assertEqual(linked["student"]["id"], padded["id"])
+
+    def test_default_adult_account_is_bound_and_can_read_sample_works(self):
+        adult_response = Response()
+        session = main.create_session(
+            main.AccountCredentialsIn(username="adult_demo", password="demo1234", expected_role="adult"),
+            adult_response,
+        )
+        self.assertEqual(session["selected_student"]["username"], "student_demo")
+        self.assertEqual([student["username"] for student in session["students"]], ["student_demo"])
+        collection = main.list_artifacts_v1(session_cookie(adult_response))
+        self.assertEqual(
+            {work["title"] for work in collection["artifacts"]},
+            {"星星邮差", "会发光的海底基地"},
+        )
+
     def test_student_can_add_and_delete_a_manual_work(self):
         student_response = Response()
         student = main.register_account(main.AccountRegistrationIn(
@@ -163,11 +203,26 @@ class AccountTests(unittest.TestCase):
 
         created = main.create_manual_work(main.ManualWorkIn(
             module="story", title="我的纸飞机", description="我画了一架飞向月亮的纸飞机。",
+            source_id="story:paper-plane",
         ), student_cookie)["work"]
         self.assertEqual(created["kind"], "manual_work")
         self.assertEqual(created["title"], "我的纸飞机")
         collection = main.list_artifacts_v1(student_cookie)
         self.assertIn(created["id"], {work["id"] for work in collection["artifacts"]})
+        saved = next(work for work in collection["artifacts"] if work["id"] == created["id"])
+        self.assertEqual(saved["sourceResourceId"], "story:paper-plane")
+
+        updated_result = main.create_manual_work(main.ManualWorkIn(
+            module="story", title="纸飞机的新结局", description="完整的新故事正文。",
+            source_id="story:paper-plane",
+        ), student_cookie)
+        self.assertTrue(updated_result["updated"])
+        self.assertEqual(updated_result["work"]["id"], created["id"])
+        self.assertEqual(
+            len([work for work in main.list_artifacts_v1(student_cookie)["artifacts"]
+                 if work["sourceResourceId"] == "story:paper-plane"]),
+            1,
+        )
 
         with main.connect() as db:
             evidence_count = db.execute(

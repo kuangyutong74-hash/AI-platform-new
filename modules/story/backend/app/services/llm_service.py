@@ -603,6 +603,7 @@ class LLMService:
                 stream=True,
                 temperature=0.8,
                 max_tokens=1024,
+                extra_body={"thinking": {"type": "disabled"}},
                 timeout=60.0,
             )
         except Exception as e:
@@ -619,6 +620,43 @@ class LLMService:
             buffer = ""
             pending_plain = ""      # Text accumulated BEFORE first valid JSON line
             seen_valid_json = False  # Whether we've successfully parsed at least one JSON line
+            emitted_content = False
+
+            async def enqueue_parsed(parsed: dict) -> bool:
+                """Queue one protocol object and report whether it terminates the turn."""
+                nonlocal emitted_content
+                event_type = parsed.get("type")
+                if event_type == "narrative":
+                    text = str(parsed.get("text", "") or "")
+                    if text.strip():
+                        event = {"type": "narrative_chunk", "text": text}
+                        if parsed.get("image_prompt"):
+                            event["image_prompt"] = parsed["image_prompt"]
+                        await queue.put(event)
+                        emitted_content = True
+                elif event_type == "ending":
+                    text = str(parsed.get("text", "") or "")
+                    if text.strip():
+                        await queue.put({"type": "ending", "text": text})
+                        emitted_content = True
+                elif event_type == "question":
+                    text = str(parsed.get("text", "") or "")
+                    if text.strip():
+                        await queue.put({"type": "question", "text": text})
+                        emitted_content = True
+                elif event_type == "observation":
+                    await queue.put({"type": "observation", "data": parsed.get("data", {})})
+                elif event_type == "done":
+                    if not emitted_content:
+                        await queue.put({
+                            "type": "error",
+                            "message": "AI 导演返回了空内容，请再试一次",
+                        })
+                    else:
+                        await queue.put({"type": "done"})
+                    stream_done.set()
+                    return True
+                return False
 
             try:
                 async for chunk in stream:
@@ -640,23 +678,10 @@ class LLMService:
                             seen_valid_json = True
                             if pending_plain.strip():
                                 await _emit_plain_text(pending_plain.strip(), queue)
+                                emitted_content = True
                                 pending_plain = ""
 
-                            t = parsed.get("type")
-                            if t == "narrative":
-                                chunk = {"type": "narrative_chunk", "text": parsed.get("text", "")}
-                                if parsed.get("image_prompt"):
-                                    chunk["image_prompt"] = parsed["image_prompt"]
-                                await queue.put(chunk)
-                            elif t == "ending":
-                                await queue.put({"type": "ending", "text": parsed.get("text", "")})
-                            elif t == "question":
-                                await queue.put({"type": "question", "text": parsed.get("text", "")})
-                            elif t == "observation":
-                                await queue.put({"type": "observation", "data": parsed.get("data", {})})
-                            elif t == "done":
-                                await queue.put({"type": "done"})
-                                stream_done.set()
+                            if await enqueue_parsed(parsed):
                                 return
                         else:
                             # Not valid JSON
@@ -668,24 +693,43 @@ class LLMService:
                 # ── Stream ended ──
                 if buffer.strip():
                     parsed = _try_parse_json_line(buffer.strip())
-                    if parsed is not None and parsed.get("type") == "done":
-                        await queue.put({"type": "done"})
-                        stream_done.set()
-                        return
-                    if not seen_valid_json:
+                    if parsed is not None:
+                        seen_valid_json = True
+                        if pending_plain.strip():
+                            await _emit_plain_text(pending_plain.strip(), queue)
+                            emitted_content = True
+                            pending_plain = ""
+                        if await enqueue_parsed(parsed):
+                            return
+                    elif not seen_valid_json:
                         pending_plain += buffer
 
                 # If we never saw valid JSON, treat everything as plain text
                 if not seen_valid_json and pending_plain.strip():
                     await _emit_plain_text(pending_plain.strip(), queue)
+                    emitted_content = True
 
             except Exception as e:
                 import traceback
                 traceback.print_exc()
                 if pending_plain.strip():
                     await _emit_plain_text(pending_plain.strip(), queue)
+                    emitted_content = True
+                if not emitted_content:
+                    await queue.put({
+                        "type": "error",
+                        "message": f"读取 AI 回复失败: {str(e)[:100]}",
+                    })
+                    stream_done.set()
             finally:
-                await queue.put({"type": "done"})
+                if not stream_done.is_set():
+                    if emitted_content:
+                        await queue.put({"type": "done"})
+                    else:
+                        await queue.put({
+                            "type": "error",
+                            "message": "AI 导演没有返回故事正文，请再试一次",
+                        })
                 stream_done.set()
 
         async def pump_heartbeats():
@@ -714,6 +758,14 @@ class LLMService:
 
             if event["type"] == "done":
                 done_received = True
+            elif event["type"] == "error":
+                stream_done.set()
+                chunk_task.cancel()
+                heartbeat_task.cancel()
+                await asyncio.gather(
+                    chunk_task, heartbeat_task, return_exceptions=True,
+                )
+                raise LLMServiceError(event.get("message", "AI 导演返回异常"))
 
             yield event
 
@@ -756,6 +808,7 @@ class LLMService:
                 stream=False,
                 temperature=0.3,   # Low temp for consistent scoring
                 max_tokens=1800,
+                extra_body={"thinking": {"type": "disabled"}},
                 timeout=25.0,
             )
             content = (resp.choices[0].message.content or "").strip()
@@ -851,6 +904,7 @@ class LLMService:
                 stream=False,
                 temperature=0.6,
                 max_tokens=120,
+                extra_body={"thinking": {"type": "disabled"}},
                 timeout=10.0,
             )
             content = (response.choices[0].message.content or "").strip()

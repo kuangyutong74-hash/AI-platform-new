@@ -103,6 +103,21 @@ describe('1. normal response', function () {
     }));
     assert.deepStrictEqual(result, { content: '' });
   });
+
+  it('2a. sends an explicit thinking mode when configured', async function () {
+    var requestBody;
+    var fakeFetch = function (url, init) {
+      requestBody = JSON.parse(init.body);
+      return makeFakeFetch({})(url, init);
+    };
+
+    await requestChatCompletion(opts({
+      thinkingMode: 'disabled',
+      fetchImpl: fakeFetch,
+    }));
+
+    assert.deepStrictEqual(requestBody.thinking, { type: 'disabled' });
+  });
 });
 
 // ============================================================

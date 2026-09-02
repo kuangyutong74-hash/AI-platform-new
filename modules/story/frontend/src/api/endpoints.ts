@@ -114,6 +114,13 @@ export function updateStory(id: number, data: { title?: string; status?: string 
   });
 }
 
+export function completeStory(id: number, endingText: string) {
+  return apiFetch<Story>(`/stories/${id}/complete`, {
+    method: 'POST',
+    body: JSON.stringify({ ending_text: endingText }),
+  });
+}
+
 export function deleteStory(id: number) {
   return apiFetch<void>(`/stories/${id}`, { method: 'DELETE' });
 }

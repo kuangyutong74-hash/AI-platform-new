@@ -384,6 +384,7 @@ app.post('/chat/session', async (req, res) => {
               ],
               temperature: 0.1,
               maxTokens: 8192,
+              thinkingMode: 'disabled',
               // 实测 13K 提示词下 flash 耗时 2.6s~19s、且经常跑满封顶。
               // 6s 封顶：能在 6s 内完成的用上，否则降级 analysis=null 继续本轮，
               // 不影响回复（实测降级轮次回复质量仍正常）。
@@ -452,6 +453,7 @@ app.post('/chat/session', async (req, res) => {
               ],
               // 聊天回复要求短小（60 字内），600 预算足够且能压缩推理时间（实测 9.4s → 6.5s）
               maxTokens: 600,
+              thinkingMode: 'disabled',
               timeoutMs: 25000,
               externalSignal: disconnectController.signal,
             });
@@ -499,6 +501,7 @@ app.post('/chat/session', async (req, res) => {
               temperature: 0.3,
               // 推理模型需预留 reasoning 预算：200 时实测 reasoning 吃光预算导致内容为空 → 兜底
               maxTokens: 800,
+              thinkingMode: 'disabled',
               timeoutMs: 15000,
               externalSignal: disconnectController.signal,
             });
@@ -654,6 +657,7 @@ app.post('/chat/simple', async (req, res) => {
         endpoint: `${DEEPSEEK_BASE_URL}/chat/completions`,
         apiKey: DEEPSEEK_API_KEY,
         model: DEEPSEEK_MODEL_REPLY,
+        thinkingMode: 'disabled',
         messages: [
           { role: 'user', content: message },
         ],
@@ -1790,6 +1794,7 @@ app.post('/api/quick-topics', async (req, res) => {
         ],
         temperature: 0.9,
         maxTokens: 200,
+        thinkingMode: 'disabled',
         timeoutMs: 8000,
       });
     } catch (_) {
@@ -1852,6 +1857,7 @@ app.get('/api/discoveries', async (_req, res) => {
       ],
       // 首页卡片属于低延迟场景，用 REPLY（flash）模型；推理模型会先消耗大量 reasoning 预算导致 content 为空
       model: DEEPSEEK_MODEL_REPLY,
+      thinkingMode: 'disabled',
       temperature: 0.8,
       maxTokens: 1500,
       timeoutMs: 30000,
