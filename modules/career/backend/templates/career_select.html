@@ -40,18 +40,9 @@
 {% block extra_js %}<script>
 const careersData={{ careers | tojson | safe }};
 let selectedCareerId = '';
-const platformConnection = new Promise(function(resolve){
-  let settled=false;
-  function finish(value){if(settled)return;settled=true;clearTimeout(timeout);resolve(value);}
-  const timeout=setTimeout(function(){finish({notConnected:true});},3000);
-  function connect(){
-    if(settled)return;
-    if(!window.AIBoleModuleSDK){setTimeout(connect,20);return;}
-    window.AIBoleCareerSDK=window.AIBoleModuleSDK.create({moduleId:'career'});
-    window.AIBoleCareerSDK.connectOptional().then(finish).catch(function(){finish({notConnected:true});});
-  }
-  connect();
-});
+// 不在职业选择页提前兑换一次性启动码。职业体验会跨多个完整页面跳转，
+// 提前兑换会清空 window.name 中的启动上下文，使最终完成页无法写回作品和进度。
+// 完成页统一连接 SDK、写入证据和作品并结束平台会话。
 
 function selectCareer(id){
   const c=careersData.find(x=>x.id===id);if(!c)return;

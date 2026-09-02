@@ -1,6 +1,6 @@
 import unittest
 
-from main import EvidenceEvent, RuleAnalyzer, normalize_report
+from main import EvidenceEvent, RuleAnalyzer, child_story_for_event, normalize_report
 
 
 def event(event_id: str, candidate: str, strength: str = "strong") -> EvidenceEvent:
@@ -8,6 +8,18 @@ def event(event_id: str, candidate: str, strength: str = "strong") -> EvidenceEv
 
 
 class ReportAnalyzerTests(unittest.TestCase):
+    def test_child_story_uses_concrete_session_content(self):
+        chat_event = EvidenceEvent(
+            id="ev-chat", module="chat", event_type="chat.observation-shared.v1",
+            occurred_at="2026-09-01T08:00:00Z", behavior_summary="分享了一次观察或想法。",
+            intelligence_candidates=["naturalistic"], raw_evidence={"turnCount": 4, "topicKey": "运动"},
+            context={"sessionSummary": {"childWords": "我想学会更快地跑步。"}, "artifacts": []},
+        )
+        story = child_story_for_event(chat_event)
+        self.assertIn("运动", story)
+        self.assertIn("我想学会更快地跑步", story)
+        self.assertNotIn("自然观察", story)
+
     def test_rule_output_uses_canonical_key_and_teacher(self):
         result = RuleAnalyzer().analyze([event("ev-1", "logical_mathematical")])
         keys = {item["key"] for item in result["dimensions"]}

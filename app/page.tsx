@@ -44,10 +44,10 @@ export default function Home(){
       onChanged={next=>{setSession(next);if(next.selected_student){setStudentManagerOpen(false);setView("report");window.history.replaceState({view:"report"},"",urlForView("report","adult"));}}}
     />}
     {isAdult&&!subject&&<AdultEmptyState session={session} onManageStudents={()=>setStudentManagerOpen(true)}/>}
-    {!isAdult&&view==="planet"&&<PlanetHome onNavigate={(next)=>navigate(next==="report"?"treasure":next as View)}/>}
+    {!isAdult&&view==="planet"&&<PlanetHome onNavigate={(next)=>navigate(next==="report"?"treasure":next as View)}/>} 
     {!isAdult&&subject&&view==="works"&&<Suspense fallback={<PersonalLoading text="正在翻开作品册…"/>}><WorksPage account={subject} onNavigate={(next)=>navigate(next==="timeline"?"planet":next as View)} perspective="student"/></Suspense>}
-    {!isAdult&&subject&&view==="treasure"&&<ReportFrame mode="child" student={subject}/>}
-    {isAdult&&subject&&view==="report"&&<ReportFrame mode="adult" student={subject}/>}
+    {!isAdult&&subject&&view==="treasure"&&<ReportFrame mode="child" student={subject}/>} 
+    {isAdult&&subject&&view==="report"&&<ReportFrame mode="adult" student={subject}/>} 
     {isAdult&&subject&&view==="showcase"&&<Suspense fallback={<PersonalLoading text="正在整理作品展柜…"/>}><WorksPage account={subject} onNavigate={(next)=>navigate(next==="works"?"showcase":next as View)} perspective="adult"/></Suspense>}
     {isAdult&&subject&&view==="timeline"&&<Suspense fallback={<PersonalLoading text="正在铺开成长足迹…"/>}><GrowthTrailPage account={subject} onNavigate={(next)=>navigate(next==="works"?"showcase":next==="planet"?"report":next as View)} perspective="adult"/></Suspense>}
   </main>;

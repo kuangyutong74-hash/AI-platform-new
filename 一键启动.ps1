@@ -8,6 +8,17 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\scripts\服务工具.ps1"
 
+# Node 24 的内置 fetch 只有在进程启动前设置 NODE_USE_ENV_PROXY 时才会
+# 使用 HTTP(S)_PROXY。聊天等 AI 服务需要继承根目录 .env 中的代理配置。
+$rootEnvPath = Join-Path $PSScriptRoot '.env'
+if (Test-Path -LiteralPath $rootEnvPath) {
+  foreach ($line in Get-Content -LiteralPath $rootEnvPath) {
+    if ($line -match '^(NODE_USE_ENV_PROXY|HTTP_PROXY|HTTPS_PROXY|NO_PROXY)=(.*)$') {
+      [Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process')
+    }
+  }
+}
+
 $runtimeDirectory = Get-RuntimeDirectory
 $logDirectory = Join-Path $runtimeDirectory 'logs'
 $registryPath = Join-Path $runtimeDirectory 'services.json'

@@ -21,6 +21,7 @@ function quoteFrom(event:CoreEvidenceRecord):string|undefined {
   return firstString(event.payload,["childWords","childEnding","quote","child_words","child_ending"])?.slice(0,72);
 }
 function imageFrom(event:CoreEvidenceRecord):string|undefined {
+  if(event.previewUrl)return event.previewUrl;
   const value=firstString(event.payload,["snapshotUrl","imageUrl","snapshot_url","image_url"]);
   return value&&/^https?:\/\//.test(value)?value:undefined;
 }
@@ -38,8 +39,8 @@ function pipelineSceneFrom(event:CoreEvidenceRecord):DeepSeaPipelineScene|undefi
 function sceneFrom(event:CoreEvidenceRecord):MomentSceneData|undefined {
   const pipeline=pipelineSceneFrom(event);if(pipeline)return pipeline;
   const raw=event.payload;
-  if(event.moduleId==="story")return {type:"story",title:stringValue(raw.storyTitle??raw.title,"我的共创故事"),words:stringValue(raw.childWords??raw.child_words),turns:numberValue(raw.contributionCount??raw.turn_number,0),mode:stringValue(raw.completionMode??raw.completion_mode,"director")};
-  if(event.moduleId==="chat")return {type:"chat",topic:stringValue(raw.topicKey??raw.topic,"最近的发现"),words:stringValue(raw.childWords??raw.child_words),turns:numberValue(raw.turnCount??raw.turn_count,0)};
+  if(event.moduleId==="story")return {type:"story",title:stringValue(raw.storyTitle??event.artifactTitle??raw.title,"我的共创故事"),words:stringValue(event.sessionSummary?.childEnding??raw.childWords??raw.child_words),turns:numberValue(raw.contributionCount??raw.turn_number,0),mode:stringValue(event.sessionSummary?.completionMode??raw.completionMode??raw.completion_mode,"director")};
+  if(event.moduleId==="chat")return {type:"chat",topic:stringValue(raw.topicKey??raw.topic,"最近的发现"),words:stringValue(event.sessionSummary?.childWords??raw.childWords??raw.child_words),turns:numberValue(raw.turnCount??raw.turn_count,0)};
   if(event.moduleId==="career")return {type:"career",career:stringValue(raw.taskKey??raw.career_name,"职业体验"),completed:numberValue(raw.completedStages??raw.completed_stages,1),stages:numberValue(raw.stageCount??raw.stage_count,3),adjustments:numberValue(raw.adjustmentCount??raw.adjustment_count,0),retries:numberValue(raw.attemptCount??raw.retry_count,0),hints:numberValue(raw.hintCount??raw.hint_count,0)};
   return undefined;
 }

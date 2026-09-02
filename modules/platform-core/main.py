@@ -111,7 +111,9 @@ def load_module_catalog() -> list[dict]:
         catalog.append(manifest)
     if {item["id"] for item in catalog} != MODULES:
         raise RuntimeError("模块清单必须完整登记 chat、story、deep_sea、career")
-    return catalog
+    # 清单文件名仅用于版本管理，不能决定首页四个入口的产品顺序。
+    order = {module_id: index for index, module_id in enumerate(("chat", "story", "deep_sea", "career"))}
+    return sorted(catalog, key=lambda item: order[item["id"]])
 
 
 def initialize_database() -> None:
@@ -409,10 +411,19 @@ def construct_dimension_map() -> dict[str, str]:
     return {item["key"]: item["reportDimension"] for item in registry["constructs"]}
 
 
-def build_talent_eligibility(rows: list[sqlite3.Row]) -> list[dict]:
-    """从 V1 evidence record 推导六星资格；至少一条 strong 才能点亮。"""
+TREASURE_DIMENSIONS_BY_MODULE = {
+    "story": {"linguistic"},
+    "deep_sea": {"logical", "spatial", "naturalistic"},
+    "chat": {"interpersonal"},
+    "career": {"intrapersonal"},
+}
+
+
+def build_talent_eligibility(rows: list[sqlite3.Row], completed_modules: set[str] | None = None) -> list[dict]:
+    """从标准证据与完整体验推导六星资格。"""
+    completed_modules = completed_modules or set()
     aggregates = {
-        key: {"strong": 0, "reference": 0, "modules": set(), "recent_id": None}
+        key: {"strong": 0, "reference": 0, "modules": set(), "completed_modules": set(), "recent_id": None, "recent_module_id": None}
         for key in CANONICAL_INTELLIGENCES
     }
     dimensions = construct_dimension_map()
@@ -425,20 +436,28 @@ def build_talent_eligibility(rows: list[sqlite3.Row]) -> list[dict]:
         for key in normalized:
             item = aggregates[key]
             item["modules"].add(row["module_id"])
+            if item["recent_id"] is None:
+                item["recent_id"] = row["id"]
+                item["recent_module_id"] = row["module_id"]
             if row["evidence_level"] == "strong":
                 item["strong"] += 1
-                item["recent_id"] = row["id"]
             else:
                 item["reference"] += 1
+    for module_id in completed_modules:
+        for key in TREASURE_DIMENSIONS_BY_MODULE.get(module_id, set()):
+            aggregates[key]["modules"].add(module_id)
+            aggregates[key]["completed_modules"].add(module_id)
     return [
         {
             "key": key,
             "name": INTELLIGENCE_NAMES[key],
             "strongCount": values["strong"],
             "referenceCount": values["reference"],
-            "eligible": values["strong"] >= 1,
+            "eligible": bool(values["completed_modules"]),
             "sourceModules": sorted(values["modules"]),
+            "completedModules": sorted(values["completed_modules"]),
             "recentEvidenceRecordId": values["recent_id"],
+            "recentEvidenceModuleId": values["recent_module_id"],
         }
         for key, values in sorted(aggregates.items())
     ]
@@ -662,7 +681,8 @@ initialize_database()
 def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple[list[dict], list[str]]:
     """将 V1 事件和派生证据投影为报告输入，引用始终使用 evidence record ID。"""
     rows = db.execute(
-        """SELECT se.*, er.id AS evidence_id, er.evidence_level, er.constructs_json, er.behavior_summary, s.module_id
+        """SELECT se.*, er.id AS evidence_id, er.evidence_level, er.constructs_json, er.behavior_summary,
+                  s.module_id, s.summary_json
            FROM source_events se JOIN evidence_records er ON er.source_event_id=se.id
            JOIN assessment_sessions s ON s.id=se.session_id
            WHERE s.child_profile_id=? ORDER BY se.occurred_at ASC""", (profile_id,)
@@ -672,13 +692,34 @@ def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple
     for row in rows:
         constructs = json.loads(row["constructs_json"])
         payload = json.loads(row["payload_json"])
-        events.append({"id": row["evidence_id"], "module": row["module_id"], "event_type": row["event_type"], "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": list(dict.fromkeys(dimension_by_construct.get(key) for key in constructs if dimension_by_construct.get(key))), "behavior_summary": row["behavior_summary"], "raw_evidence": payload, "context": {"sourceEventId": row["id"], "constructs": constructs}})
+        # 旧版第一关事件只保存了“关卡已完成”。第一关完成即代表 4 组
+        # 生物全部配对成功，可可靠恢复最终准确度；检查次数无法恢复，绝不猜测。
+        if row["event_type"] == "deep-sea.spatial-task-completed.v1" and int(payload.get("level", 0)) == 1:
+            payload.setdefault("successfulPairs", 4)
+            payload.setdefault("totalPairs", 4)
+            payload.setdefault("accuracyPercent", 100)
+        artifacts = db.execute(
+            "SELECT type,title,summary,created_at FROM artifacts WHERE session_id=? ORDER BY created_at DESC",
+            (row["session_id"],),
+        ).fetchall()
+        context = {"sourceEventId": row["id"], "constructs": constructs, "sessionSummary": json.loads(row["summary_json"] or "{}"), "artifacts": [{"type": item["type"], "title": item["title"], "summary": item["summary"], "createdAt": item["created_at"]} for item in artifacts]}
+        if row["module_id"] == "chat":
+            context["fieldSemantics"] = {
+                "topicKey": "进入本次聊天时选择的入口主题，不代表每一轮表达的话题",
+                "sessionSummary.childWords": "整场会话中孩子表达的汇总摘录，未与 topicKey 建立轮次对应关系",
+            }
+            if not payload.get("childTurns"):
+                # 旧版记录没有逐轮映射。入口主题与汇总摘录同时交给模型会被
+                # 错误拼成一句话，因此报告输入只保留可引用的孩子表达。
+                payload.pop("topicKey", None)
+                context["artifacts"] = [{**item, "title": "聊天记录"} for item in context["artifacts"]]
+        events.append({"id": row["evidence_id"], "module": row["module_id"], "event_type": row["event_type"], "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": list(dict.fromkeys(dimension_by_construct.get(key) for key in constructs if dimension_by_construct.get(key))), "behavior_summary": row["behavior_summary"], "raw_evidence": payload, "context": context})
     return events, [row["evidence_id"] for row in rows]
 
 
 def generate_report_snapshot(child_name: str, events: list[dict]) -> tuple[dict, dict]:
     """默认走 Core 内置规则；配置 REPORT_AGENT_URL 时可保留独立服务作回归对照。"""
-    url = os.environ.get("REPORT_AGENT_URL", "").strip()
+    url = os.environ.get("REPORT_AGENT_URL", "http://127.0.0.1:8030/api/report/generate").strip()
     if not url:
         return generate_internal_report(child_name, events), {"generatorVersion": "core-rule-analyzer-v1", "rulesetVersion": "core-rules-v1", "promptVersion": None, "modelId": None}
     request = urlrequest.Request(url, data=json.dumps({"child_name": child_name, "events": events}, ensure_ascii=False).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
@@ -709,7 +750,10 @@ def create_assessment_session(payload: AssessmentSessionIn, ai_bole_session: str
     timestamp = now_iso()
     session_id = str(uuid.uuid4())
     launch_code = secrets.token_urlsafe(32)
-    expires = (datetime.now(timezone.utc) + timedelta(seconds=60)).isoformat()
+    # 独立体验通常需要几分钟到几十分钟。启动码此前仅 60 秒有效，
+    # 而聊天、故事和深海都在“完成”时才连接 SDK，导致真实完成记录永远无法回写。
+    # 启动码仍然只能兑换一次，但有效期覆盖一次完整体验。
+    expires = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
     with connect() as db:
         profile = profile_for_account(db, account["id"])
         if not manifest["targetAge"]["min"] <= profile["age"] <= manifest["targetAge"]["max"]:
@@ -884,7 +928,10 @@ def list_artifacts_v1(ai_bole_session: str | None = Cookie(default=None)) -> dic
 def evidence_rows_for_profile(db: sqlite3.Connection, profile_id: str, limit: int = 500) -> list[sqlite3.Row]:
     return db.execute(
         """SELECT er.id,se.id AS source_event_id,se.session_id,se.event_type,se.payload_json,se.occurred_at,
-                  er.evidence_level,er.constructs_json,er.behavior_summary,s.module_id,s.module_version
+                  er.evidence_level,er.constructs_json,er.behavior_summary,s.module_id,s.module_version,s.summary_json,
+                  (SELECT a.preview_resource_id FROM artifacts a WHERE a.session_id=s.id AND a.preview_resource_id IS NOT NULL ORDER BY a.created_at DESC LIMIT 1) AS preview_resource_id,
+                  (SELECT a.title FROM artifacts a WHERE a.session_id=s.id ORDER BY a.created_at DESC LIMIT 1) AS artifact_title,
+                  (SELECT a.summary FROM artifacts a WHERE a.session_id=s.id ORDER BY a.created_at DESC LIMIT 1) AS artifact_summary
            FROM evidence_records er JOIN source_events se ON se.id=er.source_event_id
            JOIN assessment_sessions s ON s.id=se.session_id
            WHERE s.child_profile_id=? ORDER BY se.occurred_at DESC, er.derived_at DESC LIMIT ?""",
@@ -907,6 +954,10 @@ def list_evidence_records_v1(limit: int = 200, ai_bole_session: str | None = Coo
         "constructs": (constructs := json.loads(row["constructs_json"])),
         "reportDimensions": list(dict.fromkeys(dimensions[key] for key in constructs if key in dimensions)),
         "behaviorSummary": row["behavior_summary"], "payload": json.loads(row["payload_json"]),
+        "sessionSummary": json.loads(row["summary_json"] or "{}"),
+        "artifactTitle": row["artifact_title"], "artifactSummary": row["artifact_summary"],
+        "previewResourceId": row["preview_resource_id"],
+        "previewUrl": f"http://localhost:8020/api/v1/assets/snapshots/{row['preview_resource_id']}" if row["preview_resource_id"] else None,
     } for row in rows]}
 
 
@@ -917,7 +968,66 @@ def list_talents_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     with connect() as db:
         profile = profile_for_account(db, account["id"])
         rows = evidence_rows_for_profile(db, profile["id"], 500)
-    return {"rule": "至少存在一条 strong 标准证据时，该维度可以点亮。", "talents": build_talent_eligibility(rows)}
+        completed_modules = {
+            row["module_id"] for row in db.execute(
+                "SELECT DISTINCT module_id FROM assessment_sessions WHERE child_profile_id=? AND status='completed'",
+                (profile["id"],),
+            ).fetchall()
+        }
+    return {
+        "rule": "完成星星所属大陆的一次完整体验后，该星星进入可点亮状态；证据强度仅用于报告分析。",
+        "talents": build_talent_eligibility(rows, completed_modules),
+    }
+
+
+@app.post("/api/v1/talent-stories")
+def create_talent_stories_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    """藏宝图专用生成链路：按大陆归属送入真实游戏记录，不复用成人报告的维度归类。"""
+    viewer = require_account(ai_bole_session)
+    account = resolve_subject(viewer, ai_bole_session)
+    with connect() as db:
+        profile = profile_for_account(db, account["id"])
+        events, _ = standard_events_for_report(db, profile["id"])
+        completed_modules = {row["module_id"] for row in db.execute(
+            "SELECT DISTINCT module_id FROM assessment_sessions WHERE child_profile_id=? AND status='completed'",
+            (profile["id"],),
+        ).fetchall()}
+    star_events = []
+    for event in events:
+        if event["module"] not in completed_modules:
+            continue
+        dimensions = set(TREASURE_DIMENSIONS_BY_MODULE.get(event["module"], set()))
+        # 自然发现星只读取深海第一关的生物配对过程。
+        if event["module"] == "deep_sea":
+            dimensions.discard("naturalistic")
+            if event["event_type"] == "deep-sea.spatial-task-completed.v1" and int(event["raw_evidence"].get("level", 0)) == 1:
+                dimensions.add("naturalistic")
+        if dimensions:
+            star_events.append({**event, "intelligence_candidates": sorted(dimensions)})
+    report, generator = generate_report_snapshot(profile["display_name"], star_events)
+    level_one_events = [event for event in star_events if event["module"] == "deep_sea"
+                        and event["event_type"] == "deep-sea.spatial-task-completed.v1"
+                        and int(event["raw_evidence"].get("level", 0)) == 1]
+    latest_level_one = level_one_events[-1] if level_one_events else None
+    if latest_level_one:
+        raw = latest_level_one["raw_evidence"]
+        successful, total = int(raw.get("successfulPairs", 0)), int(raw.get("totalPairs", 4))
+        accuracy = round(float(raw.get("accuracyPercent", successful / max(total, 1) * 100)))
+        checks = raw.get("checkAttempts")
+        adjustments = int(raw.get("adjustmentCount", 0))
+        result = "全部配对成功" if successful == total else "尚未全部配对成功"
+        checks_text = f"，检查了 {checks} 次" if checks is not None else ""
+        exact_story = f"第一关生物配对中，你成功配对了 {successful}/{total} 组，最终准确度 {accuracy}%（{result}）{checks_text}，修正了 {adjustments} 次。"
+        for item in report["dimensions"]:
+            if item["key"] == "naturalistic":
+                item["child_story"] = exact_story
+                item["evidence_refs"] = [latest_level_one["id"]] if latest_level_one.get("id") else []
+    return {
+        "generatedAt": report["generated_at"],
+        "generator": generator["generatorVersion"],
+        "stories": [{"key": item["key"], "story": item["child_story"], "evidenceRefs": item["evidence_refs"]}
+                    for item in report["dimensions"] if item["key"] in CANONICAL_INTELLIGENCES],
+    }
 
 
 @app.get("/api/v1/timeline")

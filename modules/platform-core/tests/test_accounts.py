@@ -8,7 +8,7 @@ from pathlib import Path
 from fastapi import HTTPException, Response
 
 
-_TEMP_DIR = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+_TEMP_DIR = tempfile.TemporaryDirectory()
 os.environ["AI_BOLE_DB_PATH"] = str(Path(_TEMP_DIR.name) / "accounts-test.db")
 
 import main
@@ -303,12 +303,32 @@ class AccountTests(unittest.TestCase):
         context = main.create_assessment_session(main.AssessmentSessionIn(module_id="career"), cookie)
         token = main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))["token"]
         event = main.EvidenceEnvelopeIn(schemaVersion="1.0", eventId="talent-event", idempotencyKey="talent-event", eventType="career.task-completed.v1", occurredAt=main.now_iso(), payload={"taskKey":"doctor","attemptCount":2,"hintCount":0,"completionSeconds":30,"adjustmentCount":1})
-        main.create_evidence_events_v1(main.EvidenceBatchIn(events=[event]), f"Bearer {token}")
+        header = f"Bearer {token}"
+        main.create_evidence_events_v1(main.EvidenceBatchIn(events=[event]), header)
+        main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="completed", summary={"stages":1}), header)
         records = main.list_evidence_records_v1(500, cookie)["records"]
         talents = {item["key"]: item for item in main.list_talents_v1(cookie)["talents"]}
         self.assertEqual(records[0]["reportDimensions"], ["logical"])
-        self.assertTrue(talents["logical"]["eligible"])
+        self.assertFalse(talents["logical"]["eligible"])
         self.assertEqual(talents["logical"]["strongCount"], 1)
+        self.assertTrue(talents["intrapersonal"]["eligible"])
+
+    def test_completed_experience_unlocks_dimensions_with_reference_evidence(self):
+        response = Response()
+        main.register_account(main.AccountRegistrationIn(username="completed_child", display_name="小满", age=8, password="secret77"), response)
+        cookie = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="chat"), cookie)
+        token = main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))["token"]
+        header = f"Bearer {token}"
+        event = main.EvidenceEnvelopeIn(schemaVersion="1.0", eventId="completed-chat", idempotencyKey="completed-chat", eventType="chat.observation-shared.v1", occurredAt=main.now_iso(), payload={"turnCount":3,"topicKey":"animals"})
+        main.create_evidence_events_v1(main.EvidenceBatchIn(events=[event]), header)
+        main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="completed", summary={"turnCount":3}), header)
+        talents = {item["key"]: item for item in main.list_talents_v1(cookie)["talents"]}
+        self.assertTrue(talents["interpersonal"]["eligible"])
+        self.assertFalse(talents["naturalistic"]["eligible"])
+        self.assertFalse(talents["intrapersonal"]["eligible"])
+        self.assertEqual(talents["naturalistic"]["strongCount"], 0)
+        self.assertEqual(talents["naturalistic"]["completedModules"], [])
 
 
 if __name__ == "__main__":

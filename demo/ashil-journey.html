@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI 伯乐 · 探索星球 · 阿拾旅程（绘本式串联 Demo）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --starry:#21183d; --night:#172342; --paper:#fff8e8; --ink:#40374e;
+    --gold:#f0cb70; --peach:#f8e4e5; --blue:#dcebf0; --amber:#f0d9a0; --quiet:#5f5562;
+    --story:#e7c9d6; --deep:#bfe3df; --career:#e9dcae;
+    --display:"Ma Shan Zheng","ZCOOL KuaiLe","KaiTi",cursive;
+    --body:"LXGW WenKai","KaiTi","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:var(--body);color:var(--ink);line-height:1.7;
+    background:radial-gradient(120% 120% at 50% 0%,#2a1f4d 0%,var(--starry) 45%,var(--night) 100%);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;
+    padding:18px 14px 48px;position:relative;overflow-x:hidden;
+  }
+  #stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+  .wrap{position:relative;z-index:1;width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px;}
+  .brand{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--gold);
+    font-family:var(--display);font-size:19px;letter-spacing:2px;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold);}
+  .card{background:var(--paper);border-radius:26px 30px 27px 31px/12px 14px 13px 15px;
+    padding:22px 20px;box-shadow:0 18px 40px rgba(10,8,24,.45);}
+  .hidden{display:none !important;}
+
+  /* 星球 + 阿拾飞出 */
+  .stage{position:relative;height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .planet{position:relative;width:200px;height:200px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#8fb6e8 0%,#5b7fc4 40%,#3a4f8a 75%,#26336b 100%);
+    box-shadow:0 0 40px rgba(120,160,230,.35),inset -22px -22px 50px rgba(10,15,40,.55);
+    animation:spin 60s linear infinite;}
+  .planet:before{content:"";position:absolute;inset:0;border-radius:50%;
+    background:
+      radial-gradient(circle at 60% 65%,rgba(255,255,255,.18) 0 14px,transparent 15px),
+      radial-gradient(circle at 30% 50%,rgba(255,255,255,.12) 0 9px,transparent 10px),
+      radial-gradient(circle at 72% 38%,rgba(180,220,255,.18) 0 7px,transparent 8px);}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .orbit{position:absolute;width:300px;height:300px;border:1px dashed rgba(240,203,112,.35);border-radius:50%;}
+  .ashil{position:absolute;width:128px;height:128px;left:50%;top:50%;
+    transform:translate(-260px,40px) scale(.5);opacity:0;
+    filter:drop-shadow(0 6px 14px rgba(10,8,24,.5));
+    animation:flyOut 2.2s ease-out .25s forwards;}
+  @keyframes flyOut{
+    0%{transform:translate(-30px,30px) scale(.4);opacity:0;}
+    40%{opacity:1;}
+    100%{transform:translate(-150px,-78px) scale(1);opacity:1;}
+  }
+  .ink-burst{position:absolute;left:50%;top:50%;width:60px;height:60px;border-radius:50%;
+    transform:translate(-30px,-30px);background:radial-gradient(circle,rgba(143,182,232,.6),transparent 70%);
+    opacity:0;animation:burst 1.6s ease-out .2s forwards;}
+  @keyframes burst{0%{opacity:0;transform:translate(-30px,-30px) scale(.3);}
+    30%{opacity:.9;}100%{opacity:0;transform:translate(-30px,-30px) scale(2.2);}}
+
+  .bubble{position:relative;background:#fffdf6;border:2px solid #efe2c4;border-radius:18px;
+    padding:14px 16px;font-size:15px;line-height:1.7;color:var(--ink);}
+  .bubble.ashil-bubble:after{content:"";position:absolute;left:-10px;top:26px;width:0;height:0;
+    border-top:8px solid transparent;border-bottom:8px solid transparent;border-right:10px solid #efe2c4;}
+  .bubble:not(.ashil-bubble):after{content:"";position:absolute;right:-10px;top:26px;width:0;height:0;
+    border-top:8px solid transparent;border-bottom:8px solid transparent;border-left:10px solid #efe2c4;}
+
+  /* 通用按钮 */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;
+    padding:12px 20px;border:none;border-radius:999px;font-family:var(--body);font-size:15px;cursor:pointer;
+    background:var(--gold);color:var(--ink);font-weight:700;width:100%;}
+  .btn.ghost{background:#fffdf6;border:1.5px solid #e0d2af;font-weight:400;}
+  .btn:focus-visible{outline:3px solid #fff;outline-offset:2px;}
+  .row{display:flex;gap:10px;}
+  .row .btn{flex:1;}
+
+  /* 选项 chips */
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
+  .chip{background:#fffdf6;border:1.5px solid #e6d6b0;color:var(--ink);border-radius:999px;
+    padding:11px 15px;font-size:14px;font-family:var(--body);cursor:pointer;min-height:46px;
+    transition:transform .18s ease,background .18s ease;}
+  .chip:hover{transform:scale(1.03);background:#fff4d6;}
+  .chip:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  .chip.sel{background:var(--gold);border-color:var(--gold);}
+
+  .say{display:flex;gap:8px;margin-top:14px;}
+  .say input{flex:1;border:1.5px solid #e0d2af;border-radius:14px;padding:12px 14px;font-size:14px;
+    font-family:var(--body);background:#fffdf6;color:var(--ink);min-height:46px;}
+  .say input:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  .say button{background:var(--gold);color:var(--ink);border:none;border-radius:14px;padding:0 16px;
+    font-family:var(--body);font-size:14px;font-weight:700;cursor:pointer;min-height:46px;}
+
+  .section-title{font-family:var(--display);font-size:18px;color:var(--ink);text-align:center;margin-bottom:2px;}
+  .sub{font-size:13px;color:var(--quiet);text-align:center;margin-bottom:12px;}
+
+  /* 三张故事卡 */
+  .cards{display:flex;flex-direction:column;gap:12px;margin-top:6px;}
+  .story-card{display:flex;gap:13px;align-items:center;text-align:left;background:#fffdf6;border:1.5px solid #ece0c2;
+    border-radius:18px;padding:14px 16px;cursor:pointer;min-height:74px;border-left:6px solid var(--gold);
+    transition:transform .18s ease,background .18s ease;}
+  .story-card:hover{transform:translateY(-2px);background:#fff6da;}
+  .story-card:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  .story-card.c-story{border-left-color:#d9a7bd;} .story-card.c-deep{border-left-color:#6fb6ad;}
+  .story-card.c-career{border-left-color:#c9a94e;}
+  .story-card .emoji{flex:0 0 44px;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;
+    justify-content:center;font-size:24px;background:var(--peach);}
+  .story-card.c-story .emoji{background:var(--story);} .story-card.c-deep .emoji{background:var(--deep);} .story-card.c-career .emoji{background:var(--career);}
+  .story-card .txt b{font-size:15.5px;color:var(--ink);}
+  .story-card .txt span{display:block;font-size:12.5px;color:var(--quiet);margin-top:2px;}
+
+  /* 模块视图 */
+  .mod-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .back{border:1.5px solid #e0d2af;background:#fffdf6;color:var(--ink);border-radius:999px;
+    padding:8px 14px;font-size:13px;cursor:pointer;min-height:42px;font-family:var(--body);}
+  .back:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  .mod-title{font-family:var(--display);font-size:21px;color:var(--ink);}
+  .seed-line{background:var(--blue);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.7;color:var(--ink);margin-bottom:12px;}
+  .seed-line b{color:#2a4a6a;}
+  .mod-text{width:100%;border:1.5px solid #e0d2af;border-radius:14px;padding:12px 14px;font-size:14px;
+    font-family:var(--body);background:#fffdf6;color:var(--ink);min-height:96px;resize:vertical;line-height:1.7;}
+  .mod-text:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+
+  /* 六岛职业图 */
+  .islands{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
+  .isle{background:#fffdf6;border:1.5px solid #ece0c2;border-radius:16px;padding:12px;cursor:pointer;text-align:left;min-height:64px;
+    transition:transform .18s ease,background .18s ease;}
+  .isle:hover{transform:translateY(-2px);background:#fff6da;}
+  .isle:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  .isle.rec{border-color:var(--gold);box-shadow:0 0 0 2px rgba(240,203,112,.4);}
+  .isle .pin{font-size:11px;font-weight:700;color:#9a7a2a;background:var(--gold);display:inline-block;padding:2px 8px;border-radius:999px;margin-bottom:6px;}
+  .isle b{font-size:14.5px;color:var(--ink);display:block;}
+  .isle span{font-size:11.5px;color:var(--quiet);}
+
+  .journal{margin-top:14px;border-top:1px dashed #e3d4b0;padding-top:12px;}
+  .journal h3{font-family:var(--display);font-size:15px;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .journal h3 .pin{width:9px;height:9px;border-radius:2px;background:var(--gold);transform:rotate(12deg);}
+  .entry{display:flex;gap:10px;align-items:flex-start;background:#fffdf6;border-radius:14px;padding:10px 12px;margin-bottom:8px;border-left:5px solid var(--gold);}
+  .entry .tag{flex:0 0 auto;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;color:var(--ink);background:var(--gold);}
+  .entry .body{font-size:13.5px;line-height:1.6;color:var(--ink);}
+  .tag-破冰{background:var(--gold);} .tag-故事{background:var(--story);} .tag-深海{background:var(--deep);} .tag-职业{background:var(--career);}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:var(--paper);padding:12px 20px;border-radius:999px;font-size:14px;
+    opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;z-index:5;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .foot{color:#b9aed0;font-size:11.5px;text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){
+    .planet,.ashil,.ink-burst{animation:none !important;}
+    .ashil{transform:translate(-150px,-78px) scale(1);opacity:1;}
+    .ink-burst{opacity:0;}
+  }
+</style>
+</head>
+<body>
+<svg id="stars" aria-hidden="true"></svg>
+
+<div class="wrap">
+  <div class="brand"><span class="dot"></span>AI 伯乐 · 探索星球</div>
+
+  <!-- 视图0：星球 + 阿拾飞出 -->
+  <section class="card" id="s-entry">
+    <div class="stage">
+      <div class="orbit"></div>
+      <div class="ink-burst"></div>
+      <div class="planet"></div>
+      <img class="ashil" id="ashilImg"
+        src="A_cute_small_round_watercolor__2026-09-01T03-27-41.png"
+        alt="拾光鸟阿拾"
+        onerror="this.style.display='none';document.getElementById('ashilSvg').style.display='block';">
+      <svg class="ashil" id="ashilSvg" style="display:none" viewBox="0 0 120 120" aria-hidden="true">
+        <ellipse cx="60" cy="64" rx="34" ry="30" fill="#f3ead7" stroke="#cdbfa0" stroke-width="2"/>
+        <path d="M60 34 q10 -16 22 -10 q4 10 -6 16 z" fill="#dcebf0" stroke="#9fb6c9" stroke-width="1.5"/>
+        <circle cx="50" cy="60" r="3.5" fill="#40374e"/><circle cx="70" cy="60" r="3.5" fill="#40374e"/>
+        <circle cx="44" cy="68" r="4" fill="#f8c9cd" opacity=".8"/><circle cx="76" cy="68" r="4" fill="#f8c9cd" opacity=".8"/>
+        <path d="M52 72 q8 7 16 0" fill="none" stroke="#40374e" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M86 64 l14 -6 2 12 z" fill="#e7c9d6"/><path d="M88 56 l14 4 -2 12 z" fill="#bfe3df"/><path d="M90 74 l12 8 -4 10 z" fill="#e9dcae"/>
+        <circle cx="60" cy="74" r="4" fill="#f0cb70"/>
+      </svg>
+    </div>
+    <div class="bubble ashil-bubble" id="openBubble" style="opacity:0;transition:opacity .5s ease .9s;">
+      嗨，我是阿拾，这颗星球的拾光鸟。今天星球背面好像发生了点事……你愿意陪我去看一眼吗？
+    </div>
+    <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px;">
+      <button class="btn" id="goLook">陪阿拾去看看 ✶</button>
+    </div>
+  </section>
+
+  <!-- 视图1：发现事件，自然进入聊天 -->
+  <section class="card hidden" id="s-discovery">
+    <div class="bubble ashil-bubble">
+      你看——星球背面藏着一颗忽明忽暗的小星，还有一封没写完的来信。它好像在说：<b>有人需要帮忙</b>。
+      我们去看看它到底怎么了，好吗？
+    </div>
+    <div style="text-align:center;margin:14px 0;">
+      <svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+        <path d="M60 18 L69 44 L96 45 L74 63 L82 90 L60 74 L38 90 L46 63 L24 45 L51 44 Z"
+          fill="#f0cb70" stroke="#e0b24e" stroke-width="1.5" stroke-linejoin="round" opacity=".9">
+          <animate attributeName="opacity" values=".55;1;.55" dur="2.4s" repeatCount="indefinite"/>
+        </path>
+      </svg>
+      <div style="font-size:13px;color:var(--quiet);">一颗在轻轻闪的小星</div>
+    </div>
+    <div class="row">
+      <button class="btn" id="goChat">去瞧瞧它怎么了</button>
+    </div>
+  </section>
+
+  <!-- 视图2：聊天主入口 -->
+  <section class="card hidden" id="s-chat">
+    <div class="bubble ashil-bubble" id="chatQ1">
+      你先看见了什么？
+    </div>
+    <div class="chips" id="chatChips1">
+      <button class="chip" data-v="它在轻轻发抖">它在轻轻发抖</button>
+      <button class="chip" data-v="它在不停眨眼">它在不停眨眼</button>
+      <button class="chip" data-v="它身边空空的">它身边空空的</button>
+      <button class="chip" data-v="我也不知道">我也不知道</button>
+    </div>
+    <div class="bubble ashil-bubble hidden" id="chatQ2" style="margin-top:14px;">
+      如果可以问它一句，你想问什么？
+    </div>
+    <div class="chips hidden" id="chatChips2">
+      <button class="chip" data-v="你哪里不舒服吗">你哪里不舒服吗</button>
+      <button class="chip" data-v="你是不是找不到家了">你是不是找不到家了</button>
+      <button class="chip" data-v="你一个人害怕吗">你一个人害怕吗</button>
+    </div>
+    <div class="say">
+      <input id="chatInput" type="text" placeholder="或者，你自己问一句…" aria-label="自己说一句" />
+      <button id="chatSend">说给小星听</button>
+    </div>
+    <div class="row" style="margin-top:14px;">
+      <button class="btn hidden" id="chatNext">把它记成一颗种子 →</button>
+    </div>
+  </section>
+
+  <!-- 视图3：三张故事化选择卡 -->
+  <section class="card hidden" id="s-cards">
+    <div class="section-title">现在我们要帮它</div>
+    <div class="sub">你想先看看哪一张？三条路都能帮到它</div>
+    <div class="cards">
+      <button class="story-card c-story" data-m="story">
+        <span class="emoji">📖</span>
+        <span class="txt"><b>把它的故事补完</b><span>一张没写完的故事页：小海龟找不到家……</span></span>
+      </button>
+      <button class="story-card c-deep" data-m="deepsea">
+        <span class="emoji">🌊</span>
+        <span class="txt"><b>动手帮它修个家</b><span>这座海底基地哪里坏了？你来当小工程师</span></span>
+      </button>
+      <button class="story-card c-career" data-m="career">
+        <span class="emoji">🤝</span>
+        <span class="txt"><b>去当一天小帮手</b><span>一封工作邀请函：今天你想先帮谁？</span></span>
+      </button>
+    </div>
+    <div class="journal" id="journal" aria-live="polite">
+      <h3><span class="pin"></span>拾光手账 · 越走越长的线索</h3>
+      <div id="entries"></div>
+    </div>
+  </section>
+
+  <!-- 视图4：模块视图 -->
+  <section class="card hidden" id="s-module">
+    <div class="mod-head">
+      <button class="back" id="modBack">← 回到星球</button>
+      <div class="mod-title" id="modTitle">故事共创</div>
+    </div>
+    <div class="seed-line" id="seedLine"></div>
+    <textarea class="mod-text" id="modText" aria-label="在这里续写或记录"></textarea>
+    <div class="chips" id="modChips"></div>
+    <button class="btn" id="modDone" style="margin-top:14px;">记一笔，回到星球</button>
+  </section>
+
+  <!-- 视图5：职业引导（六岛） -->
+  <section class="card hidden" id="s-career">
+    <div class="bubble ashil-bubble">
+      你一路都在留意小星有没有受伤。有两个地方很适合去试试——
+      <b>社区医生</b>会照顾不舒服的人，<b>动物保护员</b>会照顾需要帮助的小动物。
+      你想先去哪一个？或者，六个地方你都能看看。
+    </div>
+    <div class="islands" id="islands"></div>
+    <div class="row" style="margin-top:14px;">
+      <button class="btn ghost" id="careerSkip">这次先不去了</button>
+    </div>
+  </section>
+
+  <div class="foot">绘本式串联 Demo · 聊天是唯一主入口，三张故事卡对应三个模块，职业由阿拾引导体验</div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+  (function(){
+    const svg=document.getElementById('stars'),ns='http://www.w3.org/2000/svg';
+    for(let i=0;i<60;i++){const c=document.createElementNS(ns,'circle');
+      c.setAttribute('cx',Math.random()*100+'%');c.setAttribute('cy',Math.random()*100+'%');
+      c.setAttribute('r',(Math.random()*1.4+0.4).toFixed(2));c.setAttribute('fill','#f0cb70');
+      c.setAttribute('opacity',(Math.random()*0.5+0.1).toFixed(2));svg.appendChild(c);}
+  })();
+
+  const $=id=>document.getElementById(id);
+  const views=['s-entry','s-discovery','s-chat','s-cards','s-module','s-career'];
+  function show(name){views.forEach(v=>$(v).classList.toggle('hidden',v!==name));
+    $(name).scrollIntoView({behavior:'smooth',block:'start'});}
+
+  // 开场淡入
+  window.addEventListener('load',()=>{ setTimeout(()=>$('openBubble').style.opacity='1',300); });
+
+  let seed='';
+  function fmt(s,r){return s.replace(/\{s\}/g,r);}
+  function addEntry(cat,text){const d=document.createElement('div');d.className='entry';
+    const t=document.createElement('span');t.className='tag tag-'+cat;t.textContent=cat;
+    const b=document.createElement('div');b.className='body';b.textContent=text;
+    d.appendChild(t);d.appendChild(b);$('entries').appendChild(d);}
+
+  let toastTimer;
+  function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');
+    clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1800);}
+
+  // 0 → 1
+  $('goLook').addEventListener('click',()=>show('s-discovery'));
+  $('goChat').addEventListener('click',()=>show('s-chat'));
+
+  // 2 聊天主入口
+  let saw1=false,saw2=false;
+  function pick(chip,group){
+    group.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+    chip.classList.add('sel');
+    if(group.id==='chatChips1'){saw1=true;$('chatQ2').classList.remove('hidden');$('chatChips2').classList.remove('hidden');}
+    else{saw2=true;$('chatNext').classList.remove('hidden');}
+  }
+  $('chatChips1').querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>pick(c,$('chatChips1'))));
+  $('chatChips2').querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>pick(c,$('chatChips2'))));
+  function sendChat(){const v=$('chatInput').value.trim();if(!v)return;
+    seed=v;$('chatInput').value='';$('chatNext').classList.remove('hidden');
+    if(!saw1&&!saw2){seed=v;}}
+  $('chatSend').addEventListener('click',sendChat);
+  $('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
+  $('chatNext').addEventListener('click',()=>{
+    const v1=document.querySelector('#chatChips1 .sel');
+    const v2=document.querySelector('#chatChips2 .sel');
+    seed = v2? v2.dataset.v : (v1? v1.dataset.v : (seed||'它好像需要帮忙'));
+    addEntry('破冰','你说：'+seed);
+    toast('已记成一颗种子 💛');
+    show('s-cards');
+  });
+
+  // 3 三张故事卡
+  const MOD={
+    story:{name:'故事共创',cat:'故事',
+      intro:'你刚才说它「{s}」，我们就从这里把它的故事补完吧。',
+      seed:'小海龟找不到家，因为它{s}……后来',
+      choices:['它最想念海边的奶奶','它把方向记在了一颗贝壳上','它遇见了一只会指路的小鱼']},
+    deepsea:{name:'深海基地',cat:'深海',
+      intro:'你说它「{s}」。深海的小基地也坏了，一起帮它修好吧。',
+      seed:'我想这样帮小基地：',
+      choices:['先把断掉的灯接上','给居民安排合适的房间','修好回家的路线']},
+    career:{name:'职业体验',cat:'职业',intro:'',seed:'',choices:[]}
+  };
+  let activeCat='';
+  document.querySelectorAll('.story-card').forEach(b=>b.addEventListener('click',()=>{
+    const m=b.dataset.m;
+    if(m==='career'){show('s-career');return;}
+    const mod=MOD[m];activeCat=mod.cat;
+    $('modTitle').textContent=mod.name;
+    $('seedLine').innerHTML=fmt(mod.intro,'<b>'+seed+'</b>');
+    $('modText').value=fmt(mod.seed,seed);
+    const mc=$('modChips');mc.innerHTML='';
+    mod.choices.forEach(c=>{const btn=document.createElement('button');btn.className='chip';btn.textContent=c;
+      btn.addEventListener('click',()=>{$('modText').value=($('modText').value?$('modText').value+'\n':'')+c;$('modText').focus();});
+      mc.appendChild(btn);});
+    show('s-module');
+  }));
+  $('modBack').addEventListener('click',()=>show('s-cards'));
+  $('modDone').addEventListener('click',()=>{
+    const v=$('modText').value.trim();if(v)addEntry(activeCat,v);
+    toast('已记一笔到拾光手账 💛');show('s-cards');
+    // 回到卡片后，阿拾顺势引导职业
+    if(!careerSuggested){careerSuggested=true;setTimeout(()=>show('s-career'),500);}
+  });
+
+  // 5 六岛职业图
+  let careerSuggested=false;
+  const CAREERS=[
+    {id:'doctor',name:'社区医生',desc:'照顾不舒服的人',rec:true},
+    {id:'animal',name:'动物保护员',desc:'照顾需要帮助的小动物',rec:true},
+    {id:'fire',name:'消防员',desc:'处理紧急情况、保护大家'},
+    {id:'teacher',name:'小学教师',desc:'带着小朋友一起学'},
+    {id:'chef',name:'餐厅厨师',desc:'做出好吃又健康的食物'},
+    {id:'journalist',name:'报社记者',desc:'去寻找和核实真相'}
+  ];
+  const isl=$('islands');
+  CAREERS.forEach(c=>{
+    const b=document.createElement('button');b.className='isle'+(c.rec?' rec':'');
+    b.innerHTML=(c.rec?'<span class="pin">阿拾推荐</span>':'')+'<b>'+c.name+'</b><span>'+c.desc+'</span>';
+    b.addEventListener('click',()=>{addEntry('职业','体验了：'+c.name);toast('已记一笔：'+c.name+' 💛');
+      // 回到卡片/完成
+      show('s-cards');});
+    isl.appendChild(b);
+  });
+  $('careerSkip').addEventListener('click',()=>{toast('没关系，下次再玩～');show('s-cards');});
+</script>
+</body>
+</html>

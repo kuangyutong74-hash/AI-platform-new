@@ -228,9 +228,13 @@ async function platformConnection() {
 function v1Event(event) {
   const raw = event.raw_evidence || {}, context = event.context || {}
   const terminal = event.event_type === 'deep_sea_session_completed'
+  const level = Number(context.level) || 1
+  const successfulPairs = Number(raw.successful_pairs) || 0
+  const totalPairs = 4
+  const levelOneMetrics = level === 1 ? { successfulPairs, totalPairs, checkAttempts: Number(raw.check_attempts) || 0, accuracyPercent: Math.round(successfulPairs / totalPairs * 100) } : {}
   return { type: terminal ? 'deep-sea.session-completed.v1' : 'deep-sea.spatial-task-completed.v1', key: context.idempotency_key, payload: terminal
     ? { completedLevels: Number(raw.completed_levels) || 3, totalLevels: Number(raw.total_levels) || 3, completionSeconds: Number(raw.duration_seconds) || 0, adjustmentCount: Number(raw.meaningful_adjustments) || 0 }
-    : { level: Number(context.level) || 1, completionSeconds: Number(raw.duration_seconds) || 0, adjustmentCount: Number(raw.meaningful_adjustments || raw.rotate_count) || 0 } }
+    : { level, completionSeconds: Number(raw.duration_seconds) || 0, adjustmentCount: Number(raw.meaningful_adjustments || raw.rotate_count) || 0, ...levelOneMetrics } }
 }
 async function sendEvidence(event) {
   const sdk = await platformConnection()

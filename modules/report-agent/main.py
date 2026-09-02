@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -37,6 +38,7 @@ EVENT_NAMES = {
 }
 REPORT_RULE = "只统计行为频次、类型和原始上下文，不换算能力分数，不输出排名。"
 PLATFORM_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+logger = logging.getLogger("report-agent")
 
 
 def platform_env() -> dict[str, str]:
@@ -86,8 +88,12 @@ def explain_event(event: EvidenceEvent) -> dict[str, Any]:
     if event.event_type == "chat.observation-shared.v1":
         details = [
             f"孩子共进行了 {raw.get('turnCount', 0)} 轮表达。",
-            f"围绕“{raw.get('topicKey', '当前话题')}”留下了可回溯的交流过程。",
+            "系统按会话保存了交流过程；只有带轮次编号的内容才能判断属于哪一轮。",
         ]
+        summary = event.context.get("sessionSummary", {}) if isinstance(event.context, dict) else {}
+        words = str(summary.get("childWords", "")).strip()
+        if words:
+            details.append(f"孩子的真实表达摘录：“{words[:100]}”")
     elif event.event_type == "career.task-completed.v1":
         details = [
             f"过程中主动尝试 {raw.get('attemptCount', 0)} 次，并调整 {raw.get('adjustmentCount', 0)} 次。",
@@ -112,6 +118,44 @@ def explain_event(event: EvidenceEvent) -> dict[str, Any]:
     }
 
 
+def child_story_for_event(event: EvidenceEvent) -> str:
+    """只用这一局真实记录写儿童回顾；即使模型不可用也不退回预设宣传语。"""
+    raw = event.raw_evidence
+    summary = event.context.get("sessionSummary", {}) if isinstance(event.context, dict) else {}
+    artifacts = event.context.get("artifacts", []) if isinstance(event.context, dict) else []
+    artifact = next((item for item in artifacts if isinstance(item, dict) and item.get("title")), {})
+    title = str(artifact.get("title", "")).strip()
+    artifact_summary = str(artifact.get("summary", "")).strip()
+    if event.module == "chat":
+        words = str(summary.get("childWords", "")).strip()
+        topic = str(raw.get("topicKey", "")).strip() or title
+        if words:
+            if topic:
+                return f"这次聊天进入时选择了“{topic}”主题；在会话中的另一段表达里，你提到：{words[:80]}。现有记录没有把这两段内容标为同一轮。"
+            return f"这次聊天中，你有一段真实表达：{words[:80]}。"
+        if topic:
+            return f"这次聊天里，你围绕“{topic}”进行了 {raw.get('turnCount', 0)} 轮表达。智能体只记录了这次真实聊过的内容。"
+    if event.module == "story" and title:
+        detail = artifact_summary or f"你为故事贡献了 {raw.get('contributionCount', 0)} 个片段"
+        return f"在《{title}》的共创里，{detail.rstrip('。')}。这是这次故事游戏留下的真实记录。"
+    if event.module == "deep_sea":
+        if int(raw.get("level", 0)) == 1:
+            successful = int(raw.get("successfulPairs", 0))
+            total = int(raw.get("totalPairs", 4))
+            accuracy = round(float(raw.get("accuracyPercent", successful / max(total, 1) * 100)))
+            checks = raw.get("checkAttempts")
+            check_text = f"，一共检查了 {checks} 次" if checks is not None else ""
+            result = "全部配对成功" if successful == total else "还没有全部配对成功"
+            return f"第一关生物配对中，你成功配对了 {successful}/{total} 组，最终准确度 {accuracy}%（{result}）{check_text}。"
+        return f"在深海任务中，你完成了 {raw.get('completedLevels', raw.get('level', 0))} 个关卡，并根据反馈调整了 {raw.get('adjustmentCount', 0)} 次。"
+    if event.module == "career":
+        task = str(raw.get("taskKey", "这次职业任务")).strip()
+        return f"在“{task}”职业任务里，你尝试了 {raw.get('attemptCount', 0)} 次，并调整了 {raw.get('adjustmentCount', 0)} 次选择。"
+    if artifact_summary:
+        return f"这次探索留下的真实记录是：{artifact_summary}"
+    return "这次体验已经完成，但目前保存的记录还不足以写出这颗星的专属发现。"
+
+
 class RuleAnalyzer:
     """只复述已经出现的行为线索，不推断未采集内容。"""
 
@@ -130,22 +174,19 @@ class RuleAnalyzer:
             status = "采集行为较少" if len(items) < 2 else ("证据丰富" if strong >= 2 else "证据均衡")
             refs = event_refs(items)
             analysis = (
-                f"本阶段在{'、'.join(modules)}中收集到{len(items)}条相关行为记录，其中{strong}条为较完整记录。"
-                f"具体表现为：{'；'.join(item.behavior_summary.rstrip('。；') for item in items[:4])}。"
-                "这些行为说明孩子在当前任务里已经尝试调用这一类方法，但它们反映的是具体情境中的表现，不等同于固定能力结论。"
-                "后续可继续观察孩子能否在不同任务中主动重复这种方法，以及遇到困难时会怎样解释、调整和再次尝试。"
+                f"具体记录：{'；'.join(child_story_for_event(item).rstrip('。；') for item in items[:4])}。"
+                f"本阶段在{'、'.join(modules)}中共留下{len(items)}条相关过程记录，其中{strong}条较完整。"
+                "这些内容只说明孩子在当时任务里采用了哪些做法，不等同于固定能力结论。"
                 if items else "本阶段暂未收集到该维度的可回溯行为线索，因此不作判断。"
             )
             observation = (
-                f"在{name}方面，可以继续留意孩子在新的任务里是否会再次出现“{items[0].behavior_summary.rstrip('。')}”这样的做法，"
-                "以及他能否说出为什么这样选择、遇到变化后如何调整。"
+                "换一个相似但不完全相同的任务，观察孩子是否会主动沿用这次的方法；"
+                "请孩子讲一讲为什么这样选择，留意他能否说清判断依据；"
+                "遇到结果不理想时，观察孩子会先检查哪里、怎样调整，以及是否愿意再次尝试；"
+                "隔一至两周在家庭或课堂的新情境中再次观察，比较这种做法是否会自然出现。"
                 if items else "暂无可观测数据。完成相关探索后，这里会结合孩子的真实行为生成观察提示。"
             )
-            child_story = (
-                f"在{MODULE_NAMES.get(items[0].module, items[0].module)}里，{items[0].behavior_summary.rstrip('。')}。"
-                "这是你这次探索留下的真实小发现。"
-                if items else "还没有可回看的探索记录。去对应的大陆完成一次游戏后，我会把你的真实表现写在这里。"
-            )
+            child_story = child_story_for_event(items[0]) if items else "还没有可回看的探索记录。去对应的大陆完成一次游戏后，我会根据那一局的真实内容写在这里。"
             dimensions.append({"key": key, "name": name, "status": status, "evidence_refs": refs, "analysis": analysis, "adult_observation": observation, "child_story": child_story})
         active = [MODULE_NAMES.get(name, name) for name, count in Counter(event.module for event in events).items() if count]
         refs = event_refs(events)
@@ -175,14 +216,32 @@ class RuleAnalyzer:
 
 
 SYSTEM_PROMPT = """你是儿童阶段性行为报告助手。只能依据输入 events 中的 behavior_summary、intelligence_candidates、
-raw_evidence 与 context 描述已经出现的行为线索，不得推断未出现的能力，不得输出能力分数、等级或排名。每个维度 analysis
-须结合2至4条具体行为，写清楚“观察到什么—可能反映何种当前策略—还需继续观察什么”，不少于120字；每条
+raw_evidence 与 context 描述已经出现的行为线索。context 中的 sessionSummary 和 artifacts 是该局真实游戏内容，应优先用于生成具体描述。
+聊天事件中，topicKey 只是进入会话时选择的入口主题，sessionSummary.childWords 是整场会话汇总摘录；除非输入提供明确的逐轮对应关系，
+严禁写成“孩子围绕 topicKey 说了 childWords”，必须分开描述为“入口主题”和“会话中另一段表达”，也不得据此推断两者的因果或语义关系。
+如果 raw_evidence.childTurns 存在，只能按其中的 turn 与 text 逐轮引用，不得把不同 turn 的内容合并成一句话或同一个观点。
+六个维度必须遵守不同的分析边界：
+- interpersonal（人际智能）：只分析孩子如何提到、理解、回应他人，以及合作、协商、关系期待；不能把“我开心”等自我感受本身当成人际结论。
+- intrapersonal（内省智能）：只分析孩子是否命名自己的感受、偏好、动机、不确定或自我调整；不能把“提到同学”本身当成内省结论。
+- linguistic（语言智能）：只分析真实表达的组织、词语、因果、叙事和修改过程。
+- logical（逻辑智能）：只分析比较、规则、因果推理、检查与策略调整。
+- spatial（空间智能）：只分析位置、方向、旋转、布局和空间建构。
+- naturalistic（自然观察智能）：只分析生物差异、分类、生态关系和观察依据。
+同一事件可以支持多个维度，但各维度 analysis 和 adult_observation 必须回答各自不同的问题；除输入中的同一句真实引语外，
+interpersonal 与 intrapersonal 不得复用相同句子、结论或观察建议。证据不足时应明确写“本次只观察到……，尚不足以说明……”。
+不得推断未出现的能力，不得输出能力分数、等级或排名。每个维度 analysis 是左页的“本次具体表现”，必须优先写事实：
+真实故事名、话题、任务名、孩子原话（仅限输入中存在的原话）、完成次数、用时、尝试/调整/提示次数及先后过程；不得在 analysis
+中写家庭建议或“后续可观察”，不得为凑长度重复或虚构。每条
+对于 chat、story 等语言相关事件，只要 context.sessionSummary、raw_evidence.childTurns 或 artifacts 中存在孩子原话，analysis 必须选取
+一段最相关的短原话，用中文引号“……”逐字引用；不得润色、补全或把系统摘要伪装成引语。
 cross_insights 必须引用输入中真实存在的 evidence_refs，但正文绝不显示 id。模块必须写中文：chat=聊天观察、story=故事共创、
 deep_sea=深海基地重建、career=职业模拟器。family 和 teacher 各返回4至6条不同的可执行建议数组，不得在建议中写记录 id。
 logical_mathematical 归一化为 logical。
-每个维度还要返回 adult_observation：根据该维度真实行为生成一条具体、不同的成人观察提示；没有记录时固定返回
+每个维度还要返回 adult_observation：这是右页的“迁移观察清单”，不得复述 analysis。请给出3至5个彼此不同、可执行的观察方向，
+覆盖新情境迁移、理由表达、受挫后的调整、合作方式或一至两周后的复现；各项用“；”分隔，不得对孩子下结论。没有记录时固定返回
 “暂无可观测数据。完成相关探索后，这里会结合孩子的真实行为生成观察提示。”。每个维度还要返回 child_story：面向孩子，
-用第二人称和一至两句儿童能读懂的话，只复述该维度已有的真实游戏表现，不得套用示例、虚构引语或泛泛夸奖；没有记录时说明
+用第二人称和一至两句儿童能读懂的话，只复述该维度已有的真实游戏表现，尽量点明真实话题、故事名、任务名、孩子原话或实际调整次数。
+不得套用示例、虚构引语或泛泛夸奖，也不得因为事件被标记为某维度就虚构该维度行为（例如聊天记录没有自然观察内容时，不能写成观察了自然）；没有记录时说明
 还没有可回看的探索记录。另外返回 evidence_explanations 数组，
 每条包含 evidence_ref、中文 title、自然语言 summary 和 2 至 4 条 details；只能解释已有数据，不显示事件代码、字段名、
 会话编号或图片地址。
@@ -252,6 +311,57 @@ class LLMAnalyzer:
         if isinstance(content, list):
             content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
         return json.loads(str(content).strip().removeprefix("```json").removesuffix("```").strip())
+
+    def expand_dimensions(self, events: list[EvidenceEvent], report: dict[str, Any]) -> dict[str, Any]:
+        """第二阶段只负责把六个维度写深，避免完整报告任务挤压维度内容。"""
+        endpoint = self.base_url if self.base_url.endswith("/chat/completions") else f"{self.base_url}/chat/completions"
+        system = """你是儿童行为报告的维度深描智能体。只依据输入 events 扩写 dimensions，不得添加新事实、分数、等级或诊断。
+每个有 evidence_refs 的维度必须返回：
+每个有证据维度必须返回 facts（2至4条具体事实）、interpretations（2至4条本维度解释）、limits（1至2条证据边界）和 adult_observations（恰好4条）。
+facts 必须引用真实任务名、数值或一小段输入中确实存在的孩子原话；interpretations 只讨论该维度；limits 明确本次尚不能说明什么。
+adult_observations 每条25至60个中文字符，依次覆盖①新情境迁移、②理由或感受表达、③遇到困难后的调整、④一至两周后的复现。
+interpersonal 只写理解/回应他人、合作、关系互动；intrapersonal 只写自我感受、偏好、动机、自我调节。两者即使引用同一句原话，也不得复用相同解释、结论和观察任务。
+聊天的 topicKey 是入口主题，不能与 sessionSummary.childWords 合并为同一轮；没有 childTurns 时不得建立二者关系。引语必须逐字来自输入。
+无证据维度使用空数组。只返回 JSON：{\"dimensions\":[{\"key\":\"...\",\"facts\":[\"...\"],\"interpretations\":[\"...\"],\"limits\":[\"...\"],\"adult_observations\":[\"...\",\"...\",\"...\",\"...\"]}]}，六个 key 各一次。"""
+        payload = {
+            "model": self.model, "temperature": 0.15, "response_format": {"type": "json_object"},
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": json.dumps({"events": [event.model_dump() for event in events], "dimensions": report.get("dimensions", [])}, ensure_ascii=False)},
+            ],
+        }
+        http_request = urlrequest.Request(endpoint, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"), headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}, method="POST")
+        try:
+            with urlrequest.urlopen(http_request, timeout=45) as response:
+                result = json.loads(response.read().decode("utf-8"))
+            content = result["choices"][0]["message"]["content"]
+            if isinstance(content, list):
+                content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
+            return json.loads(str(content).strip().removeprefix("```json").removesuffix("```").strip())
+        except (error.URLError, TimeoutError, json.JSONDecodeError, KeyError, IndexError, TypeError) as exc:
+            raise RuntimeError("维度深描模型请求失败") from exc
+
+
+def apply_dimension_expansion(report: dict[str, Any], expansion: dict[str, Any]) -> dict[str, Any]:
+    supplied = {canonical_key(str(item.get("key", ""))): item for item in expansion.get("dimensions", []) if isinstance(item, dict)}
+    for dimension in report.get("dimensions", []):
+        item = supplied.get(dimension.get("key"))
+        if not item or not dimension.get("evidence_refs"):
+            continue
+        clean_list = lambda value: [str(part).strip().rstrip("。；;，,") for part in value if str(part).strip()] if isinstance(value, list) else []
+        facts = clean_list(item.get("facts"))[:4]
+        interpretations = clean_list(item.get("interpretations"))[:4]
+        limits = clean_list(item.get("limits"))[:2]
+        observation_items = clean_list(item.get("adult_observations"))
+        if facts and interpretations and limits:
+            dimension["analysis"] = (
+                f"具体表现：{'；'.join(facts)}。"
+                f"本维度观察：{'；'.join(interpretations)}。"
+                f"证据边界：{'；'.join(limits)}。"
+            )
+        if len(observation_items) >= 4:
+            dimension["adult_observation"] = "；".join(observation_items[:4])
+    return report
 
 
 def normalize_report(candidate: dict[str, Any], events: list[EvidenceEvent]) -> dict[str, Any]:
@@ -323,9 +433,15 @@ def generate_report(report_request: ReportRequest) -> dict[str, Any]:
     analyzer = LLMAnalyzer.from_environment()
     if analyzer:
         try:
-            return normalize_report(analyzer.analyze(report_request.events), report_request.events)
+            report = normalize_report(analyzer.analyze(report_request.events), report_request.events)
         except (RuntimeError, KeyError, IndexError, TypeError, ValueError):
-            pass
+            logger.exception("第一阶段报告生成失败，改用规则报告")
+            return RuleAnalyzer().analyze(report_request.events)
+        try:
+            return apply_dimension_expansion(report, analyzer.expand_dimensions(report_request.events, report))
+        except (RuntimeError, KeyError, IndexError, TypeError, ValueError):
+            logger.exception("第二阶段维度深描失败，暂时返回第一阶段报告")
+            return report
     return RuleAnalyzer().analyze(report_request.events)
 
 

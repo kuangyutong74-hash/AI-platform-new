@@ -5,6 +5,7 @@ import type { Evidence, Talent } from "../data/mockReport";
 defineProps<{talents:Talent[];insights:string[];family:string[];teacher:string[];liveReport?:GeneratedReport}>();
 const emit=defineEmits<{open:[evidence:Evidence]}>();
 const dimensionAnalysis=(talent:Talent,liveReport?:GeneratedReport)=>liveReport?.dimensions.find(item=>item.key===talent.key);
+const observationItems=(talent:Talent,liveReport?:GeneratedReport)=>(dimensionAnalysis(talent,liveReport)?.adult_observation||"").split(/[；\n]+/).map(item=>item.trim()).filter(Boolean);
 </script>
 
 <template>
@@ -25,7 +26,7 @@ const dimensionAnalysis=(talent:Talent,liveReport?:GeneratedReport)=>liveReport?
         <h2>分维度观察记录</h2>
         <section v-for="(talent,index) in talents" :key="talent.key" class="formal-dimension">
           <header><span>{{ String(index+1).padStart(2,'0') }}</span><div><h3>{{ talent.adultName }}</h3><p>{{ talent.label }} · {{ talent.continent }} · {{ talent.module }}</p></div></header>
-          <div class="formal-analysis"><h4>阶段性分析</h4><p>{{ dimensionAnalysis(talent,liveReport)?.analysis || talent.encouragement }}</p><p v-if="dimensionAnalysis(talent,liveReport)?.adult_observation" class="formal-observation"><strong>建议继续观察：</strong>{{ dimensionAnalysis(talent,liveReport)?.adult_observation }}</p></div>
+          <div class="formal-analysis"><h4>智能体深度分析</h4><p>{{ dimensionAnalysis(talent,liveReport)?.analysis || '报告智能体正在根据真实活动记录生成本维度分析…' }}</p><div v-if="observationItems(talent,liveReport).length" class="formal-observation"><strong>给成人的延伸观察：</strong><ol><li v-for="item in observationItems(talent,liveReport)" :key="item">{{item}}</li></ol></div></div>
           <div class="formal-evidence"><h4>行为证据</h4><p v-if="!talent.evidence.length" class="formal-empty">当前还没有足够的可回溯记录，建议继续在不同情境中观察。</p><button v-for="evidence in talent.evidence" :key="evidence.id" type="button" @click="emit('open',evidence)"><span class="formal-evidence-meta"><b>{{ evidence.source }}</b><time>{{ evidence.time }}</time><em>{{ evidence.level==='strong'?'较完整记录':'参考线索' }}</em></span><span>{{ evidence.behavior }}</span><small>查看完整过程记录</small></button></div>
         </section>
       </section>
