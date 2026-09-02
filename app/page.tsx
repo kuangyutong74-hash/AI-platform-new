@@ -15,6 +15,7 @@ type AuthMode="login"|"register"|"reset";
 
 const CORE_URL="http://localhost:8020";
 const REPORT_URL="http://localhost:5175";
+const DEMO_PASSWORD="demo1234";
 
 function normalizeSession(payload:unknown):Session{
   const value=payload as {account:Account;students?:Account[];selected_student?:Account|null},account=value.account;
@@ -67,7 +68,7 @@ function AuthPage({onAuthenticated}:{onAuthenticated:(session:Session)=>void}){
     let endpoint="/api/account/session",body:Record<string,unknown>={username:form.get("username"),password,expected_role:role};
     if(mode==="register"){endpoint="/api/account/register";body={username:String(form.get("username")||"").trim()||null,display_name:form.get("displayName"),age:role==="student"?Number(form.get("age")):null,password,role};}
     else if(mode==="reset"){endpoint="/api/account/password/reset";body={username:form.get("username"),new_password:password};}
-    try{const response=await fetch(`${CORE_URL}${endpoint}`,{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(apiErrorMessage(data,"操作没有完成，请稍后再试"));if(mode==="reset"){setNotice("密码已重置，请用新密码登录。");setMode("login");return;}const next=normalizeSession(data);if(mode==="register")setCreated(next);else onAuthenticated(next);}catch(cause){setError(cause instanceof Error?cause.message:"暂时无法连接账号服务");}finally{setLoading(false);}
+    try{const response=await fetch(`${CORE_URL}${endpoint}`,{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(apiErrorMessage(data,"操作没有完成，请稍后再试"));if(mode==="reset"){const resetAccount=typeof data.username==="string"?data.username.toUpperCase():"该账号";setNotice(`${resetAccount} 的密码已重置，请用新密码登录。`);setMode("login");return;}const next=normalizeSession(data);if(mode==="register")setCreated(next);else onAuthenticated(next);}catch(cause){setError(cause instanceof Error?cause.message:"暂时无法连接账号服务");}finally{setLoading(false);}
   }
   if(created)return <RegistrationSuccess session={created} onContinue={async()=>onAuthenticated(await loadSession())} onBound={setCreated} onLogout={async()=>{await fetch(`${CORE_URL}/api/account/session`,{method:"DELETE",credentials:"include"}).catch(()=>undefined);setCreated(null);setMode("login");}}/>;
   return <main className="login-page"><div className="login-stars" aria-hidden="true"><i/><i/><i/><i/><i/></div><section className="login-panel" aria-labelledby="auth-title">
@@ -80,11 +81,16 @@ function AuthPage({onAuthenticated}:{onAuthenticated:(session:Session)=>void}){
       <label>{mode==="reset"?"新密码":"密码"}<span className="password-field"><input name="password" type={showPassword?"text":"password"} minLength={mode==="login"?4:6} maxLength={72} required autoComplete={mode==="login"?"current-password":"new-password"}/><button type="button" onClick={()=>setShowPassword(v=>!v)}>{showPassword?"隐藏":"显示"}</button></span></label>
       {mode!=="login"&&<label>再次输入密码<input name="confirmPassword" type={showPassword?"text":"password"} minLength={6} maxLength={72} required/></label>}
       {error&&<p className="login-error" role="alert">{error}</p>}{notice&&<p className="login-notice" role="status">{notice}</p>}<button className="primary-button" disabled={loading}>{loading?"正在处理…":mode==="login"?`进入${role==="student"?"学生端":"老师 / 家长端"}`:mode==="register"?"创建账号":"重置密码"}<span>→</span></button>
-    </form><p className="auth-footnote">{mode==="reset"?"输入用户名并设置新密码即可完成重置。":"成人注册后只需填写学生账号即可绑定，不需要学生密码；最多可绑定 5 位学生。"}</p>
+    </form>{mode==="login"&&<aside className="demo-account-hint" aria-label="默认测试账号"><b>默认测试账号</b><span>学生：<code>STUDENT_DEMO</code></span><span>老师 / 家长：<code>ADULT_DEMO</code></span><span>密码：<code>{DEMO_PASSWORD}</code></span><small>成人测试账号已绑定测试学生，可直接查看示例作品。</small></aside>}<p className="auth-footnote">{mode==="reset"?"输入用户名并设置新密码即可完成重置。自动账号少写一个前导 0 时，系统也会自动识别。":"成人注册后只需填写学生账号即可绑定，不需要学生密码；最多可绑定 5 位学生。"}</p>
   </section></main>;
 }
 
-function RegistrationSuccess({session,onContinue,onBound,onLogout}:{session:Session;onContinue:()=>void;onBound:(session:Session)=>void;onLogout:()=>void}){const isAdult=session.account.role==="adult";return <main className="login-page"><section className="login-panel registration-success"><p className="kicker">ACCOUNT CREATED</p><h1>账号创建成功</h1><p>请保存好登录账号和密码。</p><div className="account-code"><small>{isAdult?"家长 / 老师账号":"学生账号"}</small><strong>{session.account.username.toUpperCase()}</strong><button onClick={()=>navigator.clipboard?.writeText(session.account.username)}>复制账号</button></div>{isAdult&&<BindingForm students={session.students} onChanged={onBound}/>}<button className="primary-button" onClick={onContinue}>{isAdult?(session.selected_student?"进入学生的天赋报告":"暂不绑定，进入家长 / 老师端"):"进入我的探索星球"}<span>→</span></button><button className="text-button" onClick={onLogout}>退出登录</button>{isAdult&&!session.selected_student&&<p className="auth-footnote">没有学生账号也可以先进入，之后再绑定。</p>}</section></main>}
+function RegistrationSuccess({session,onContinue,onBound,onLogout}:{session:Session;onContinue:()=>void;onBound:(session:Session)=>void;onLogout:()=>void}){
+  const isAdult=session.account.role==="adult",account=session.account.username.toUpperCase(),generated=/^[SA]\d{8}$/.test(account);
+  const [copied,setCopied]=useState(false);
+  const copyAccount=async()=>{await navigator.clipboard?.writeText(session.account.username);setCopied(true);window.setTimeout(()=>setCopied(false),1800);};
+  return <main className="login-page"><section className="login-panel registration-success"><p className="kicker">ACCOUNT CREATED</p><h1>账号创建成功</h1><p>请复制并保存下面的完整登录账号。退出后仍可继续登录，数据不会因退出而删除。</p><div className="account-code"><small>{isAdult?"家长 / 老师账号":"学生账号"}</small><strong>{account}</strong><button onClick={copyAccount}>{copied?"已复制 ✓":"复制完整账号"}</button>{generated&&<em>自动账号共 9 位：{account.slice(0,5)} + {account.slice(5)}</em>}</div>{isAdult&&<BindingForm students={session.students} onChanged={onBound}/>}<button className="primary-button" onClick={onContinue}>{isAdult?(session.selected_student?"进入学生的天赋报告":"暂不绑定，进入家长 / 老师端"):"进入我的探索星球"}<span>→</span></button><button className="text-button" onClick={onLogout}>退出登录</button>{isAdult&&!session.selected_student&&<p className="auth-footnote">没有学生账号也可以先进入，之后再绑定。</p>}</section></main>
+}
 
 function BindingForm({students,onChanged}:{students:Account[];onChanged:(session:Session)=>void}){
   const [error,setError]=useState(""),[loading,setLoading]=useState(false);
@@ -110,7 +116,7 @@ function BindingForm({students,onChanged}:{students:Account[];onChanged:(session
       onChanged(normalizeSession(data));
     }catch(cause){setError(cause instanceof Error?cause.message:"解除绑定失败");}finally{setLoading(false);}
   }
-  return <section className="binding-box"><h2>管理学生 <small>{students.length}/5</small></h2><p>输入学生登录账号即可绑定，不需要学生密码。</p><form onSubmit={bind}><input name="studentUsername" required placeholder="例如 S20260001"/><button disabled={loading||students.length>=5}>{loading?"处理中…":"添加学生"}</button></form>{error&&<p className="login-error" role="alert">{error}</p>}<div className="bound-students">{students.map(student=><span key={student.id}><span><b>{student.display_name}</b><small>{student.username.toUpperCase()}</small></span><button type="button" disabled={loading} onClick={()=>unbind(student)}>解除</button></span>)}</div></section>;
+  return <section className="binding-box"><h2>管理学生 <small>{students.length}/5</small></h2><p>输入学生的完整登录账号即可绑定，不需要学生密码；自动账号少写一个前导 0 时系统也会识别。</p><form onSubmit={bind}><input name="studentUsername" required placeholder="例如 S20260001（共 9 位）"/><button disabled={loading||students.length>=5}>{loading?"处理中…":"添加学生"}</button></form>{error&&<p className="login-error" role="alert">{error}</p>}<div className="bound-students">{students.map(student=><span key={student.id}><span><b>{student.display_name}</b><small>{student.username.toUpperCase()}</small></span><button type="button" disabled={loading} onClick={()=>unbind(student)}>解除</button></span>)}</div></section>;
 }
 
 function StudentManager({session,onClose,onChanged}:{session:Session;onClose:()=>void;onChanged:(session:Session)=>void}){return <div className="student-manager-backdrop"><section className="student-manager" role="dialog" aria-modal="true" aria-labelledby="student-manager-title"><header><div><p>STUDENT MANAGEMENT</p><h2 id="student-manager-title">学生管理</h2></div><button type="button" aria-label="关闭学生管理" onClick={onClose}>×</button></header><BindingForm students={session.students} onChanged={onChanged}/></section></div>}

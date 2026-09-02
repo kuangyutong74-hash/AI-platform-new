@@ -15,8 +15,12 @@ const STATUS_MAP: Record<string, { label: string; icon: StoryPngIconName }> = {
 
 export default function StoryCard({ story, onClick }: StoryCardProps) {
   const statusInfo = STATUS_MAP[story.status] || STATUS_MAP.active;
-  const preview = story.full_text
-    ? story.full_text.slice(0, 100) + '...'
+  const cleanPreview = story.full_text
+    ?.replace(/【(?:AI故事导演|小作家)】/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const preview = cleanPreview
+    ? cleanPreview.slice(0, 100) + (cleanPreview.length > 100 ? '...' : '')
     : '一个关于' + (story.theme || '冒险') + '的故事...';
 
   return (

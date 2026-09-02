@@ -11,12 +11,11 @@ const MAX_RETRIES = 2;
 export function useSSE() {
   const { dispatch } = useStoryState();
   const abortRef = useRef<AbortController | null>(null);
-  const retryCountRef = useRef<Record<number, number>>({});
 
   const skipQuestionRef = useRef(false);  // Set true when writing ending
 
   const startTurn = useCallback(
-    async (storyId: number, childInput: string, skipQuestion: boolean = false): Promise<void> => {
+    async (storyId: number, childInput: string, skipQuestion: boolean = false): Promise<boolean> => {
       const isKickoff = childInput === '';
       skipQuestionRef.current = skipQuestion;
 
@@ -27,11 +26,11 @@ export function useSSE() {
           message: CHILD_INPUT_BLOCK_MESSAGE,
           level: 'moderate',
         });
-        return;
+        return false;
       }
 
       // Don't add child message for kickoff (AI initiates)
-      if (!isKickoff) {
+      if (!isKickoff && !skipQuestion) {
         dispatch({ type: 'ADD_CHILD_MESSAGE', content: childInput });
       }
 
@@ -44,7 +43,7 @@ export function useSSE() {
       }
       abortRef.current = new AbortController();
 
-      const doStream = async () => {
+      const doStream = async (): Promise<boolean> => {
         const response = await sendStoryTurn(storyId, childInput, abortRef.current!.signal, skipQuestion);
 
         if (!response.ok) {
@@ -56,73 +55,114 @@ export function useSSE() {
           throw new Error(errMsg);
         }
 
-        const reader = response.body!.getReader();
+        if (!response.body) {
+          throw new Error('没有收到故事内容，请稍后重试');
+        }
+
+        const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
         let currentEvent = '';
+        let receivedTerminal = false;
+        let receivedContent = false;
+        let blocked = false;
+
+        const processLine = (rawLine: string) => {
+          const line = rawLine.replace(/\r$/, '');
+          // Skip heartbeat comments (lines starting with ":")
+          if (line.startsWith(':')) return;
+
+          if (line.startsWith('event:')) {
+            currentEvent = line.slice(6).trim();
+            return;
+          }
+          if (!line.startsWith('data:')) return;
+
+          const dataStr = line.slice(5).trimStart();
+          let data: Record<string, unknown>;
+          try {
+            data = JSON.parse(dataStr) as Record<string, unknown>;
+          } catch {
+            return;
+          }
+
+          if (
+            ['narrative_chunk', 'ending', 'question'].includes(currentEvent)
+            && typeof data.text === 'string'
+            && data.text.trim()
+          ) {
+            receivedContent = true;
+          }
+          if (currentEvent === 'input_blocked') blocked = true;
+          if (currentEvent === 'error') {
+            throw new Error(
+              typeof data.message === 'string' && data.message.trim()
+                ? data.message
+                : '故事生成失败，请重试',
+            );
+          }
+          if (currentEvent === 'done') {
+            receivedTerminal = true;
+            blocked = blocked || data.blocked === true;
+            if (!receivedContent && !blocked) {
+              throw new Error('AI 导演没有写出有效内容，请再试一次');
+            }
+          }
+
+          handleEvent(currentEvent, data);
+          currentEvent = '';
+        };
 
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            buffer += decoder.decode();
+            break;
+          }
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
           buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            // Skip heartbeat comments (lines starting with ":")
-            if (line.startsWith(': ')) continue;
-
-            if (line.startsWith('event: ')) {
-              currentEvent = line.slice(7).trim();
-            } else if (line.startsWith('data: ')) {
-              const dataStr = line.slice(6);
-              try {
-                const data = JSON.parse(dataStr);
-                handleEvent(currentEvent, data);
-              } catch {
-                // Ignore parse errors for individual data lines
-              }
-              currentEvent = '';
-            }
-          }
+          lines.forEach(processLine);
         }
 
-        // Success — reset retry count
-        retryCountRef.current[storyId] = 0;
+        if (buffer) processLine(buffer);
+        if (!receivedTerminal) {
+          throw new Error('故事连接提前结束了，请再试一次');
+        }
+        return !blocked;
       };
 
-      try {
-        await doStream();
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') return;
+      let lastError: unknown;
+      for (let retry = 0; retry <= MAX_RETRIES; retry += 1) {
+        try {
+          return await doStream();
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === 'AbortError') return false;
+          lastError = err;
+          if (retry >= MAX_RETRIES) break;
 
-        const retries = retryCountRef.current[storyId] || 0;
-        if (retries < MAX_RETRIES) {
-          retryCountRef.current[storyId] = retries + 1;
-          const message = `故事导演掉线了，正在重连...（第${retries + 1}次）`;
+          const message = `故事导演掉线了，正在重连...（第${retry + 1}次）`;
           dispatch({
             type: 'SHOW_SAFETY_NOTICE',
             message,
             level: 'mild',
           });
+          dispatch({ type: 'RETRY_AI_STREAMING' });
 
           // Auto-retry after 2 seconds
           await new Promise((resolve) => setTimeout(resolve, 2000));
 
           // Reset the abort controller for retry
           abortRef.current = new AbortController();
-          try {
-            await doStream();
-            return;
-          } catch (retryErr: unknown) {
-            if (retryErr instanceof Error && retryErr.name === 'AbortError') return;
-          }
         }
-
-        const message = err instanceof Error ? err.message : '网络连接出错了，请检查网络后重试';
-        handleEvent('error', { message });
       }
+
+      const message = lastError instanceof Error
+        ? lastError.message
+        : '网络连接出错了，请检查网络后重试';
+      handleEvent('error', { message });
+      return false;
     },
     [dispatch],
   );

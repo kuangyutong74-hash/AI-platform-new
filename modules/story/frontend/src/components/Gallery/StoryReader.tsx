@@ -3,8 +3,8 @@ import { getStoryMessages, type StoryMessage } from '../../api/endpoints';
 import Loading from '../Shared/Loading';
 import { useModalHeaderActions } from '../Shared/Modal';
 import PinyinText from '../Story/PinyinText';
+import { buildStoryParagraphs } from '../../utils/storyPresentation';
 import './StoryReader.css';
-import PngIcon from '../Shared/PngIcon';
 
 interface StoryReaderProps {
   storyId: number;
@@ -46,22 +46,17 @@ export default function StoryReader({ storyId }: StoryReaderProps) {
   if (loading) return <Loading text="加载故事中..." />;
   if (error) return <p className="reader-error">{error}</p>;
 
+  const paragraphs = buildStoryParagraphs(messages);
+
   return (
     <div className={`story-reader ${showPinyin ? 'story-reader-pinyin' : ''} reader-fs-${fontSize}`}>
-      <div className="reader-message-list">
-        {messages.map((msg) => (
-            <div key={msg.id} className={`reader-message reader-message-${msg.role}`}>
-              <div className="reader-role-icon">
-                {msg.role === 'ai' ? <PngIcon name="story-director" size={34} /> : <PngIcon name="child-explorer" size={34} />}
-              </div>
-              <div className="reader-content">
-                <p>
-                  <PinyinText text={msg.content} enabled={showPinyin && msg.role === 'ai'} />
-                </p>
-              </div>
-            </div>
-        ))}
-      </div>
+      <article className="reader-story-paper" aria-label="完整故事正文">
+        {paragraphs.length > 0 ? paragraphs.map((paragraph, index) => (
+          <p key={`${index}-${paragraph.slice(0, 12)}`}>
+            <PinyinText text={paragraph} enabled={showPinyin} />
+          </p>
+        )) : <p className="reader-empty">这个故事还没有正文。</p>}
+      </article>
     </div>
   );
 }

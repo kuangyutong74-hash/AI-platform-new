@@ -11,6 +11,17 @@ type V1Artifact={id:string;moduleId:string;type:string;title:string;summary:stri
 type V1ModuleSummary={moduleId:string;completedCount:number;firstUsedAt:string;lastUsedAt:string;activeSeconds:number;evidenceCount:number;artifactCount:number};
 
 const number=(value:unknown)=>Number(value)||0;
+const artifactPresentation:Record<string,{status:string;metric_label:string;metric_value:string}>={
+  story:{status:"故事已完成",metric_label:"作品类型",metric_value:"故事共创"},
+  chat:{status:"聊天已完成",metric_label:"记录类型",metric_value:"聊天观察"},
+  deep_sea:{status:"重建已完成",metric_label:"作品类型",metric_value:"深海基地重建"},
+  career:{status:"体验已完成",metric_label:"作品类型",metric_value:"职业模拟"},
+};
+
+function presentationFor(artifact:V1Artifact){
+  if(artifact.kind==="manual_work")return {status:"我添加的作品",metric_label:"作品来源",metric_value:"自主添加"};
+  return artifactPresentation[artifact.moduleId]||{status:"已收藏",metric_label:"作品类型",metric_value:artifact.type};
+}
 
 function collectionFromV1(account:Account,artifacts:V1Artifact[],summaries:V1ModuleSummary[]){
   return {
@@ -24,9 +35,7 @@ function collectionFromV1(account:Account,artifacts:V1Artifact[],summaries:V1Mod
       detail:artifact.detail||artifact.summary,
       quote:"",
       occurred_at:artifact.createdAt,
-      status:artifact.kind==="manual_work"?"我添加的作品":"已收藏",
-      metric_label:"作品记录",
-      metric_value:artifact.type,
+      ...presentationFor(artifact),
       usage_count:1,
       is_highlight:artifact.kind!=="manual_work",
       snapshot_url:artifact.previewResourceId?`${CORE_API_URL}/api/v1/assets/snapshots/${artifact.previewResourceId}`:"",

@@ -83,6 +83,7 @@ function isAbortError(err) {
  * @param {Array}   options.messages      — [{role,content},…]
  * @param {number} [options.temperature]
  * @param {number} [options.maxTokens]
+ * @param {'enabled'|'disabled'} [options.thinkingMode]
  * @param {number} [options.timeoutMs=25000]
  * @param {Function} [options.fetchImpl]  — 可注入的 fetch（测试用）
  * @param {AbortSignal} [options.externalSignal] — 外部取消信号
@@ -100,6 +101,7 @@ async function requestChatCompletion(options) {
   var messages = options.messages;
   var temperature = options.temperature;
   var maxTokens = options.maxTokens;
+  var thinkingMode = options.thinkingMode;
   var timeoutMs = typeof options.timeoutMs === 'number' && options.timeoutMs > 0
     ? options.timeoutMs
     : 25000;
@@ -190,7 +192,7 @@ async function requestChatCompletion(options) {
           'Content-Type': 'application/json',
           Authorization: 'Bearer ' + apiKey,
         },
-        body: JSON.stringify(buildRequestBody(model, messages, temperature, maxTokens)),
+        body: JSON.stringify(buildRequestBody(model, messages, temperature, maxTokens, thinkingMode)),
         signal: controller.signal,
       }),
       timeoutPromise,
@@ -299,13 +301,16 @@ async function requestChatCompletion(options) {
 //  构建请求体（不包含 endpoint/apiKey）
 // ============================================================
 
-function buildRequestBody(model, messages, temperature, maxTokens) {
+function buildRequestBody(model, messages, temperature, maxTokens, thinkingMode) {
   var body = { model: model, messages: messages };
   if (typeof temperature === 'number' && isFinite(temperature)) {
     body.temperature = temperature;
   }
   if (typeof maxTokens === 'number' && maxTokens > 0 && Math.floor(maxTokens) === maxTokens) {
     body.max_tokens = maxTokens;
+  }
+  if (thinkingMode === 'enabled' || thinkingMode === 'disabled') {
+    body.thinking = { type: thinkingMode };
   }
   return body;
 }

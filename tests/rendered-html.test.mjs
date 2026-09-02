@@ -33,8 +33,20 @@ test("server renders AI伯乐探索星球", async () => {
   assert.match(page, /退出登录/);
   assert.match(page, /管理学生/);
   assert.match(page, /两次输入的密码不一致/);
+  assert.match(page, /STUDENT_DEMO/);
+  assert.match(page, /ADULT_DEMO/);
+  assert.match(page, /自动账号共 9 位/);
+  assert.match(page, /少写一个前导 0/);
   assert.match(page, /http:\/\/localhost:8020/);
   assert.doesNotMatch(html, /codex-preview|SkeletonPreview|react-loading-skeleton/);
+});
+
+test("mobile personal navigation does not draw a stray bottom rule", async () => {
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(
+    styles,
+    /@media\(max-width:850px\)\{\.topbar nav button,\.topbar nav button\.active\{border-bottom:0;border-color:transparent\}\}/,
+  );
 });
 
 test("keeps four modules equal and preserves personal exploration nodes", async () => {
@@ -118,4 +130,20 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
   assert.match(growth, /item\.metricValue/);
   assert.match(growth, /item\.firstUsedAt/);
   assert.match(growth, /最近一次完成/);
+});
+
+test("explains the chat completion boundary and links the finished chat to works", async () => {
+  const chat = await readFile(
+    new URL("../modules/chat/public/chat.html", import.meta.url),
+    "utf8",
+  );
+  const chatEnd = await readFile(
+    new URL("../modules/chat/public/chat-end.html", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(chat, /if\(turnCount===0\|\|finalized\)return/);
+  assert.match(chatEnd, /怎样算完成一次？/);
+  assert.match(chatEnd, /至少发送 1 条消息/);
+  assert.match(chatEnd, /http:\/\/localhost:4173\/\?view=works/);
 });

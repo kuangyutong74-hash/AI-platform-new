@@ -32,13 +32,14 @@ type TurnAction =
   | { type: 'START_STORY'; storyId: number }
   | { type: 'ADD_CHILD_MESSAGE'; content: string }
   | { type: 'START_AI_STREAMING' }
+  | { type: 'RETRY_AI_STREAMING' }
   | { type: 'ADD_FAIRY_PRAISE'; content: string }
   | { type: 'APPEND_NARRATIVE_CHUNK'; text: string }
   | { type: 'APPEND_ENDING'; text: string }
   | { type: 'SET_AI_QUESTION'; text: string }
   | { type: 'FINISH_TURN'; turnNumber: number; isEnding: boolean }
   | { type: 'FAIL_TURN'; message: string }
-  | { type: 'RESTORE_MESSAGES'; messages: ChatMessage[]; turnNumber: number; isEnding: boolean; fairyPraise?: string }
+  | { type: 'RESTORE_MESSAGES'; storyId: number; messages: ChatMessage[]; turnNumber: number; isEnding: boolean; fairyPraise?: string }
   | { type: 'SHOW_SAFETY_NOTICE'; message: string; level: string }
   | { type: 'REDACT_LAST_CHILD_MESSAGE'; content: string }
   | { type: 'REMOVE_BLOCKED_TURN' }
@@ -70,17 +71,40 @@ function turnReducer(state: TurnState, action: TurnAction): TurnState {
     }
 
     case 'START_AI_STREAMING': {
+      const messages = state.messages.filter(
+        (message) => !(message.role === 'ai' && !message.isStreaming && !message.content.trim()),
+      );
+      const last = messages[messages.length - 1];
+      if (last?.role === 'ai' && last.isStreaming) {
+        return { ...state, messages, isStreaming: true };
+      }
       const aiMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
+        id: `ai-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         role: 'ai',
         content: '',
         isStreaming: true,
       };
-      return { ...state, messages: [...state.messages, aiMsg], isStreaming: true };
+      return { ...state, messages: [...messages, aiMsg], isStreaming: true };
     }
 
     case 'ADD_FAIRY_PRAISE': {
       return { ...state, fairyPraise: action.content };
+    }
+
+    case 'RETRY_AI_STREAMING': {
+      const streamingIndex = state.messages.findLastIndex(
+        (message) => message.role === 'ai' && message.isStreaming,
+      );
+      if (streamingIndex < 0) return state;
+      const messages = state.messages.slice(0, streamingIndex + 1);
+      messages[streamingIndex] = {
+        ...messages[streamingIndex],
+        content: '',
+        isStreaming: true,
+        isQuestion: false,
+        isEnding: false,
+      };
+      return { ...state, messages, isStreaming: true };
     }
 
     case 'APPEND_NARRATIVE_CHUNK': {
@@ -102,29 +126,29 @@ function turnReducer(state: TurnState, action: TurnAction): TurnState {
         msgs[msgs.length - 1] = {
           ...last,
           content: last.content + (action.text || ''),
-          isStreaming: false,
+          isStreaming: true,
           isEnding: true,
         };
+      } else if (action.text) {
+        msgs.push({
+          id: `ai-ending-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          role: 'ai',
+          content: action.text,
+          isStreaming: true,
+          isEnding: true,
+        });
       }
-      // Add ending as highlight message
-      const endMsg: ChatMessage = {
-        id: `ai-ending-${Date.now()}`,
-        role: 'ai',
-        content: action.text || '',
-        isEnding: true,
-      };
-      return { ...state, messages: [...msgs, endMsg], isStreaming: false };
+      return { ...state, messages: msgs, isStreaming: true };
     }
 
     case 'SET_AI_QUESTION': {
       const msgs = [...state.messages];
-      const lastIdx = msgs.length - 1;
-      if (lastIdx >= 0 && msgs[lastIdx].role === 'ai') {
-        msgs[lastIdx] = { ...msgs[lastIdx], isStreaming: false };
+      if (!action.text?.trim()) {
+        return { ...state, messages: msgs };
       }
       // Add question as a separate highlighted message
       const qMsg: ChatMessage = {
-        id: `ai-q-${Date.now()}`,
+        id: `ai-q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         role: 'ai',
         content: action.text,
         isQuestion: true,
@@ -135,11 +159,13 @@ function turnReducer(state: TurnState, action: TurnAction): TurnState {
     case 'FINISH_TURN':
       return {
         ...state,
-        messages: state.messages.map((message) =>
-          message.role === 'ai' && message.isStreaming
-            ? { ...message, isStreaming: false }
-            : message,
-        ),
+        messages: state.messages
+          .filter((message) => message.role !== 'ai' || Boolean(message.content.trim()))
+          .map((message) =>
+            message.role === 'ai' && message.isStreaming
+              ? { ...message, isStreaming: false }
+              : message,
+          ),
         isStreaming: false,
         turnNumber: action.turnNumber,
         isEnding: action.isEnding,
@@ -199,6 +225,7 @@ function turnReducer(state: TurnState, action: TurnAction): TurnState {
     case 'RESTORE_MESSAGES':
       return {
         ...state,
+        storyId: action.storyId,
         messages: action.messages,
         turnNumber: action.turnNumber,
         isEnding: action.isEnding,

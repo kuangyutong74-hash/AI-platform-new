@@ -33,50 +33,28 @@
   border-color: var(--color-primary);
 }
 
-.reader-message-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.reader-story-paper {
+  padding: clamp(22px, 4vw, 42px);
+  border: 1px solid rgba(132, 112, 186, 0.14);
+  border-radius: 24px;
+  background:
+    linear-gradient(90deg, rgba(224, 210, 255, 0.15) 1px, transparent 1px),
+    #fffdf8;
+  background-size: 100% 2.25em;
+  box-shadow: inset 0 0 30px rgba(142, 116, 190, 0.06);
 }
 
-.reader-message {
-  display: flex;
-  gap: 12px;
-}
-
-.reader-role-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-full);
-  background: var(--color-white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
-}
-
-.reader-content {
-  flex: 1;
-  min-width: 0;
-  padding: 14px 18px;
-  border-radius: var(--radius-lg);
-  line-height: 1.8;
+.reader-story-paper p {
+  margin: 0 0 1.15em;
+  color: var(--color-text);
   font-size: var(--font-size-body);
+  line-height: 2.05;
+  text-indent: 2em;
 }
 
-.reader-message-ai .reader-content {
-  background: var(--color-bubble-ai);
-}
-
-.reader-message-child .reader-content {
-  background: var(--color-bubble-child);
-}
-
-.story-reader-pinyin .reader-message-ai .reader-content p {
-  line-height: 2.7;
-}
+.reader-story-paper p:last-child { margin-bottom: 0; }
+.story-reader-pinyin .reader-story-paper p { line-height: 2.85; }
+.reader-story-paper .reader-empty { text-align: center; text-indent: 0; color: var(--color-text-light); }
 
 .story-reader ruby {
   ruby-position: over;
@@ -88,9 +66,9 @@
   font-size: 0.58em;
 }
 
-.reader-fs-s .reader-content p { font-size: 1rem; }
-.reader-fs-m .reader-content p { font-size: var(--font-size-body); }
-.reader-fs-l .reader-content p { font-size: 1.5rem; }
+.reader-fs-s .reader-story-paper p { font-size: 1rem; }
+.reader-fs-m .reader-story-paper p { font-size: var(--font-size-body); }
+.reader-fs-l .reader-story-paper p { font-size: 1.5rem; }
 
 .fontsize-toggle { display: flex; gap: 2px; }
 .fs-btn { padding: 3px 8px; border: 1px solid #ddd; border-radius: var(--radius-sm); background: #f8f8f8; font-size: 11px; cursor: pointer; color: var(--color-text-light); }
@@ -104,6 +82,5 @@
 }
 
 @media (max-width: 600px) {
-  .reader-role-icon { display: none; }
-  .reader-content { padding: 12px 14px; }
+  .reader-story-paper { padding: 20px 16px; }
 }

@@ -7,6 +7,7 @@ import {
   type Story,
 } from "../api/endpoints";
 import { apiFetch } from "../api/client";
+import { addStoryToMyWorks, listCollectedStoryIds } from "../api/platformWorks";
 import StoryCard from "../components/Gallery/StoryCard";
 import StoryReader from "../components/Gallery/StoryReader";
 import Modal from "../components/Shared/Modal";
@@ -19,10 +20,16 @@ export default function GalleryPage({ parentMode = false }: { parentMode?: boole
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [readingStory, setReadingStory] = useState<Story | null>(null);
+  const [collectedStoryIds, setCollectedStoryIds] = useState<Set<number>>(new Set());
+  const [collectingStoryId, setCollectingStoryId] = useState<number | null>(null);
+  const [collectError, setCollectError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
     loadStories();
+    if (!parentMode) {
+      listCollectedStoryIds().then(setCollectedStoryIds).catch(() => undefined);
+    }
   }, [parentMode]);
 
   async function loadStories() {
@@ -61,6 +68,21 @@ export default function GalleryPage({ parentMode = false }: { parentMode?: boole
     navigate(`/story-create/play/${story.id}`);
   }
 
+  async function handleCollect(story: Story, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (collectedStoryIds.has(story.id) || collectingStoryId !== null) return;
+    setCollectError("");
+    setCollectingStoryId(story.id);
+    try {
+      await addStoryToMyWorks(story.id);
+      setCollectedStoryIds((current) => new Set(current).add(story.id));
+    } catch (cause) {
+      setCollectError(cause instanceof Error ? cause.message : "暂时没有添加成功，请稍后再试。");
+    } finally {
+      setCollectingStoryId(null);
+    }
+  }
+
   if (loading) return <Loading text="加载故事画廊..." />;
 
   const activeStories = parentMode ? [] : stories.filter((s) => s.status === "active");
@@ -71,14 +93,19 @@ export default function GalleryPage({ parentMode = false }: { parentMode?: boole
     <div className="gallery-page page">
       <div className="gallery-header">
         <h1>{parentMode ? "家长故事书架" : "我的故事画廊"}</h1>
-        {!parentMode && (
-          <div style={{ display: "flex", gap: 8 }}>
+        <div className="gallery-header-actions">
+          <Button variant="ghost" onClick={() => navigate("/story-create")}>
+            ← 返回故事共创首页
+          </Button>
+          {!parentMode && (
             <Button variant="primary" onClick={() => navigate("/story-create/characters")}>
               <PngIcon name="celebration" size={26} /> 创作新故事
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {collectError && <div className="gallery-collect-error" role="alert">{collectError}</div>}
 
       {!hasVisibleStories ? (
         <div className="gallery-empty">
@@ -141,6 +168,17 @@ export default function GalleryPage({ parentMode = false }: { parentMode?: boole
                       >
                         <PngIcon name="story-book" size={22} /> 阅读
                       </button>
+                      {!parentMode && (
+                        <button
+                          className={`gallery-action-btn collect ${collectedStoryIds.has(story.id) ? "collected" : ""}`}
+                          onClick={(e) => handleCollect(story, e)}
+                          disabled={collectedStoryIds.has(story.id) || collectingStoryId === story.id}
+                        >
+                          {collectingStoryId === story.id
+                            ? "添加中..."
+                            : collectedStoryIds.has(story.id) ? "✓ 已添加到我的作品" : "+ 添加到我的作品"}
+                        </button>
+                      )}
                       {!parentMode && (
                         <button
                           className="gallery-action-btn rename"

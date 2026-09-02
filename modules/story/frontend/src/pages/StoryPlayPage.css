@@ -84,7 +84,8 @@
 .story-ended-emoji { font-size: 48px; display: block; margin-bottom: 10px; }
 .story-ended-card h3 { font-size: var(--font-size-md); margin-bottom: 6px; }
 .story-ended-card p { color: var(--color-text-light); margin-bottom: 16px; }
-.story-ended-actions { display: flex; gap: 10px; justify-content: center; }
+.story-ended-actions { display: flex; flex-wrap:wrap; gap: 10px; justify-content: center; }
+.story-ended-card .story-work-save-error { margin:12px 0 0; color:var(--color-danger); font-size:var(--font-size-xs); }
 
 /* End story button */
 .story-end-action { text-align: center; padding: 8px 20px 14px; }

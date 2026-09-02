@@ -14,6 +14,7 @@ import json
 import logging
 import base64
 import os
+import re
 import secrets
 import sqlite3
 import uuid
@@ -271,6 +272,7 @@ def initialize_database() -> None:
               module TEXT NOT NULL,
               title TEXT NOT NULL,
               description TEXT NOT NULL,
+              source_id TEXT NOT NULL DEFAULT '',
               created_at TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_adult_links_student ON adult_student_links(student_account_id);
@@ -302,6 +304,16 @@ def initialize_database() -> None:
             db.execute("ALTER TABLE assessment_sessions ADD COLUMN summary_json TEXT NOT NULL DEFAULT '{}'")
         if "interruption_reason" not in assessment_columns:
             db.execute("ALTER TABLE assessment_sessions ADD COLUMN interruption_reason TEXT")
+        manual_work_columns = {
+            row["name"] for row in db.execute("PRAGMA table_info(manual_works)").fetchall()
+        }
+        if "source_id" not in manual_work_columns:
+            db.execute("ALTER TABLE manual_works ADD COLUMN source_id TEXT NOT NULL DEFAULT ''")
+        db.execute(
+            """CREATE UNIQUE INDEX IF NOT EXISTS idx_manual_works_student_source
+               ON manual_works(student_account_id, module, source_id)
+               WHERE source_id <> ''"""
+        )
         migration_columns = {row["name"] for row in db.execute("PRAGMA table_info(schema_migrations)").fetchall()}
         if "source" not in migration_columns:
             db.execute("ALTER TABLE schema_migrations ADD COLUMN source TEXT NOT NULL DEFAULT 'runtime'")
@@ -318,6 +330,7 @@ def initialize_database() -> None:
                SELECT id,id,display_name,age,created_at,updated_at FROM accounts
                WHERE COALESCE(role,'student')='student'"""
         )
+        ensure_default_test_accounts(db, timestamp)
         for manifest in load_module_catalog():
             db.execute(
                 """INSERT INTO modules (id,name,enabled,current_version,updated_at) VALUES (?,?,?,?,?)
@@ -343,6 +356,75 @@ def password_digest(password: str, salt: str) -> str:
 
 def token_digest(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
+
+
+def canonical_generated_username(value: str) -> str:
+    """容错自动账号的常见抄写形式，例如 S2026001 或 S2026-0001。"""
+    match = re.fullmatch(r"([sa])(\d{4})-?(\d{1,4})", value)
+    if not match:
+        return value
+    role, year, sequence = match.groups()
+    return f"{role}{year}{sequence.zfill(4)}"
+
+
+def find_account_by_username(db: sqlite3.Connection, username: str) -> sqlite3.Row | None:
+    """精确账号优先；不存在时再兼容自动账号漏写前导零的输入。"""
+    account = db.execute("SELECT * FROM accounts WHERE username=?", (username,)).fetchone()
+    if account:
+        return account
+    canonical = canonical_generated_username(username)
+    if canonical == username:
+        return None
+    return db.execute("SELECT * FROM accounts WHERE username=?", (canonical,)).fetchone()
+
+
+def ensure_default_test_accounts(db: sqlite3.Connection, timestamp: str) -> None:
+    """为本地实验环境提供稳定、可重复登录的学生与成人测试账号。"""
+    if os.environ.get("AI_BOLE_SEED_TEST_ACCOUNTS", "1").strip().lower() in {"0", "false", "no", "off"}:
+        return
+
+    password = os.environ.get("AI_BOLE_TEST_ACCOUNT_PASSWORD", "demo1234")
+
+    def ensure_account(username: str, display_name: str, age: int, role: str) -> sqlite3.Row:
+        existing = db.execute("SELECT * FROM accounts WHERE username=?", (username,)).fetchone()
+        if existing:
+            return existing
+        account_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"ai-bole.local/{username}"))
+        salt = secrets.token_hex(16)
+        db.execute(
+            """INSERT INTO accounts
+               (id,username,display_name,age,password_hash,password_salt,created_at,updated_at,role,adult_kind)
+               VALUES (?,?,?,?,?,?,?,?,?,NULL)""",
+            (account_id, username, display_name, age, password_digest(password, salt), salt,
+             timestamp, timestamp, role),
+        )
+        return db.execute("SELECT * FROM accounts WHERE id=?", (account_id,)).fetchone()
+
+    student = ensure_account("student_demo", "测试学生小星", 9, "student")
+    adult = ensure_account("adult_demo", "测试家长", 0, "adult")
+    if (student["role"] or "student") != "student" or (adult["role"] or "student") != "adult":
+        logger.warning("默认测试账号名称已被其他角色占用，跳过自动绑定")
+        return
+
+    db.execute(
+        """INSERT OR IGNORE INTO child_profiles
+           (id,account_id,display_name,age,created_at,updated_at) VALUES (?,?,?,?,?,?)""",
+        (student["id"], student["id"], student["display_name"], student["age"], timestamp, timestamp),
+    )
+    db.execute(
+        "INSERT OR IGNORE INTO adult_student_links (adult_account_id,student_account_id,created_at) VALUES (?,?,?)",
+        (adult["id"], student["id"], timestamp),
+    )
+    samples = (
+        ("demo-work-story", "story", "星星邮差", "我设计了一个把勇气送到每颗星球的故事。"),
+        ("demo-work-deep-sea", "deep_sea", "会发光的海底基地", "我调整了基地布局，让小鱼和珊瑚都有安全空间。"),
+    )
+    for work_id, module, title, description in samples:
+        db.execute(
+            """INSERT OR IGNORE INTO manual_works
+               (id,student_account_id,module,title,description,created_at) VALUES (?,?,?,?,?,?)""",
+            (work_id, student["id"], module, title, description, timestamp),
+        )
 
 
 def public_account(row: sqlite3.Row) -> dict:
@@ -535,7 +617,8 @@ class WorkCommentIn(BaseModel):
 class ManualWorkIn(BaseModel):
     module: Literal["story", "deep_sea", "career", "chat"]
     title: str = Field(min_length=1, max_length=60)
-    description: str = Field(default="", max_length=1000)
+    description: str = Field(default="", max_length=20000)
+    source_id: str = Field(default="", max_length=160)
 
     @field_validator("title")
     @classmethod
@@ -548,6 +631,11 @@ class ManualWorkIn(BaseModel):
     @field_validator("description")
     @classmethod
     def normalize_manual_work_description(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("source_id")
+    @classmethod
+    def normalize_manual_work_source(cls, value: str) -> str:
         return value.strip()
 
 
@@ -834,8 +922,24 @@ def create_artifact_v1(payload: ArtifactIn, authorization: str | None = Header(d
             (payload.preview_resource_id, auth["session_id"]),
         ).fetchone():
             raise HTTPException(422, "作品预览不属于当前探索会话")
-        db.execute("INSERT OR IGNORE INTO artifacts (id,session_id,type,title,summary,preview_resource_id,source_resource_id,created_at) VALUES (?,?,?,?,?,?,?,?)", (payload.artifact_id, auth["session_id"], payload.type, payload.title, payload.summary, payload.preview_resource_id, payload.source_resource_id, payload.created_at))
-    return {"id": payload.artifact_id, "created": True}
+        existing = db.execute(
+            "SELECT session_id FROM artifacts WHERE id=?", (payload.artifact_id,)
+        ).fetchone()
+        if existing and existing["session_id"] != auth["session_id"]:
+            raise HTTPException(409, "作品标识已被其他探索会话使用")
+        db.execute(
+            """INSERT INTO artifacts
+               (id,session_id,type,title,summary,preview_resource_id,source_resource_id,created_at)
+               VALUES (?,?,?,?,?,?,?,?)
+               ON CONFLICT(id) DO UPDATE SET
+                 type=excluded.type,title=excluded.title,summary=excluded.summary,
+                 preview_resource_id=excluded.preview_resource_id,
+                 source_resource_id=excluded.source_resource_id,created_at=excluded.created_at""",
+            (payload.artifact_id, auth["session_id"], payload.type, payload.title,
+             payload.summary, payload.preview_resource_id, payload.source_resource_id,
+             payload.created_at),
+        )
+    return {"id": payload.artifact_id, "created": existing is None, "updated": existing is not None}
 
 
 @app.get("/api/v1/artifacts")
@@ -863,18 +967,22 @@ def list_artifacts_v1(ai_bole_session: str | None = Cookie(default=None)) -> dic
             "id": row["id"], "body": row["body"], "authorName": row["author_name"],
             "authorKind": row["author_kind"], "createdAt": row["created_at"],
         })
+    manually_collected_sources = {
+        (row["module"], row["source_id"])
+        for row in manual_rows if row["source_id"]
+    }
     artifacts = [{
         "id": row["id"], "sessionId": row["session_id"], "moduleId": row["module_id"],
         "moduleVersion": row["module_version"], "type": row["type"], "kind": "highlight",
         "title": row["title"], "summary": row["summary"], "detail": row["summary"],
         "previewResourceId": row["preview_resource_id"], "sourceResourceId": row["source_resource_id"],
         "createdAt": row["created_at"], "comments": comments.get(row["id"], []),
-    } for row in rows]
+    } for row in rows if (row["module_id"], row["source_resource_id"]) not in manually_collected_sources]
     artifacts.extend({
         "id": f"manual-{row['id']}", "sessionId": None, "moduleId": row["module"],
         "moduleVersion": None, "type": "manual", "kind": "manual_work", "title": row["title"],
-        "summary": "这是我自己添加的作品。", "detail": row["description"] or "这件作品由我自己添加到作品册。",
-        "previewResourceId": None, "sourceResourceId": None, "createdAt": row["created_at"],
+        "summary": manual_work_summary(row), "detail": row["description"] or "这件作品由我自己添加到作品册。",
+        "previewResourceId": None, "sourceResourceId": row["source_id"] or None, "createdAt": row["created_at"],
         "comments": comments.get(f"manual-{row['id']}", []),
     } for row in manual_rows)
     artifacts.sort(key=lambda item: item["createdAt"], reverse=True)
@@ -1226,7 +1334,7 @@ def account_session_payload(viewer: sqlite3.Row, token: str | None = None) -> di
 def register_account(payload: AccountRegistrationIn, response: Response) -> dict:
     timestamp = now_iso()
     with connect() as db:
-        username = payload.username or generate_username(db, payload.role)
+        username = canonical_generated_username(payload.username) if payload.username else generate_username(db, payload.role)
         if db.execute("SELECT 1 FROM accounts WHERE username=?", (username,)).fetchone():
             raise HTTPException(409, "这个探索者账号已经存在，请直接登录")
         account_id = str(uuid.uuid4())
@@ -1257,7 +1365,7 @@ def register_account(payload: AccountRegistrationIn, response: Response) -> dict
 def create_session(payload: AccountCredentialsIn, response: Response) -> dict:
     timestamp = now_iso()
     with connect() as db:
-        account = db.execute("SELECT * FROM accounts WHERE username=?", (payload.username,)).fetchone()
+        account = find_account_by_username(db, payload.username)
         if not account:
             raise HTTPException(401, "账号或密码不正确")
         candidate = password_digest(payload.password, account["password_salt"])
@@ -1274,7 +1382,7 @@ def create_session(payload: AccountCredentialsIn, response: Response) -> dict:
 @app.post("/api/account/password/reset")
 def reset_password(payload: PasswordResetIn) -> dict:
     with connect() as db:
-        account = db.execute("SELECT * FROM accounts WHERE username=?", (payload.username,)).fetchone()
+        account = find_account_by_username(db, payload.username)
         if not account:
             raise HTTPException(404, "没有找到这个账号，请核对用户名")
         salt = secrets.token_hex(16)
@@ -1283,7 +1391,7 @@ def reset_password(payload: PasswordResetIn) -> dict:
             (password_digest(payload.new_password, salt), salt, now_iso(), account["id"]),
         )
         db.execute("DELETE FROM account_sessions WHERE account_id=?", (account["id"],))
-    return {"ok": True}
+    return {"ok": True, "username": account["username"]}
 
 
 @app.get("/api/account/me")
@@ -1308,7 +1416,7 @@ def bind_student(payload: StudentLinkIn, ai_bole_session: str | None = Cookie(de
         count = db.execute(
             "SELECT COUNT(*) AS total FROM adult_student_links WHERE adult_account_id=?", (viewer["id"],)
         ).fetchone()["total"]
-        student = db.execute("SELECT * FROM accounts WHERE username=?", (payload.username,)).fetchone()
+        student = find_account_by_username(db, payload.username)
         if not student or (student["role"] or "student") != "student":
             raise HTTPException(404, "没有找到这个学生账号，请核对后再试")
         exists = db.execute(
@@ -1496,12 +1604,20 @@ def explorer_collection(ai_bole_session: str | None = Cookie(default=None)) -> d
     return result
 
 
+def manual_work_summary(row: sqlite3.Row) -> str:
+    text = " ".join((row["description"] or "").split())
+    if not text:
+        return "这是我自己添加的作品。"
+    return text if len(text) <= 180 else f"{text[:179].rstrip()}…"
+
+
 def manual_work_item(row: sqlite3.Row) -> dict:
     return {
         "id": f"manual-{row['id']}",
         "module": row["module"],
+        "source_id": row["source_id"],
         "title": row["title"],
-        "summary": "这是我自己添加的作品。",
+        "summary": manual_work_summary(row),
         "detail": row["description"] or "这件作品由我自己添加到作品册。",
         "quote": "",
         "occurred_at": row["created_at"],
@@ -1520,15 +1636,38 @@ def manual_work_item(row: sqlite3.Row) -> dict:
 @app.post("/api/explorer/works", status_code=201)
 def create_manual_work(payload: ManualWorkIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
     student = require_student_viewer(ai_bole_session)
-    work_id = str(uuid.uuid4())
     created_at = now_iso()
     with connect() as db:
-        db.execute(
-            "INSERT INTO manual_works (id,student_account_id,module,title,description,created_at) VALUES (?,?,?,?,?,?)",
-            (work_id, student["id"], payload.module, payload.title, payload.description, created_at),
-        )
+        existing = None
+        if payload.source_id:
+            existing = db.execute(
+                """SELECT * FROM manual_works
+                   WHERE student_account_id=? AND module=? AND source_id=?""",
+                (student["id"], payload.module, payload.source_id),
+            ).fetchone()
+        if existing:
+            work_id = existing["id"]
+            db.execute(
+                "UPDATE manual_works SET title=?, description=? WHERE id=?",
+                (payload.title, payload.description, work_id),
+            )
+        else:
+            work_id = str(uuid.uuid4())
+            db.execute(
+                """INSERT INTO manual_works
+                   (id,student_account_id,module,title,description,source_id,created_at)
+                   VALUES (?,?,?,?,?,?,?)""",
+                (
+                    work_id, student["id"], payload.module, payload.title,
+                    payload.description, payload.source_id, created_at,
+                ),
+            )
         row = db.execute("SELECT * FROM manual_works WHERE id=?", (work_id,)).fetchone()
-    return {"work": {**manual_work_item(row), "comments": []}}
+    return {
+        "work": {**manual_work_item(row), "comments": []},
+        "created": existing is None,
+        "updated": existing is not None,
+    }
 
 
 @app.delete("/api/explorer/works/{work_id}")

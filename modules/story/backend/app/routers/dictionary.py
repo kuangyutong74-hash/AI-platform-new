@@ -35,6 +35,7 @@ async def lookup_word(word: str, age_group: str = "8-12"):
             stream=False,
             temperature=0.3,
             max_tokens=150,
+            extra_body={"thinking": {"type": "disabled"}},
             timeout=10.0,
         )
         definition = stream.choices[0].message.content

@@ -16,7 +16,7 @@ from app.models.character import Character
 from app.models.message import StoryMessage
 from app.models.story import Story
 from app.schemas.message import StoryMessageOut
-from app.schemas.story import StoryCreate, StoryOut, StoryUpdate, TurnRequest
+from app.schemas.story import StoryCompleteRequest, StoryCreate, StoryOut, StoryUpdate, TurnRequest
 from app.services import observation_service, story_service
 from app.services.content_guard import (
     EMPTY_AFTER_CLEAN_MESSAGE,
@@ -123,6 +123,42 @@ async def update_story(
         if req.status == "completed":
             story.completed_at = datetime.utcnow()
     await db.commit()
+    await db.refresh(story)
+    return story
+
+
+@router.post("/{story_id}/complete", response_model=StoryOut)
+async def complete_story_with_child_ending(
+    story_id: int,
+    req: StoryCompleteRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Persist a child-authored ending before completing the story.
+
+    The old frontend-only completion path made the visible chat diverge from
+    the saved story and from the platform artifact.  This endpoint makes the
+    child's final paragraph part of the canonical message history first.
+    """
+    story = await _get_story(story_id, db)
+    if story.status != "active":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="这个故事已经结束啦！")
+
+    clean_result = clean_submitted_text(req.ending_text)
+    if not clean_result.cleaned_text:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=EMPTY_AFTER_CLEAN_MESSAGE,
+        )
+
+    turn_number = story.turn_count + 1
+    await story_service.save_child_message(
+        db, story_id, turn_number, clean_result.cleaned_text,
+    )
+    await db.execute(
+        update(Story).where(Story.id == story_id).values(turn_count=turn_number)
+    )
+    await db.commit()
+    await story_service.complete_story(db, story_id)
     await db.refresh(story)
     return story
 
@@ -243,12 +279,12 @@ async def story_turn(
     # 年龄通道跟随角色所属年龄段（角色创建时已确定）
     char_age_group = (char.age_group if char and char.age_group else "8-12")
 
-    # 1. Save child message (skip for first turn — AI initiates)
+    # Save the child message only after a valid director response exists. This
+    # keeps a dropped/retried request from creating duplicate child turns.
     child_msg = None
-    if not is_first_turn and not req.force_ending:
-        child_msg = await story_service.save_child_message(
-            db, story_id, turn_number, safe_child_input
-        )
+    has_child_contribution = (
+        not is_first_turn and not req.force_ending and bool(safe_child_input.strip())
+    )
 
     # 2. Build message history
     messages = await story_service.get_story_messages(db, story_id)
@@ -282,6 +318,8 @@ async def story_turn(
         observation_data = None
         praise_text = ""
         ai_ending = False
+        praise_task = None
+        evaluation_task = None
 
         if clean_result and clean_result.removed_count > 0:
             yield f"event: input_redacted\ndata: {json.dumps({'text': safe_child_input}, ensure_ascii=False)}\n\n"
@@ -290,36 +328,19 @@ async def story_turn(
         try:
             llm = get_llm_service()
 
-            # Story Fairy and Talent Evaluator analyze the child's contribution
-            # together. Persist the observation before the director starts so
-            # evidence survives director/network failures and early page exits.
-            if child_msg and safe_child_input.strip():
+            # Story Fairy and Talent Evaluator must never block the story
+            # director. Run them beside generation; if they are still pending
+            # when the director finishes, fall back to the deterministic local
+            # observation instead of leaving the child staring at an empty
+            # bubble for up to two extra provider timeouts.
+            if has_child_contribution:
                 age = char_age_group
-                praise_result, evaluation_result = await asyncio.gather(
-                    llm.generate_praise(safe_child_input, evaluation_context, age),
-                    llm.evaluate_turn(safe_child_input, age, evaluation_context),
-                    return_exceptions=True,
+                praise_task = asyncio.create_task(
+                    llm.generate_praise(safe_child_input, evaluation_context, age)
                 )
-                praise_text = (
-                    sanitize_agent_output(praise_result)
-                    if isinstance(praise_result, str) else ""
+                evaluation_task = asyncio.create_task(
+                    llm.evaluate_turn(safe_child_input, age, evaluation_context)
                 )
-                if isinstance(evaluation_result, Exception):
-                    from app.services.llm_service import (
-                        compute_observation,
-                        upgrade_observation,
-                    )
-                    observation_data = upgrade_observation(
-                        compute_observation(safe_child_input, age)
-                    )
-                else:
-                    observation_data = evaluation_result
-                if observation_data:
-                    await observation_service.save_observation(
-                        db, story_id, child_msg.id, turn_number, observation_data,
-                    )
-                if praise_text:
-                    yield f"event: praise\ndata: {json.dumps({'text': praise_text, 'agent': '故事精灵'}, ensure_ascii=False)}\n\n"
 
             async for chunk in llm.generate_turn(
                 messages,
@@ -332,12 +353,16 @@ async def story_turn(
             ):
                 if chunk["type"] == "narrative_chunk":
                     safe_text = sanitize_agent_output(chunk["text"])
+                    if not safe_text:
+                        continue
                     narrative_parts.append(safe_text)
                     yield f"event: narrative_chunk\ndata: {json.dumps({'text': safe_text}, ensure_ascii=False)}\n\n"
 
                 elif chunk["type"] == "ending":
                     ai_ending = True
                     safe_text = sanitize_agent_output(chunk["text"])
+                    if not safe_text:
+                        continue
                     narrative_parts.append(safe_text)
                     yield f"event: ending\ndata: {json.dumps({'text': safe_text}, ensure_ascii=False)}\n\n"
 
@@ -367,6 +392,51 @@ async def story_turn(
 
                 elif chunk["type"] == "done":
                     narrative = "".join(narrative_parts)
+                    if not narrative.strip():
+                        raise LLMServiceError("AI 导演没有生成有效故事内容，请再试一次")
+
+                    if has_child_contribution:
+                        child_msg = await story_service.save_child_message(
+                            db, story_id, turn_number, safe_child_input,
+                        )
+
+                    if evaluation_task:
+                        if evaluation_task.done() and not evaluation_task.cancelled():
+                            try:
+                                observation_data = evaluation_task.result()
+                            except Exception:
+                                observation_data = None
+                        else:
+                            evaluation_task.cancel()
+                        if not observation_data:
+                            from app.services.llm_service import (
+                                compute_observation,
+                                upgrade_observation,
+                            )
+                            observation_data = upgrade_observation(
+                                compute_observation(safe_child_input, char_age_group)
+                            )
+                        try:
+                            await observation_service.save_observation(
+                                db, story_id, child_msg.id, turn_number, observation_data,
+                            )
+                        except Exception:
+                            # Observation is auxiliary. A scoring write must not
+                            # turn a valid story response into another failed or
+                            # duplicated child turn.
+                            await db.rollback()
+                            observation_data = None
+
+                    if praise_task:
+                        if praise_task.done() and not praise_task.cancelled():
+                            try:
+                                praise_text = sanitize_agent_output(praise_task.result())
+                            except Exception:
+                                praise_text = ""
+                        else:
+                            praise_task.cancel()
+                        if praise_text:
+                            yield f"event: praise\ndata: {json.dumps({'text': praise_text, 'agent': '故事精灵'}, ensure_ascii=False)}\n\n"
 
                     # 4. Save AI message
                     ai_msg = await story_service.save_ai_message(
@@ -400,13 +470,9 @@ async def story_turn(
                             .order_by(StoryMessage.turn_number, StoryMessage.id)
                         )
                         all_msgs = result.scalars().all()
-                        parts = []
-                        for msg in all_msgs:
-                            role_label = "【AI故事导演】" if msg.role == "ai" else "【小作家】"
-                            parts.append(f"{role_label}\n{msg.content}")
                         await db.execute(
                             update(Story).where(Story.id == story_id).values(
-                                full_text="\n\n".join(parts)
+                                full_text=story_service.build_complete_story_text(all_msgs)
                             )
                         )
 
@@ -421,6 +487,15 @@ async def story_turn(
             import traceback
             traceback.print_exc()
             yield f"event: error\ndata: {json.dumps({'message': f'服务器出了点小问题: {str(e)[:200]}'}, ensure_ascii=False)}\n\n"
+        finally:
+            pending_tasks = [
+                task for task in (praise_task, evaluation_task)
+                if task is not None and not task.done()
+            ]
+            for task in pending_tasks:
+                task.cancel()
+            if pending_tasks:
+                await asyncio.gather(*pending_tasks, return_exceptions=True)
 
     return StreamingResponse(
         event_generator(),
