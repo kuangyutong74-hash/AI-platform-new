@@ -150,20 +150,37 @@ export default function StoryPlayPage() {
   }
 
   async function emitStoryCompleted(completionMode: 'child' | 'director', ending = '') {
-    const activityId = `story-${id}`;
-    const endingText = ending.trim();
-    const [savedStory, savedMessages] = await Promise.all([
-      getStory(id),
-      getStoryMessages(id),
-    ]);
-    const savedTitle = compactText(savedStory.title || storyTitle) || '故事共创';
-    const contributionCount = savedMessages.filter((message) => message.role === 'child').length;
-    const sdk = (window as any).AIBoleModuleSDK?.create({moduleId:'story'});
-    if (!sdk) return;
-    const connection = await sdk.connectOptional();
-    if (connection.notConnected) return;
-    await sdk.emitEvidence(sdk.makeEvent('story.contribution-completed.v1',{contributionCount:Math.max(1,contributionCount),completionSeconds:storyDurationSeconds(),storyTitle:savedTitle.slice(0,120)},`${activityId}:completed`));
-    await sdk.completeSession({completionMode,endingLength:endingText.length});
+    try {
+      const activityId = `story-${id}`;
+      const endingText = ending.trim();
+      const [savedStory, savedMessages] = await Promise.all([
+        getStory(id),
+        getStoryMessages(id),
+      ]);
+      const savedTitle = compactText(savedStory.title || storyTitle) || '故事共创';
+      const contributionCount = savedMessages.filter((message) => message.role === 'child').length;
+      const sdk = (window as any).AIBoleModuleSDK?.create({moduleId:'story'});
+      if (!sdk) return;
+      const connection = await sdk.connectOptional().catch(() => null);
+      if (!connection || connection.notConnected || !sdk.connected()) return;
+      await sdk.emitEvidence(sdk.makeEvent('story.contribution-completed.v1',{contributionCount:Math.max(1,contributionCount),completionSeconds:storyDurationSeconds(),storyTitle:savedTitle.slice(0,120)},`${activityId}:completed`));
+      const snapshot = await sdk.captureSnapshot('.story-chat-area').catch(() => null);
+      if (snapshot?.id) {
+        await sdk.publishArtifact({
+          schemaVersion: '1.0',
+          artifactId: `story:${id}:${Date.now()}`,
+          type: 'story',
+          title: savedTitle,
+          summary: '完成故事共创表达',
+          previewResourceId: snapshot.id,
+          sourceResourceId: `story:${id}`,
+          createdAt: new Date().toISOString(),
+        }).catch(() => null);
+      }
+      await sdk.completeSession({completionMode,endingLength:endingText.length}).catch(() => null);
+    } catch {
+      // 平台留痕失败时静默降级，不影响孩子完成故事。
+    }
   }
 
   async function handleAddToMyWorks() {

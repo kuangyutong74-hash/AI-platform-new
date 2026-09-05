@@ -43,6 +43,25 @@ let selectedCareerId = '';
 // 不在职业选择页提前兑换一次性启动码。职业体验会跨多个完整页面跳转，
 // 提前兑换会清空 window.name 中的启动上下文，使最终完成页无法写回作品和进度。
 // 完成页统一连接 SDK、写入证据和作品并结束平台会话。
+// platformConnection：只读解析 window.name 中的启动上下文取学生身份，不调用
+// connectOptional()，因此不会消费/清空 window.name，也不与完成页的 SDK 兑换冲突。
+const platformConnection = new Promise(function(resolve){
+  let settled=false;
+  function finish(value){if(settled)return;settled=true;clearTimeout(timeout);resolve(value);}
+  const timeout=setTimeout(function(){finish({notConnected:true});},3000);
+  function connect(){
+    if(settled)return;
+    try{
+      const raw=window.name;
+      if(!raw){finish({notConnected:true});return;}
+      const parsed=JSON.parse(raw);
+      if(parsed&&parsed.namespace==='ai-bole.launch-context.v1'&&parsed.context&&parsed.context.student){
+        finish({connected:true,context:parsed.context});
+      }else{finish({notConnected:true});}
+    }catch(_){finish({notConnected:true});}
+  }
+  setTimeout(connect,0);
+});
 
 function selectCareer(id){
   const c=careersData.find(x=>x.id===id);if(!c)return;

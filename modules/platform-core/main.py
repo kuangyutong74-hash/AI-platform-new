@@ -493,6 +493,23 @@ def construct_dimension_map() -> dict[str, str]:
     return {item["key"]: item["reportDimension"] for item in registry["constructs"]}
 
 
+def evidence_report_dimensions(row: sqlite3.Row, dimensions: dict[str, str]) -> list[str]:
+    """Map standard constructs to report dimensions, including level-specific game evidence."""
+    try:
+        constructs = json.loads(row["constructs_json"])
+    except (TypeError, json.JSONDecodeError):
+        constructs = []
+    normalized = list(dict.fromkeys(dimensions[item] for item in constructs if item in dimensions))
+    if row["module_id"] == "deep_sea" and row["event_type"] == "deep-sea.spatial-task-completed.v1":
+        try:
+            payload = json.loads(row["payload_json"])
+        except (TypeError, json.JSONDecodeError):
+            payload = {}
+        if int(payload.get("level", 0)) == 1 and "naturalistic" not in normalized:
+            normalized.append("naturalistic")
+    return normalized
+
+
 TREASURE_DIMENSIONS_BY_MODULE = {
     "story": {"linguistic"},
     "deep_sea": {"logical", "spatial", "naturalistic"},
@@ -510,11 +527,7 @@ def build_talent_eligibility(rows: list[sqlite3.Row], completed_modules: set[str
     }
     dimensions = construct_dimension_map()
     for row in rows:
-        try:
-            constructs = json.loads(row["constructs_json"])
-        except (TypeError, json.JSONDecodeError):
-            constructs = []
-        normalized = {dimensions[item] for item in constructs if item in dimensions}
+        normalized = set(evidence_report_dimensions(row, dimensions))
         for key in normalized:
             item = aggregates[key]
             item["modules"].add(row["module_id"])
@@ -801,7 +814,11 @@ def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple
                 # 错误拼成一句话，因此报告输入只保留可引用的孩子表达。
                 payload.pop("topicKey", None)
                 context["artifacts"] = [{**item, "title": "聊天记录"} for item in context["artifacts"]]
-        events.append({"id": row["evidence_id"], "module": row["module_id"], "event_type": row["event_type"], "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": list(dict.fromkeys(dimension_by_construct.get(key) for key in constructs if dimension_by_construct.get(key))), "behavior_summary": row["behavior_summary"], "raw_evidence": payload, "context": context})
+        intelligence_candidates = list(dict.fromkeys(dimension_by_construct.get(key) for key in constructs if dimension_by_construct.get(key)))
+        # 深海基地第一关（生态配对）映射到自然观察智能
+        if row["event_type"] == "deep-sea.spatial-task-completed.v1" and int(payload.get("level", 0)) == 1 and "naturalistic" not in intelligence_candidates:
+            intelligence_candidates.append("naturalistic")
+        events.append({"id": row["evidence_id"], "module": row["module_id"], "event_type": row["event_type"], "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": intelligence_candidates, "behavior_summary": row["behavior_summary"], "raw_evidence": payload, "context": context})
     return events, [row["evidence_id"] for row in rows]
 
 
@@ -1059,8 +1076,8 @@ def list_evidence_records_v1(limit: int = 200, ai_bole_session: str | None = Coo
         "id": row["id"], "sourceEventId": row["source_event_id"], "sessionId": row["session_id"],
         "moduleId": row["module_id"], "moduleVersion": row["module_version"], "eventType": row["event_type"],
         "occurredAt": row["occurred_at"], "evidenceLevel": row["evidence_level"],
-        "constructs": (constructs := json.loads(row["constructs_json"])),
-        "reportDimensions": list(dict.fromkeys(dimensions[key] for key in constructs if key in dimensions)),
+        "constructs": json.loads(row["constructs_json"]),
+        "reportDimensions": evidence_report_dimensions(row, dimensions),
         "behaviorSummary": row["behavior_summary"], "payload": json.loads(row["payload_json"]),
         "sessionSummary": json.loads(row["summary_json"] or "{}"),
         "artifactTitle": row["artifact_title"], "artifactSummary": row["artifact_summary"],

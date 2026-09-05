@@ -385,6 +385,25 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(talents["naturalistic"]["strongCount"], 0)
         self.assertEqual(talents["naturalistic"]["completedModules"], [])
 
+    def test_deep_sea_level_one_populates_naturalistic_evidence(self):
+        response = Response()
+        main.register_account(main.AccountRegistrationIn(username="nature_child", display_name="小森", age=8, password="secret77"), response)
+        cookie = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="deep_sea"), cookie)
+        token = main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))["token"]
+        header = f"Bearer {token}"
+        level_one = main.EvidenceEnvelopeIn(
+            schemaVersion="1.0", eventId="nature-level-one", idempotencyKey="nature-level-one",
+            eventType="deep-sea.spatial-task-completed.v1", occurredAt=main.now_iso(),
+            payload={"level":1,"completionSeconds":25,"adjustmentCount":1,"successfulPairs":4,"totalPairs":4,"checkAttempts":2,"accuracyPercent":100},
+        )
+        main.create_evidence_events_v1(main.EvidenceBatchIn(events=[level_one]), header)
+        records = main.list_evidence_records_v1(500, cookie)["records"]
+        talents = {item["key"]: item for item in main.list_talents_v1(cookie)["talents"]}
+        self.assertIn("naturalistic", records[0]["reportDimensions"])
+        self.assertEqual(talents["naturalistic"]["referenceCount"], 1)
+        self.assertEqual(talents["naturalistic"]["recentEvidenceRecordId"], records[0]["id"])
+
 
 if __name__ == "__main__":
     unittest.main()
