@@ -165,7 +165,7 @@ DEEPSEEK_MODEL=deepseek-chat
 | 4173 | Portal | `http://localhost:4173` |
 | 8020 | Core API | `http://localhost:8020/api/health` |
 | 8030 | Report Agent | `http://localhost:8030/health` |
-| 3000 | 聊天观察 | `http://localhost:3000/chat.html?from=ai-bole` |
+| 3000 | 聊天观察 | `http://localhost:3000/home.html?from=ai-bole` |
 | 8010 / 5174 | 故事后端 / 前端 | `/api/health` / `/story-create?from=ai-bole` |
 | 8005 / 3001 | 深海后端 / 前端 | `/api/health` / `/?from=ai-bole` |
 | 8000 | 职业模拟器 | `http://127.0.0.1:8000/?from=ai-bole` |

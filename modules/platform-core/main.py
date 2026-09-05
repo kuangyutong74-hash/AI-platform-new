@@ -907,7 +907,9 @@ def change_assessment_session(session_id: str, payload: SessionStatusIn, authori
         raise HTTPException(403, "模块授权不属于该探索会话")
     required_scope = "session:complete" if payload.status == "completed" else "session:interrupt"
     if required_scope not in json.loads(auth["scopes_json"]): raise HTTPException(403, "模块授权不含会话状态权限")
-    allowed = {"active": {"completed", "interrupted", "abandoned"}, "interrupted": {"active", "abandoned"}}
+    # 中断（如页面刷新触发的 pagehide 中断）后允许补记完成，
+    # 与证据写入规则一致：interrupted 会话仍可写入证据并落档。
+    allowed = {"active": {"completed", "interrupted", "abandoned"}, "interrupted": {"active", "completed", "abandoned"}}
     timestamp = now_iso()
     with connect() as db:
         session = db.execute("SELECT * FROM assessment_sessions WHERE id=?", (session_id,)).fetchone()

@@ -1,0 +1,1262 @@
+[
+  {
+    "id": "conv-1788313877971",
+    "userId": "guest",
+    "sessionId": "sess-1788313819364-dmhxm6",
+    "startTime": "2026-09-02T01:51:17.971Z",
+    "turnCount": 4,
+    "weather": "rainbow",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "感觉你今天状态特别好呀，快说说是什么好事！"
+      },
+      {
+        "role": "user",
+        "content": "今天 吃 了 很好吃 的 东西"
+      },
+      {
+        "role": "assistant",
+        "content": "哇，能吃到好吃的东西一整天心情都会不一样吧。你吃的是什么呀？"
+      },
+      {
+        "role": "user",
+        "content": "汉堡包 还有 披萨"
+      },
+      {
+        "role": "assistant",
+        "content": "汉堡和披萨一起吃，听着就好满足。"
+      },
+      {
+        "role": "user",
+        "content": "你觉得哪种食物最配汉堡披萨？"
+      },
+      {
+        "role": "assistant",
+        "content": "我自己吃汉堡披萨的时候，会喜欢配一杯冰可乐，气泡冲上来那感觉特别爽。你吃的时候也有爱配的东西吗？"
+      },
+      {
+        "role": "user",
+        "content": "你最喜欢的汉堡配料是什么呀？"
+      },
+      {
+        "role": "assistant",
+        "content": "我喜欢夹很多脆脆的生菜和酸黄瓜，咬起来特别爽口。"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 4,
+      "stage": "interest",
+      "question_budget": 2,
+      "active_topic": "今天吃的美食",
+      "engagement": "medium",
+      "observation_focus": "none",
+      "known_facts": [],
+      "previous_assistant_asked": false,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [
+        "interest_depth_breadth",
+        "interest_depth_breadth"
+      ],
+      "used_focuses": [
+        "interest_depth_breadth"
+      ]
+    },
+    "analysis": {
+      "status": "failed"
+    }
+  },
+  {
+    "id": "conv-1788317787848",
+    "userId": "guest",
+    "sessionId": "sess-1788317778972-rr4pfo",
+    "startTime": "2026-09-02T02:56:27.848Z",
+    "turnCount": 3,
+    "weather": "sunny",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "心情这么好，是发生什么好事了吗？"
+      },
+      {
+        "role": "user",
+        "content": "我家的猫会抓蝴蝶！"
+      },
+      {
+        "role": "assistant",
+        "content": "你家猫这么厉害！它是怎么抓到蝴蝶的？"
+      },
+      {
+        "role": "user",
+        "content": "你家的猫是什么颜色的呀？"
+      },
+      {
+        "role": "assistant",
+        "content": "我家的猫是黑白花纹的，像穿了件小礼服。不过它动作可没你家猫那么快，蝴蝶飞起来它就只能干瞪眼。"
+      },
+      {
+        "role": "user",
+        "content": "我 家 的 猫 是一只 黄色 的"
+      },
+      {
+        "role": "assistant",
+        "content": "黄色的小猫，那它抓蝴蝶的时候是什么样子，像个毛绒绒的小球在蹦来蹦去吗？"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 3,
+      "stage": "deepening",
+      "question_budget": 0,
+      "active_topic": "猫抓蝴蝶",
+      "engagement": "medium",
+      "observation_focus": "interest_depth_breadth",
+      "known_facts": [],
+      "previous_assistant_asked": true,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [
+        "interest_depth_breadth",
+        "interest_depth_breadth"
+      ],
+      "used_focuses": [
+        "interest_depth_breadth"
+      ]
+    },
+    "analysis": {
+      "status": "failed"
+    }
+  },
+  {
+    "id": "conv-1788317902173",
+    "userId": "guest",
+    "sessionId": "sess-1788317884078-xhkqqa",
+    "startTime": "2026-09-02T02:58:22.173Z",
+    "turnCount": 3,
+    "weather": "breeze",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "轻松惬意的一天，有什么想和小新说说的？"
+      },
+      {
+        "role": "user",
+        "content": "的 我 今天 什么 事 都 不用 干"
+      },
+      {
+        "role": "assistant",
+        "content": "哦，那今天挺清闲的呀。不用上课也不用写作业，这种日子可不多。"
+      },
+      {
+        "role": "user",
+        "content": "是 这样"
+      },
+      {
+        "role": "assistant",
+        "content": "那这种日子你一般会怎么打发时间呢，是待在家里还是想出去走走。"
+      },
+      {
+        "role": "user",
+        "content": "出去走走"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 2,
+      "stage": "interest",
+      "question_budget": 0,
+      "active_topic": "今天无事可做",
+      "engagement": "low",
+      "observation_focus": "none",
+      "known_facts": [],
+      "previous_assistant_asked": false,
+      "consecutive_short_replies": 1,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [],
+      "used_focuses": []
+    },
+    "analysis": {
+      "status": "failed"
+    }
+  },
+  {
+    "id": "conv-1788438458038",
+    "userId": "guest",
+    "sessionId": "sess-1788438441203-0uemiq",
+    "startTime": "2026-09-03T12:27:38.038Z",
+    "turnCount": 1,
+    "weather": "sunny",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "心情这么好，是发生什么好事了吗？"
+      },
+      {
+        "role": "user",
+        "content": "我 今天 中午 吃 迟到 了 非常 好吃 的 东西"
+      },
+      {
+        "role": "assistant",
+        "content": "谢谢你跟我聊这些。"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 1,
+      "stage": "opening",
+      "question_budget": 2,
+      "active_topic": "午餐美食",
+      "engagement": "medium",
+      "observation_focus": "none",
+      "known_facts": [],
+      "previous_assistant_asked": false,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [],
+      "used_focuses": []
+    },
+    "analysis": {
+      "status": "failed"
+    }
+  },
+  {
+    "id": "conv-1788438466526",
+    "userId": "guest",
+    "sessionId": "sess-1788438441203-0uemiq",
+    "startTime": "2026-09-03T12:27:46.526Z",
+    "turnCount": 1,
+    "weather": "晴天",
+    "completed": false,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "心情这么好，是发生什么好事了吗？"
+      },
+      {
+        "role": "user",
+        "content": "我 今天 中午 吃 迟到 了 非常 好吃 的 东西"
+      },
+      {
+        "role": "assistant",
+        "content": "谢谢你跟我聊这些。"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 1,
+      "stage": "opening",
+      "question_budget": 2,
+      "active_topic": "午餐美食",
+      "engagement": "medium",
+      "observation_focus": "none",
+      "known_facts": [],
+      "previous_assistant_asked": false,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [],
+      "used_focuses": []
+    }
+  },
+  {
+    "id": "conv-1788438473426",
+    "userId": "guest",
+    "sessionId": "sess-1788438471150-6os5sp",
+    "startTime": "2026-09-03T12:27:53.426Z",
+    "turnCount": 1,
+    "weather": "sunny",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "心情这么好，是发生什么好事了吗？"
+      },
+      {
+        "role": "user",
+        "content": "我 今天 中午 吃 迟到 了 非常 好吃 的 东西"
+      },
+      {
+        "role": "assistant",
+        "content": "谢谢你跟我聊这些。"
+      }
+    ],
+    "analysis": {
+      "status": "failed"
+    }
+  },
+  {
+    "id": "conv-1788438518669",
+    "userId": "guest",
+    "sessionId": "sess-1788438480066-6hwpzu",
+    "startTime": "2026-09-03T12:28:38.669Z",
+    "turnCount": 6,
+    "weather": "breeze",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "状态挺放松的呀，最近在做什么呢？"
+      },
+      {
+        "role": "user",
+        "content": "最近 是 暑假 我 完成 暑假 作业 之后 就 没有 什么 压力 了 每天 可以 干我自己 喜欢 的 事情"
+      },
+      {
+        "role": "assistant",
+        "content": "暑假没压力确实爽，能完全按自己的节奏来。你最近在干点啥自己喜欢的事？"
+      },
+      {
+        "role": "user",
+        "content": "看 课外 书 和 游泳"
+      },
+      {
+        "role": "assistant",
+        "content": "看书和游泳，一动一静挺配的。"
+      },
+      {
+        "role": "user",
+        "content": "是 的 是 的 我 还喜欢 看 动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "看动画片也是暑假一大乐事。你最近看的动画片里，有特别喜欢的角色没？"
+      },
+      {
+        "role": "user",
+        "content": "我 很喜欢 Tom&Jerry"
+      },
+      {
+        "role": "assistant",
+        "content": "Tom和Jerry那俩家伙闹腾了这么多年，每次看还是觉得好笑。"
+      },
+      {
+        "role": "user",
+        "content": "我 非常 喜欢 这部搞笑的动画片看着让人很舒服很愉悦"
+      },
+      {
+        "role": "assistant",
+        "content": "那真的很棒，能找到一部让自己看着就舒服开心的动画片，暑假里心情会特别好。你最喜欢里面的哪个角色呢？"
+      },
+      {
+        "role": "user",
+        "content": "当然 是 聪明 又 机灵 的 杰瑞 了"
+      },
+      {
+        "role": "assistant",
+        "content": "杰瑞确实机灵，每次看它怎么捉弄汤姆都特别有意思。"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 6,
+      "stage": "deepening",
+      "question_budget": 2,
+      "active_topic": "暑假生活",
+      "engagement": "medium",
+      "observation_focus": "none",
+      "known_facts": [],
+      "previous_assistant_asked": false,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [
+        "interest_depth_breadth",
+        "interest_depth_breadth"
+      ],
+      "used_focuses": [
+        "interest_depth_breadth"
+      ]
+    },
+    "analysis": {
+      "status": "failed"
+    }
+  },
+  {
+    "id": "conv-1788438671404",
+    "userId": "guest",
+    "sessionId": "sess-1788438480066-6hwpzu",
+    "startTime": "2026-09-03T12:31:11.404Z",
+    "turnCount": 6,
+    "weather": "微风",
+    "completed": false,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "状态挺放松的呀，最近在做什么呢？"
+      },
+      {
+        "role": "user",
+        "content": "最近 是 暑假 我 完成 暑假 作业 之后 就 没有 什么 压力 了 每天 可以 干我自己 喜欢 的 事情"
+      },
+      {
+        "role": "assistant",
+        "content": "暑假没压力确实爽，能完全按自己的节奏来。你最近在干点啥自己喜欢的事？"
+      },
+      {
+        "role": "user",
+        "content": "看 课外 书 和 游泳"
+      },
+      {
+        "role": "assistant",
+        "content": "看书和游泳，一动一静挺配的。"
+      },
+      {
+        "role": "user",
+        "content": "是 的 是 的 我 还喜欢 看 动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "看动画片也是暑假一大乐事。你最近看的动画片里，有特别喜欢的角色没？"
+      },
+      {
+        "role": "user",
+        "content": "我 很喜欢 Tom&Jerry"
+      },
+      {
+        "role": "assistant",
+        "content": "Tom和Jerry那俩家伙闹腾了这么多年，每次看还是觉得好笑。"
+      },
+      {
+        "role": "user",
+        "content": "我 非常 喜欢 这部搞笑的动画片看着让人很舒服很愉悦"
+      },
+      {
+        "role": "assistant",
+        "content": "那真的很棒，能找到一部让自己看着就舒服开心的动画片，暑假里心情会特别好。你最喜欢里面的哪个角色呢？"
+      },
+      {
+        "role": "user",
+        "content": "当然 是 聪明 又 机灵 的 杰瑞 了"
+      },
+      {
+        "role": "assistant",
+        "content": "杰瑞确实机灵，每次看它怎么捉弄汤姆都特别有意思。"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 6,
+      "stage": "deepening",
+      "question_budget": 2,
+      "active_topic": "暑假生活",
+      "engagement": "medium",
+      "observation_focus": "none",
+      "known_facts": [],
+      "previous_assistant_asked": false,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [
+        "interest_depth_breadth",
+        "interest_depth_breadth"
+      ],
+      "used_focuses": [
+        "interest_depth_breadth"
+      ]
+    }
+  },
+  {
+    "id": "conv-1788438673118",
+    "userId": "guest",
+    "sessionId": "sess-1788438671457-2h1od8",
+    "startTime": "2026-09-03T12:31:13.118Z",
+    "turnCount": 7,
+    "weather": "breeze",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "状态挺放松的呀，最近在做什么呢？"
+      },
+      {
+        "role": "user",
+        "content": "最近 是 暑假 我 完成 暑假 作业 之后 就 没有 什么 压力 了 每天 可以 干我自己 喜欢 的 事情"
+      },
+      {
+        "role": "assistant",
+        "content": "暑假没压力确实爽，能完全按自己的节奏来。你最近在干点啥自己喜欢的事？"
+      },
+      {
+        "role": "user",
+        "content": "看 课外 书 和 游泳"
+      },
+      {
+        "role": "assistant",
+        "content": "看书和游泳，一动一静挺配的。"
+      },
+      {
+        "role": "user",
+        "content": "是 的 是 的 我 还喜欢 看 动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "看动画片也是暑假一大乐事。你最近看的动画片里，有特别喜欢的角色没？"
+      },
+      {
+        "role": "user",
+        "content": "我 很喜欢 Tom&Jerry"
+      },
+      {
+        "role": "assistant",
+        "content": "Tom和Jerry那俩家伙闹腾了这么多年，每次看还是觉得好笑。"
+      },
+      {
+        "role": "user",
+        "content": "我 非常 喜欢 这部搞笑的动画片看着让人很舒服很愉悦"
+      },
+      {
+        "role": "assistant",
+        "content": "那真的很棒，能找到一部让自己看着就舒服开心的动画片，暑假里心情会特别好。你最喜欢里面的哪个角色呢？"
+      },
+      {
+        "role": "user",
+        "content": "当然 是 聪明 又 机灵 的 杰瑞 了"
+      },
+      {
+        "role": "assistant",
+        "content": "杰瑞确实机灵，每次看它怎么捉弄汤姆都特别有意思。"
+      },
+      {
+        "role": "user",
+        "content": "你有模仿过杰瑞的搞笑动作吗？"
+      },
+      {
+        "role": "assistant",
+        "content": "有啊，杰瑞那个蹑手蹑脚走路的样子我试过，感觉自己像偷吃奶酪的小偷，你没试过学他那种偷偷摸摸的感觉吗？"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 1,
+      "stage": "opening",
+      "question_budget": 0,
+      "active_topic": "模仿杰瑞动作",
+      "engagement": "medium",
+      "observation_focus": "none",
+      "known_facts": [],
+      "previous_assistant_asked": true,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [],
+      "used_focuses": []
+    },
+    "analysis": {
+      "status": "failed"
+    }
+  },
+  {
+    "id": "conv-1788438696242",
+    "userId": "guest",
+    "sessionId": "sess-1788438671457-2h1od8",
+    "startTime": "2026-09-03T12:31:36.242Z",
+    "turnCount": 7,
+    "weather": "breeze",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "状态挺放松的呀，最近在做什么呢？"
+      },
+      {
+        "role": "user",
+        "content": "最近 是 暑假 我 完成 暑假 作业 之后 就 没有 什么 压力 了 每天 可以 干我自己 喜欢 的 事情"
+      },
+      {
+        "role": "assistant",
+        "content": "暑假没压力确实爽，能完全按自己的节奏来。你最近在干点啥自己喜欢的事？"
+      },
+      {
+        "role": "user",
+        "content": "看 课外 书 和 游泳"
+      },
+      {
+        "role": "assistant",
+        "content": "看书和游泳，一动一静挺配的。"
+      },
+      {
+        "role": "user",
+        "content": "是 的 是 的 我 还喜欢 看 动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "看动画片也是暑假一大乐事。你最近看的动画片里，有特别喜欢的角色没？"
+      },
+      {
+        "role": "user",
+        "content": "我 很喜欢 Tom&Jerry"
+      },
+      {
+        "role": "assistant",
+        "content": "Tom和Jerry那俩家伙闹腾了这么多年，每次看还是觉得好笑。"
+      },
+      {
+        "role": "user",
+        "content": "我 非常 喜欢 这部搞笑的动画片看着让人很舒服很愉悦"
+      },
+      {
+        "role": "assistant",
+        "content": "那真的很棒，能找到一部让自己看着就舒服开心的动画片，暑假里心情会特别好。你最喜欢里面的哪个角色呢？"
+      },
+      {
+        "role": "user",
+        "content": "当然 是 聪明 又 机灵 的 杰瑞 了"
+      },
+      {
+        "role": "assistant",
+        "content": "杰瑞确实机灵，每次看它怎么捉弄汤姆都特别有意思。"
+      },
+      {
+        "role": "user",
+        "content": "你有模仿过杰瑞的搞笑动作吗？"
+      },
+      {
+        "role": "assistant",
+        "content": "有啊，杰瑞那个蹑手蹑脚走路的样子我试过，感觉自己像偷吃奶酪的小偷，你没试过学他那种偷偷摸摸的感觉吗？"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 1,
+      "stage": "opening",
+      "question_budget": 0,
+      "active_topic": "模仿杰瑞动作",
+      "engagement": "medium",
+      "observation_focus": "none",
+      "known_facts": [],
+      "previous_assistant_asked": true,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [],
+      "used_focuses": []
+    },
+    "analysis": {
+      "status": "failed"
+    }
+  },
+  {
+    "id": "conv-1788438715014",
+    "userId": "guest",
+    "sessionId": "sess-1788438671457-2h1od8",
+    "startTime": "2026-09-03T12:31:55.014Z",
+    "turnCount": 7,
+    "weather": "微风",
+    "completed": false,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "状态挺放松的呀，最近在做什么呢？"
+      },
+      {
+        "role": "user",
+        "content": "最近 是 暑假 我 完成 暑假 作业 之后 就 没有 什么 压力 了 每天 可以 干我自己 喜欢 的 事情"
+      },
+      {
+        "role": "assistant",
+        "content": "暑假没压力确实爽，能完全按自己的节奏来。你最近在干点啥自己喜欢的事？"
+      },
+      {
+        "role": "user",
+        "content": "看 课外 书 和 游泳"
+      },
+      {
+        "role": "assistant",
+        "content": "看书和游泳，一动一静挺配的。"
+      },
+      {
+        "role": "user",
+        "content": "是 的 是 的 我 还喜欢 看 动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "看动画片也是暑假一大乐事。你最近看的动画片里，有特别喜欢的角色没？"
+      },
+      {
+        "role": "user",
+        "content": "我 很喜欢 Tom&Jerry"
+      },
+      {
+        "role": "assistant",
+        "content": "Tom和Jerry那俩家伙闹腾了这么多年，每次看还是觉得好笑。"
+      },
+      {
+        "role": "user",
+        "content": "我 非常 喜欢 这部搞笑的动画片看着让人很舒服很愉悦"
+      },
+      {
+        "role": "assistant",
+        "content": "那真的很棒，能找到一部让自己看着就舒服开心的动画片，暑假里心情会特别好。你最喜欢里面的哪个角色呢？"
+      },
+      {
+        "role": "user",
+        "content": "当然 是 聪明 又 机灵 的 杰瑞 了"
+      },
+      {
+        "role": "assistant",
+        "content": "杰瑞确实机灵，每次看它怎么捉弄汤姆都特别有意思。"
+      },
+      {
+        "role": "user",
+        "content": "你有模仿过杰瑞的搞笑动作吗？"
+      },
+      {
+        "role": "assistant",
+        "content": "有啊，杰瑞那个蹑手蹑脚走路的样子我试过，感觉自己像偷吃奶酪的小偷，你没试过学他那种偷偷摸摸的感觉吗？"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 1,
+      "stage": "opening",
+      "question_budget": 0,
+      "active_topic": "模仿杰瑞动作",
+      "engagement": "medium",
+      "observation_focus": "none",
+      "known_facts": [],
+      "previous_assistant_asked": true,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [],
+      "used_focuses": []
+    }
+  },
+  {
+    "id": "conv-1788438758835",
+    "userId": "guest",
+    "sessionId": "sess-1788438740492-4gb2ss",
+    "startTime": "2026-09-03T12:32:38.835Z",
+    "turnCount": 3,
+    "weather": "breeze",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "轻松惬意的一天，有什么想和小新说说的？"
+      },
+      {
+        "role": "user",
+        "content": "最近 是 暑假 我 完成 暑假 作业 之后 就 可以 干 自己 喜欢 的 事情了"
+      },
+      {
+        "role": "assistant",
+        "content": "哇，先把作业搞定再玩，这安排挺爽的。那你暑假里最想干的事情是啥？"
+      },
+      {
+        "role": "user",
+        "content": "看 课外 书 游泳 和 看 动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "原来你还挺喜欢看书的，平时可以多跟我分享你喜欢的课外书。"
+      },
+      {
+        "role": "user",
+        "content": "是 的 是 的 我 很喜欢 看 查理 九世"
+      },
+      {
+        "role": "assistant",
+        "content": "《查理九世》啊，那套书确实挺上头的，我身边好多小伙伴都迷它。你最喜欢里面哪一集的故事？"
+      }
+    ],
+    "analysis": {
+      "status": "failed"
+    },
+    "conversationState": {
+      "turn_index": 3,
+      "stage": "deepening",
+      "question_budget": 0,
+      "active_topic": "暑假安排",
+      "engagement": "medium",
+      "observation_focus": "interest_depth_breadth",
+      "known_facts": [],
+      "previous_assistant_asked": true,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [
+        "interest_depth_breadth",
+        "interest_depth_breadth"
+      ],
+      "used_focuses": [
+        "interest_depth_breadth"
+      ]
+    }
+  },
+  {
+    "id": "conv-1788438963500",
+    "userId": "guest",
+    "sessionId": "sess-1788438740492-4gb2ss",
+    "startTime": "2026-09-03T12:36:03.500Z",
+    "turnCount": 3,
+    "weather": "微风",
+    "completed": false,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "轻松惬意的一天，有什么想和小新说说的？"
+      },
+      {
+        "role": "user",
+        "content": "最近 是 暑假 我 完成 暑假 作业 之后 就 可以 干 自己 喜欢 的 事情了"
+      },
+      {
+        "role": "assistant",
+        "content": "哇，先把作业搞定再玩，这安排挺爽的。那你暑假里最想干的事情是啥？"
+      },
+      {
+        "role": "user",
+        "content": "看 课外 书 游泳 和 看 动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "原来你还挺喜欢看书的，平时可以多跟我分享你喜欢的课外书。"
+      },
+      {
+        "role": "user",
+        "content": "是 的 是 的 我 很喜欢 看 查理 九世"
+      },
+      {
+        "role": "assistant",
+        "content": "《查理九世》啊，那套书确实挺上头的，我身边好多小伙伴都迷它。你最喜欢里面哪一集的故事？"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 3,
+      "stage": "deepening",
+      "question_budget": 0,
+      "active_topic": "暑假安排",
+      "engagement": "medium",
+      "observation_focus": "interest_depth_breadth",
+      "known_facts": [],
+      "previous_assistant_asked": true,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [
+        "interest_depth_breadth",
+        "interest_depth_breadth"
+      ],
+      "used_focuses": [
+        "interest_depth_breadth"
+      ]
+    }
+  },
+  {
+    "id": "conv-1788446089622",
+    "userId": "guest",
+    "sessionId": "sess-1788446084241-ol6cp7",
+    "startTime": "2026-09-03T14:34:49.622Z",
+    "turnCount": 4,
+    "weather": "breeze",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "状态挺放松的呀，最近在做什么呢？"
+      },
+      {
+        "role": "user",
+        "content": "今天最离谱的作业"
+      },
+      {
+        "role": "assistant",
+        "content": "最离谱的作业，我都想听听是有多离谱了。"
+      },
+      {
+        "role": "user",
+        "content": "我最近在折纸飞机，可好玩啦！"
+      },
+      {
+        "role": "assistant",
+        "content": "折纸飞机确实好玩！看它飞出去的时候特别有成就感吧？你都怎么让它飞得又高又远的？"
+      },
+      {
+        "role": "user",
+        "content": "你当时看到作业啥表情？"
+      },
+      {
+        "role": "assistant",
+        "content": "我这会儿心思全在纸飞机上呢，光琢磨它咋能飞得又高又稳了。你要是折出特别厉害的飞机，得好好给我讲讲是咋折出来的！"
+      },
+      {
+        "role": "user",
+        "content": "纸飞机还能加什么小机关呢？"
+      },
+      {
+        "role": "assistant",
+        "content": "你问的这个问题真有意思！纸飞机加上小机关，说不定飞起来会有惊喜呢。你之前有没有试过给自己的飞机加点什么特别的？"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 4,
+      "stage": "deepening",
+      "question_budget": 0,
+      "active_topic": "折纸飞机",
+      "engagement": "medium",
+      "observation_focus": "none",
+      "known_facts": [],
+      "previous_assistant_asked": true,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [
+        "interest_depth_breadth",
+        "interest_depth_breadth"
+      ],
+      "used_focuses": [
+        "interest_depth_breadth"
+      ]
+    },
+    "analysis": {
+      "status": "failed"
+    }
+  },
+  {
+    "id": "conv-1788446169100",
+    "userId": "guest",
+    "sessionId": "sess-1788446143227-56ttt6",
+    "startTime": "2026-09-03T14:36:09.100Z",
+    "turnCount": 4,
+    "weather": "breeze",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "轻松惬意的一天，有什么想和小新说说的？"
+      },
+      {
+        "role": "user",
+        "content": "最近 暑假 作业 写完 之后 我 就 没有 什么 压力 了 可以干 我自己 喜欢 的 事情"
+      },
+      {
+        "role": "assistant",
+        "content": "哇，写完暑假作业确实一下子轻松好多！那你最喜欢干的事情是什么啊？"
+      },
+      {
+        "role": "user",
+        "content": "吃 好吃 的，游泳，看课外书和动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "游泳和看课外书都挺有意思的，夏天游泳的时候注意安全就好。"
+      },
+      {
+        "role": "user",
+        "content": "你喜欢看什么动画片呀？"
+      },
+      {
+        "role": "assistant",
+        "content": "我最近在看一些搞笑的冒险动画，不过想听听你的！你一般都看什么类型的？"
+      },
+      {
+        "role": "user",
+        "content": "我 也 喜欢 看 那种 比较 搞笑的，比如猫和老鼠"
+      },
+      {
+        "role": "assistant",
+        "content": "猫和老鼠确实经典，汤姆和杰瑞每次互相捉弄都特别好笑，有时候看到他们折腾来折腾去，又闹又好笑，感觉什么样的烦心事都能忘掉。"
+      }
+    ],
+    "analysis": {
+      "status": "failed"
+    },
+    "conversationState": {
+      "turn_index": 4,
+      "stage": "deepening",
+      "question_budget": 2,
+      "active_topic": "暑假作业完成",
+      "engagement": "medium",
+      "observation_focus": "none",
+      "known_facts": [],
+      "previous_assistant_asked": false,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [
+        "interest_depth_breadth",
+        "interest_depth_breadth"
+      ],
+      "used_focuses": [
+        "interest_depth_breadth"
+      ]
+    }
+  },
+  {
+    "id": "conv-1788446286744",
+    "userId": "guest",
+    "sessionId": "sess-1788446143227-56ttt6",
+    "startTime": "2026-09-03T14:38:06.744Z",
+    "turnCount": 4,
+    "weather": "微风",
+    "completed": false,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "轻松惬意的一天，有什么想和小新说说的？"
+      },
+      {
+        "role": "user",
+        "content": "最近 暑假 作业 写完 之后 我 就 没有 什么 压力 了 可以干 我自己 喜欢 的 事情"
+      },
+      {
+        "role": "assistant",
+        "content": "哇，写完暑假作业确实一下子轻松好多！那你最喜欢干的事情是什么啊？"
+      },
+      {
+        "role": "user",
+        "content": "吃 好吃 的，游泳，看课外书和动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "游泳和看课外书都挺有意思的，夏天游泳的时候注意安全就好。"
+      },
+      {
+        "role": "user",
+        "content": "你喜欢看什么动画片呀？"
+      },
+      {
+        "role": "assistant",
+        "content": "我最近在看一些搞笑的冒险动画，不过想听听你的！你一般都看什么类型的？"
+      },
+      {
+        "role": "user",
+        "content": "我 也 喜欢 看 那种 比较 搞笑的，比如猫和老鼠"
+      },
+      {
+        "role": "assistant",
+        "content": "猫和老鼠确实经典，汤姆和杰瑞每次互相捉弄都特别好笑，有时候看到他们折腾来折腾去，又闹又好笑，感觉什么样的烦心事都能忘掉。"
+      }
+    ],
+    "conversationState": {
+      "turn_index": 4,
+      "stage": "deepening",
+      "question_budget": 2,
+      "active_topic": "暑假作业完成",
+      "engagement": "medium",
+      "observation_focus": "none",
+      "known_facts": [],
+      "previous_assistant_asked": false,
+      "consecutive_short_replies": 0,
+      "open_task_completed": false,
+      "open_task_used": false,
+      "student_refused_topic": false,
+      "focus_history": [
+        "interest_depth_breadth",
+        "interest_depth_breadth"
+      ],
+      "used_focuses": [
+        "interest_depth_breadth"
+      ]
+    }
+  },
+  {
+    "id": "conv-1788446291104",
+    "userId": "guest",
+    "sessionId": "sess-1788446290001-m21x5m",
+    "startTime": "2026-09-03T14:38:11.104Z",
+    "turnCount": 4,
+    "weather": "breeze",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "轻松惬意的一天，有什么想和小新说说的？"
+      },
+      {
+        "role": "user",
+        "content": "最近 暑假 作业 写完 之后 我 就 没有 什么 压力 了 可以干 我自己 喜欢 的 事情"
+      },
+      {
+        "role": "assistant",
+        "content": "哇，写完暑假作业确实一下子轻松好多！那你最喜欢干的事情是什么啊？"
+      },
+      {
+        "role": "user",
+        "content": "吃 好吃 的，游泳，看课外书和动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "游泳和看课外书都挺有意思的，夏天游泳的时候注意安全就好。"
+      },
+      {
+        "role": "user",
+        "content": "你喜欢看什么动画片呀？"
+      },
+      {
+        "role": "assistant",
+        "content": "我最近在看一些搞笑的冒险动画，不过想听听你的！你一般都看什么类型的？"
+      },
+      {
+        "role": "user",
+        "content": "我 也 喜欢 看 那种 比较 搞笑的，比如猫和老鼠"
+      },
+      {
+        "role": "assistant",
+        "content": "猫和老鼠确实经典，汤姆和杰瑞每次互相捉弄都特别好笑，有时候看到他们折腾来折腾去，又闹又好笑，感觉什么样的烦心事都能忘掉。"
+      }
+    ],
+    "analysis": {
+      "status": "failed"
+    }
+  },
+  {
+    "id": "conv-1788446291135",
+    "userId": "guest",
+    "sessionId": "sess-1788446290001-m21x5m",
+    "startTime": "2026-09-03T14:38:11.135Z",
+    "turnCount": 4,
+    "weather": "微风",
+    "completed": false,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "轻松惬意的一天，有什么想和小新说说的？"
+      },
+      {
+        "role": "user",
+        "content": "最近 暑假 作业 写完 之后 我 就 没有 什么 压力 了 可以干 我自己 喜欢 的 事情"
+      },
+      {
+        "role": "assistant",
+        "content": "哇，写完暑假作业确实一下子轻松好多！那你最喜欢干的事情是什么啊？"
+      },
+      {
+        "role": "user",
+        "content": "吃 好吃 的，游泳，看课外书和动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "游泳和看课外书都挺有意思的，夏天游泳的时候注意安全就好。"
+      },
+      {
+        "role": "user",
+        "content": "你喜欢看什么动画片呀？"
+      },
+      {
+        "role": "assistant",
+        "content": "我最近在看一些搞笑的冒险动画，不过想听听你的！你一般都看什么类型的？"
+      },
+      {
+        "role": "user",
+        "content": "我 也 喜欢 看 那种 比较 搞笑的，比如猫和老鼠"
+      },
+      {
+        "role": "assistant",
+        "content": "猫和老鼠确实经典，汤姆和杰瑞每次互相捉弄都特别好笑，有时候看到他们折腾来折腾去，又闹又好笑，感觉什么样的烦心事都能忘掉。"
+      }
+    ]
+  },
+  {
+    "id": "conv-1788446292337",
+    "userId": "guest",
+    "sessionId": "sess-1788446291196-ygahem",
+    "startTime": "2026-09-03T14:38:12.337Z",
+    "turnCount": 4,
+    "weather": "breeze",
+    "completed": true,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "轻松惬意的一天，有什么想和小新说说的？"
+      },
+      {
+        "role": "user",
+        "content": "最近 暑假 作业 写完 之后 我 就 没有 什么 压力 了 可以干 我自己 喜欢 的 事情"
+      },
+      {
+        "role": "assistant",
+        "content": "哇，写完暑假作业确实一下子轻松好多！那你最喜欢干的事情是什么啊？"
+      },
+      {
+        "role": "user",
+        "content": "吃 好吃 的，游泳，看课外书和动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "游泳和看课外书都挺有意思的，夏天游泳的时候注意安全就好。"
+      },
+      {
+        "role": "user",
+        "content": "你喜欢看什么动画片呀？"
+      },
+      {
+        "role": "assistant",
+        "content": "我最近在看一些搞笑的冒险动画，不过想听听你的！你一般都看什么类型的？"
+      },
+      {
+        "role": "user",
+        "content": "我 也 喜欢 看 那种 比较 搞笑的，比如猫和老鼠"
+      },
+      {
+        "role": "assistant",
+        "content": "猫和老鼠确实经典，汤姆和杰瑞每次互相捉弄都特别好笑，有时候看到他们折腾来折腾去，又闹又好笑，感觉什么样的烦心事都能忘掉。"
+      }
+    ],
+    "analysis": {
+      "status": "failed"
+    }
+  },
+  {
+    "id": "conv-1788446292398",
+    "userId": "guest",
+    "sessionId": "sess-1788446291196-ygahem",
+    "startTime": "2026-09-03T14:38:12.398Z",
+    "turnCount": 4,
+    "weather": "微风",
+    "completed": false,
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "轻松惬意的一天，有什么想和小新说说的？"
+      },
+      {
+        "role": "user",
+        "content": "最近 暑假 作业 写完 之后 我 就 没有 什么 压力 了 可以干 我自己 喜欢 的 事情"
+      },
+      {
+        "role": "assistant",
+        "content": "哇，写完暑假作业确实一下子轻松好多！那你最喜欢干的事情是什么啊？"
+      },
+      {
+        "role": "user",
+        "content": "吃 好吃 的，游泳，看课外书和动画片"
+      },
+      {
+        "role": "assistant",
+        "content": "游泳和看课外书都挺有意思的，夏天游泳的时候注意安全就好。"
+      },
+      {
+        "role": "user",
+        "content": "你喜欢看什么动画片呀？"
+      },
+      {
+        "role": "assistant",
+        "content": "我最近在看一些搞笑的冒险动画，不过想听听你的！你一般都看什么类型的？"
+      },
+      {
+        "role": "user",
+        "content": "我 也 喜欢 看 那种 比较 搞笑的，比如猫和老鼠"
+      },
+      {
+        "role": "assistant",
+        "content": "猫和老鼠确实经典，汤姆和杰瑞每次互相捉弄都特别好笑，有时候看到他们折腾来折腾去，又闹又好笑，感觉什么样的烦心事都能忘掉。"
+      }
+    ]
+  }
+]

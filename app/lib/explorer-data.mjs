@@ -10,6 +10,7 @@ export const MODULE_META = {
   },
   story: {
     key: "story",
+    name: "故事共创",
     island: "想象之洲",
     collection: "故事高光奖章",
     short: "参与最完整、最值得回看的一次故事",
@@ -19,6 +20,7 @@ export const MODULE_META = {
   },
   deep_sea: {
     key: "deep_sea",
+    name: "深海基地重建",
     island: "创造之洲",
     collection: "深海高光奖章",
     short: "完成最完整、最值得回看的一次重建",
@@ -28,6 +30,7 @@ export const MODULE_META = {
   },
   career: {
     key: "career",
+    name: "职业模拟器",
     island: "未来之洲",
     collection: "职业高光奖章",
     short: "最投入的一次角色体验",
@@ -37,6 +40,7 @@ export const MODULE_META = {
   },
   chat: {
     key: "chat",
+    name: "聊天观察",
     island: "倾听之洲",
     collection: "表达高光奖章",
     short: "最充分表达的一次对话",
@@ -137,13 +141,30 @@ function cleanText(value, fallback = "") {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
-function normalizeModule(value) {
-  if (value === "sea" || value === "build") return "deep_sea";
-  return MODULE_META[value] ? value : "chat";
+const MODULE_ALIASES = {
+  story: "story",
+  storytelling: "story",
+  deep_sea: "deep_sea",
+  "deep-sea": "deep_sea",
+  sea: "deep_sea",
+  build: "deep_sea",
+  career: "career",
+  chat: "chat",
+};
+
+export function canonicalExplorerModule(value, {allowRegistration = false} = {}) {
+  const key = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (allowRegistration && key === "registration") return "registration";
+  return Object.prototype.hasOwnProperty.call(MODULE_ALIASES, key) ? MODULE_ALIASES[key] : null;
+}
+
+export function explorerModuleName(value) {
+  const key = canonicalExplorerModule(value);
+  return key ? MODULE_META[key].name : "探索模块";
 }
 
 function normalizeItem(item, index, kind) {
-  const moduleKey = normalizeModule(item?.module);
+  const moduleKey = canonicalExplorerModule(item?.module, {allowRegistration: true}) ?? "registration";
   const meta = MODULE_META[moduleKey];
   const summary = cleanText(item?.summary, "这里收着一次认真尝试。");
   const itemKind = cleanText(item?.kind, kind === "work" ? "highlight" : "module_summary");
@@ -212,10 +233,14 @@ export function normalizeCollectionResponse(payload) {
     createdAt: cleanText(payload?.account?.created_at ?? payload?.account?.createdAt),
   };
   const realWorks = Array.isArray(payload?.works)
-    ? payload.works.map((item, index) => normalizeItem(item, index, "work"))
+    ? payload.works
+      .filter(item => canonicalExplorerModule(item?.module))
+      .map((item, index) => normalizeItem(item, index, "work"))
     : [];
   const realMilestones = Array.isArray(payload?.milestones)
-    ? payload.milestones.map((item, index) => normalizeItem(item, index, "milestone"))
+    ? payload.milestones
+      .filter(item => canonicalExplorerModule(item?.module, {allowRegistration: true}))
+      .map((item, index) => normalizeItem(item, index, "milestone"))
     : [];
   const demo = createDemoCollection(account);
   const worksAreDemo = realWorks.length === 0;

@@ -332,7 +332,7 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(main.read_assessment_session(context["sessionId"], cookie)["summary"], {"stages": 3})
         self.assertEqual(main.read_snapshot(snapshot["id"], cookie).media_type, "image/jpeg")
 
-    def test_v1_batch_is_atomic_and_invalid_transition_is_rejected(self):
+    def test_v1_batch_is_atomic_and_interrupted_session_can_still_complete(self):
         response = Response()
         main.register_account(main.AccountRegistrationIn(username="atomic_child", display_name="小舟", age=8, password="secret77"), response)
         cookie = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
@@ -347,9 +347,16 @@ class AccountTests(unittest.TestCase):
         with main.connect() as db:
             self.assertEqual(db.execute("SELECT COUNT(*) AS n FROM source_events WHERE session_id=?", (context["sessionId"],)).fetchone()["n"], 0)
         main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="interrupted", reason="test"), header)
-        with self.assertRaises(HTTPException) as transition:
-            main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="completed"), header)
-        self.assertEqual(transition.exception.status_code, 409)
+        # 中断（如页面刷新触发的 pagehide 中断）后允许补记完成
+        late_completed = main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="completed"), header)
+        self.assertFalse(late_completed["duplicate"])
+        # 完成后模块授权被撤销：不能再回退状态，也不能再补写证据
+        with self.assertRaises(HTTPException) as revoked:
+            main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="active"), header)
+        self.assertEqual(revoked.exception.status_code, 401)
+        with self.assertRaises(HTTPException) as revoked_evidence:
+            main.create_evidence_events_v1(main.EvidenceBatchIn(events=[valid]), header)
+        self.assertEqual(revoked_evidence.exception.status_code, 401)
 
     def test_v1_evidence_records_and_talents_are_derived_from_standard_evidence(self):
         response = Response()

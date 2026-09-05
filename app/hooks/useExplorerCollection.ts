@@ -1,7 +1,7 @@
 "use client";
 
 import {useCallback,useEffect,useState} from "react";
-import {createDemoCollection,normalizeCollectionResponse} from "../lib/explorer-data.mjs";
+import {canonicalExplorerModule,createDemoCollection,explorerModuleName,normalizeCollectionResponse} from "../lib/explorer-data.mjs";
 import type {ExplorerCollection} from "../lib/explorer-types";
 import {CORE_API_URL} from "../config/modules";
 
@@ -20,15 +20,16 @@ const artifactPresentation:Record<string,{status:string;metric_label:string;metr
 
 function presentationFor(artifact:V1Artifact){
   if(artifact.kind==="manual_work")return {status:"我添加的作品",metric_label:"作品来源",metric_value:"自主添加"};
-  return artifactPresentation[artifact.moduleId]||{status:"已收藏",metric_label:"作品类型",metric_value:artifact.type};
+  const moduleId=canonicalExplorerModule(artifact.moduleId);
+  return artifactPresentation[moduleId]||{status:"已收藏",metric_label:"作品类型",metric_value:artifact.type};
 }
 
 function collectionFromV1(account:Account,artifacts:V1Artifact[],summaries:V1ModuleSummary[]){
   return {
     account,
-    works:artifacts.map(artifact=>({
+    works:artifacts.filter(artifact=>canonicalExplorerModule(artifact.moduleId)).map(artifact=>({
       id:artifact.id,
-      module:artifact.moduleId,
+      module:canonicalExplorerModule(artifact.moduleId),
       kind:artifact.kind||"highlight",
       title:artifact.title,
       summary:artifact.summary,
@@ -55,12 +56,12 @@ function collectionFromV1(account:Account,artifacts:V1Artifact[],summaries:V1Mod
         metric_value:"第一次出发",
         usage_count:0,
       },
-      ...summaries.map(summary=>({
-        id:`v1-summary-${summary.moduleId}`,
-        module:summary.moduleId,
+      ...summaries.filter(summary=>canonicalExplorerModule(summary.moduleId)).map(summary=>({
+        id:`v1-summary-${canonicalExplorerModule(summary.moduleId)}`,
+        module:canonicalExplorerModule(summary.moduleId),
         kind:"module_summary",
-        title:`${summary.moduleId} 的完成小结`,
-        summary:`共留下 ${summary.completedCount} 次探索记录。`,
+        title:`${explorerModuleName(summary.moduleId)}的完成小结`,
+        summary:`在${explorerModuleName(summary.moduleId)}共留下 ${summary.completedCount} 次探索记录。`,
         detail:`其中包含 ${summary.evidenceCount} 条证据${summary.artifactCount?` 和 ${summary.artifactCount} 件作品`:""}。`,
         occurred_at:summary.lastUsedAt,
         status:"模块已点亮",

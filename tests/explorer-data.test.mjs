@@ -2,9 +2,33 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  canonicalExplorerModule,
   createDemoCollection,
+  explorerModuleName,
   normalizeCollectionResponse,
 } from "../app/lib/explorer-data.mjs";
+
+test("uses one canonical Chinese mapping for the four exploration modules", () => {
+  assert.equal(canonicalExplorerModule("deep_sea"), "deep_sea");
+  assert.equal(canonicalExplorerModule("deep-sea"), "deep_sea");
+  assert.equal(canonicalExplorerModule("build"), "deep_sea");
+  assert.equal(explorerModuleName("chat"), "聊天观察");
+  assert.equal(explorerModuleName("story"), "故事共创");
+  assert.equal(explorerModuleName("deep_sea"), "深海基地重建");
+  assert.equal(explorerModuleName("career"), "职业模拟器");
+  assert.equal(canonicalExplorerModule("unexpected_module"), null);
+});
+
+test("does not misclassify an unknown module as chat", () => {
+  const result = normalizeCollectionResponse({
+    account: {display_name: "小芽", age: 8},
+    works: [{id: "unknown-work", module: "unexpected_module", title: "未知记录"}],
+    milestones: [{id: "unknown-step", module: "unexpected_module", title: "未知足迹"}],
+  });
+  assert.equal(result.worksAreDemo, true);
+  assert.equal(result.timelineIsDemo, true);
+  assert.equal(result.works.some(item => item.id === "unknown-work"), false);
+});
 
 test("normalizes account-owned works and milestones without replacing them with demo records", () => {
   const result = normalizeCollectionResponse({

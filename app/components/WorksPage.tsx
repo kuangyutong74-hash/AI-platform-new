@@ -12,7 +12,7 @@ type WorkModule=Exclude<ExplorerModule,"registration">;
 const CORE_URL="http://localhost:8020";
 const moduleOrder:WorkModule[]=["story","deep_sea","career","chat"];
 const iconByModule:Record<WorkModule,"book"|"waves"|"map"|"journal">={story:"book",deep_sea:"waves",career:"map",chat:"journal"};
-const moduleNames:Record<WorkModule,string>={story:"故事共创",deep_sea:"深海基地重建",career:"职业模拟器",chat:"聊天观察"};
+const moduleNames:Record<WorkModule,string>={story:MODULE_META.story.name,deep_sea:MODULE_META.deep_sea.name,career:MODULE_META.career.name,chat:MODULE_META.chat.name};
 
 function speak(text:string){if(!("speechSynthesis" in window))return;window.speechSynthesis.cancel();const voice=new SpeechSynthesisUtterance(text);voice.lang="zh-CN";voice.rate=.82;voice.pitch=1.06;window.speechSynthesis.speak(voice);}
 function formatDate(value:string){const date=new Date(value);if(Number.isNaN(date.valueOf())||date.valueOf()===0)return "最近一次探索";return new Intl.DateTimeFormat("zh-CN",{year:"numeric",month:"long",day:"numeric"}).format(date);}

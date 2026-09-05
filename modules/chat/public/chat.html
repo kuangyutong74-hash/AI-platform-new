@@ -310,10 +310,34 @@ var XIAOXIN_SESSION_FINALIZED_KEY='xiaoxin_session_finalized';
 var XIAOXIN_ACTIVE_SESSION_KEY='xiaoxin_active_session_id';
 // 注意：旧会话数据（备份、天气标记等）的清理由下面的初始化 IIFE 统一管理，
 // 不再在变量声明阶段做无条件的 removeItem。只有明确判定"全新对话"时才清理。
-var selectedWeather=null,weatherLabel=null,turnCount=0,messages=[],isLoading=false,finalized=false,consecutiveShortCount=0,litCategories={};
+var selectedWeather=null,weatherLabel=null,turnCount=0,messages=[],isLoading=false,finalizing=false,finalized=false,finalizePromise=null,consecutiveShortCount=0,litCategories={};
 var conversationActiveMs=0,conversationActiveFrom=Date.now();
+var platformSdk=null,platformConnectionPromise=null;
 document.addEventListener('visibilitychange',function(){if(document.hidden){if(conversationActiveFrom){conversationActiveMs+=Date.now()-conversationActiveFrom;conversationActiveFrom=0}}else if(!conversationActiveFrom){conversationActiveFrom=Date.now()}});
 function conversationDurationSeconds(){var active=conversationActiveMs+(conversationActiveFrom?Date.now()-conversationActiveFrom:0);return Math.max(1,Math.round(active/1000))}
+function connectChatPlatform(){
+  if(platformSdk&&platformSdk.connected())return Promise.resolve({connected:true});
+  if(platformConnectionPromise)return platformConnectionPromise;
+  if(!platformSdk&&window.AIBoleModuleSDK)platformSdk=window.AIBoleModuleSDK.create({moduleId:'chat'});
+  if(!platformSdk)return Promise.resolve({notConnected:true,standalone:true});
+  platformConnectionPromise=platformSdk.connectOptional().catch(function(error){platformConnectionPromise=null;throw error});
+  return platformConnectionPromise;
+}
+// 启动码是一次性的：从探索星球进入后只够第一次聊天兑换。
+// 若从模块首页/结束页再次进入聊天，窗口里没有启动上下文，这次聊天就永远写不进成长记录。
+// 此时由模块自己向平台申请一个全新会话（与探索星球点击入口完全一致），保证每次聊天都能正常落档。
+function hasLaunchContext(){
+  try{var v=JSON.parse(window.name||'');return !!(v&&v.namespace==='ai-bole.launch-context.v1'&&v.context&&v.context.launchCode)}catch(_){return false}
+}
+function ensureLaunchContext(){
+  if(hasLaunchContext()||window.__launchAttempted)return Promise.resolve();
+  window.__launchAttempted=true;
+  return fetch('http://localhost:8020/api/v1/assessment-sessions',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({module_id:'chat'})})
+    .then(function(r){if(!r.ok)throw new Error('session unavailable');return r.json()})
+    .then(function(ctx){window.name=JSON.stringify({namespace:'ai-bole.launch-context.v1',context:ctx})})
+    .catch(function(err){console.warn('[platform] 无法为本次聊天申请成长记录会话：',err&&(err.message||err))});
+}
+window.addEventListener('DOMContentLoaded',function(){ensureLaunchContext().then(function(){return connectChatPlatform()}).catch(function(error){console.warn('[platform] 聊天会话暂未连接：',error)})});
 
 // ===== TOPIC CATEGORY =====
 var TOPIC_CATEGORY_MAP=[
@@ -961,12 +985,12 @@ async function sendMessage(){
   try{
     var resp=await fetch('/chat/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sessionId,message:text})});
     var data=await resp.json();removeTyping();
-    if (!resp.ok){rollbackUserMessage();var et='小新暂时无法回应，请稍后重试';switch (data.error){case'MESSAGE_EMPTY':et='消息不能为空';break;case'MESSAGE_TOO_LONG':et='消息过长，请精简到 2000 个字符以内';break;case'PAYLOAD_TOO_LARGE':et='发送内容过大，请精简后重试';break;case'INVALID_REQUEST':case'INVALID_JSON':et='消息格式不正确，请重新输入';break}addBubble('assistant',et);isLoading=false;btnSend.disabled=false;msgInput.focus();return}
+    if (!resp.ok){rollbackUserMessage();var et='小新暂时无法回应，请稍后重试';switch (data.error){case'MESSAGE_EMPTY':et='消息不能为空';break;case'MESSAGE_TOO_LONG':et='消息过长，请精简到 2000 个字符以内';break;case'PAYLOAD_TOO_LARGE':et='发送内容过大，请精简后重试';break;case'INVALID_REQUEST':case'INVALID_JSON':et='消息格式不正确，请重新输入';break}addBubble('assistant',et);if(!finalizing){isLoading=false;btnSend.disabled=false}msgInput.focus();return}
     if(data.reply){addBubble('assistant',data.reply);messages.push({role:'assistant',content:data.reply});refreshQuickTopics()}else addBubble('assistant','(小新好像走神了，再试一次？)');
     if(data.imageUrl){var ir=document.createElement('div');ir.className='message-row assistant';ir.innerHTML=getAvatarHTML('assistant');var ib=document.createElement('div');ib.className='message-bubble';ib.style.textAlign='center';ib.innerHTML='<span class="bubble-text">🎨 今天聊的这几件事我都画下来啦～<br><span style="font-size:11px;color:#a09080;">画面正在生成中...</span></span>';ir.appendChild(ib);messageList.appendChild(ir);chatMessages.scrollTop=chatMessages.scrollHeight;var img=new Image();img.onload=function(){ib.innerHTML='<span class="bubble-text">今天聊的这几件事我都画下来啦，随时可以去手账本翻一翻哦～</span><br><img src="'+data.imageUrl+'" alt="配图" style="width:100%;max-width:360px;border-radius:12px;display:block;margin:8px auto 0;"><span style="font-size:11px;color:#a09080;">以后随时可以去手账本里再看到它哦</span>';chatMessages.scrollTop=chatMessages.scrollHeight};img.onerror=function(){ib.innerHTML='<span class="bubble-text">我把今天画下来啦～<br><span style="font-size:11px;color:#a09080;">(画面还在路上，稍后再来手账本看看吧)</span></span>'};img.src=data.imageUrl}
     autoSave();
   }catch(err){console.error('[sendMessage] 错误:',err);removeTyping();rollbackUserMessage();addBubble('assistant','(网络好像不太稳定，检查一下服务器吧)')}
-  isLoading=false;btnSend.disabled=false;msgInput.focus();
+  if(!finalizing){isLoading=false;btnSend.disabled=false}msgInput.focus();
 }
 btnSend.addEventListener('click',sendMessage);
 msgInput.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();sendMessage()}});
@@ -978,8 +1002,22 @@ msgInput.addEventListener('input',function(){autoResizeTextarea();updateCharCoun
 msgInput.addEventListener('paste',function(e){var cur=msgInput.value,cl=(e.clipboardData||window.clipboardData||{}).getData?e.clipboardData.getData('text/plain'):'';if(!cl)return;var avail=2000-cur.length;if(cl.length>avail){e.preventDefault();var tr=cl.slice(0,avail),st=msgInput.selectionStart,en=msgInput.selectionEnd;msgInput.value=cur.slice(0,st)+tr+cur.slice(en);var np=st+tr.length;msgInput.setSelectionRange(np,np);autoResizeTextarea();updateCharCount();var toast=document.createElement('div');toast.textContent='最多输入 2000 个字符，超出部分未输入';toast.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#51291f;color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;z-index:9999;opacity:1;transition:opacity .4s;pointer-events:none;';document.body.appendChild(toast);setTimeout(function(){toast.style.opacity='0'},1800);setTimeout(function(){if(toast.parentNode)toast.parentNode.removeChild(toast)},2300)}});
 
 // ===== End chat =====
-async function saveConversationToPlatform(){var sdk=window.AIBoleModuleSDK&&window.AIBoleModuleSDK.create({moduleId:'chat'});if(!sdk)return;var connection=await sdk.connectOptional();if(connection.notConnected){showStatus('从探索星球进入后，这次聊天会保存到成长记录。');return}var childMessages=messages.filter(function(item){return item.role==='user'}),childTurns=childMessages.slice(0,20).map(function(item,index){return {turn:index+1,text:String(item.content||'').slice(0,240)}}).filter(function(item){return item.text}),longTurns=childMessages.filter(function(item){return item.content.length>=20}).length,totalChars=childMessages.reduce(function(sum,item){return sum+item.content.length},0),longest=childMessages.reduce(function(best,item){return item.content.length>best.length?item.content:best},''),topic=conversationTopic(),key=sessionId+':completed',artifactSummary=conversationArtifactSummary(childMessages);await sdk.emitEvidence(sdk.makeEvent('chat.observation-shared.v1',{turnCount:turnCount,topicKey:String(topic||'conversation').slice(0,80),childTurns:childTurns},key));var snapshot=await sdk.captureSnapshot('#chat-shell').catch(function(){return null});await sdk.publishArtifact({schemaVersion:'1.0',artifactId:'chat:'+sessionId,type:'conversation',title:'聊天记录',summary:artifactSummary,previewResourceId:snapshot&&snapshot.id,sourceResourceId:'chat:'+sessionId,createdAt:new Date().toISOString()});await sdk.completeSession({turnCount:turnCount,longTurnCount:longTurns,totalChildChars:totalChars,childWords:longest.slice(0,60),childTurns:childTurns,durationSeconds:conversationDurationSeconds()});}
-async function finalizeConversation(){if(turnCount===0||finalized)return;finalized=true;sessionStorage.setItem(XIAOXIN_SESSION_FINALIZED_KEY,'1');var b={sessionId:sessionId,messages:messages,turnCount:turnCount,weather:selectedWeather,weatherLabel:weatherLabel,completed:true};try{await fetch('/api/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}catch(e){}try{await saveConversationToPlatform()}catch(e){}}
+async function saveConversationToPlatform(){var connection=await connectChatPlatform();if(connection.notConnected){console.warn('[platform] 本次聊天未连接探索星球，不会记入成长记录');showStatus('这次聊天已经保存在小新家啦。');return {notConnected:true}}var childMessages=messages.filter(function(item){return item.role==='user'}),childTurns=childMessages.slice(0,20).map(function(item,index){return {turn:index+1,text:String(item.content||'').slice(0,240)}}).filter(function(item){return item.text}),longTurns=childMessages.filter(function(item){return item.content.length>=20}).length,totalChars=childMessages.reduce(function(sum,item){return sum+item.content.length},0),longest=childMessages.reduce(function(best,item){return item.content.length>best.length?item.content:best},''),topic=conversationTopic(),key=sessionId+':completed',artifactSummary=conversationArtifactSummary(childMessages);await platformSdk.emitEvidence(platformSdk.makeEvent('chat.observation-shared.v1',{turnCount:turnCount,topicKey:String(topic||'conversation').slice(0,80),childTurns:childTurns},key));var snapshot=await platformSdk.captureSnapshot('#chat-shell').catch(function(){return null});await platformSdk.publishArtifact({schemaVersion:'1.0',artifactId:'chat:'+sessionId,type:'conversation',title:'聊天记录',summary:artifactSummary,previewResourceId:snapshot&&snapshot.id,sourceResourceId:'chat:'+sessionId,createdAt:new Date().toISOString()});await platformSdk.completeSession({turnCount:turnCount,longTurnCount:longTurns,totalChildChars:totalChars,childWords:longest.slice(0,60),childTurns:childTurns,durationSeconds:conversationDurationSeconds()});return {completed:true}}
+async function finalizeConversation(){
+  if(turnCount===0||finalized)return true;
+  if(finalizePromise)return finalizePromise;
+  // 结束期间锁定输入，避免结束流程中继续发消息造成记录错乱
+  finalizing=true;isLoading=true;btnSend.disabled=true;
+  finalizePromise=(async function(){
+    var b={sessionId:sessionId,messages:messages,turnCount:turnCount,weather:selectedWeather,weatherLabel:weatherLabel,completed:true};
+    try{await fetch('/api/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}catch(error){console.warn('[history] 聊天历史暂未保存：',error)}
+    await saveConversationToPlatform();
+    finalized=true;
+    sessionStorage.setItem(XIAOXIN_SESSION_FINALIZED_KEY,'1');
+    return true;
+  })();
+  try{return await finalizePromise}catch(error){console.error('[platform] 聊天完成记录保存失败：',error);showStatus('成长记录还没有保存成功，请再点一次“结束聊天”。');throw error}finally{finalizePromise=null;finalizing=false;isLoading=false;btnSend.disabled=false}
+}
 function buildEndUrl(){
   var params=new URLSearchParams();
   params.set('turns',turnCount);
@@ -990,7 +1028,7 @@ function buildEndUrl(){
   return '/chat-end.html?'+params.toString();
 }
 btnEnd.addEventListener('click',async function(){
-  if(turnCount>0)await finalizeConversation();
+  if(turnCount>0){try{await finalizeConversation()}catch(_){return}}
   // 跳转到独立的结束页面，URL 不同 → 刷新也不丢状态
   location.href=buildEndUrl();
 });

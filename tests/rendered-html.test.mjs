@@ -108,6 +108,10 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
     new URL("../app/lib/explorer-data.mjs", import.meta.url),
     "utf8",
   );
+  const collectionHook = await readFile(
+    new URL("../app/hooks/useExplorerCollection.ts", import.meta.url),
+    "utf8",
+  );
   const styles = await readFile(
     new URL("../app/styles/works.css", import.meta.url),
     "utf8",
@@ -129,6 +133,8 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
   assert.match(growth, /item\.metricValue/);
   assert.match(growth, /item\.firstUsedAt/);
   assert.match(growth, /最近一次完成/);
+  assert.match(collectionHook, /explorerModuleName\(summary\.moduleId\)/);
+  assert.doesNotMatch(collectionHook, /`\$\{summary\.moduleId\} 的完成小结`/);
 });
 
 test("explains the chat completion boundary and links the finished chat to works", async () => {

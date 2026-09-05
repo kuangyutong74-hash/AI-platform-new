@@ -850,6 +850,18 @@ app.put('/api/history/auto-save', guestIdentity, (req, res) => {
     }
     if (existingIdx < 0) {
       existingIdx = history.findIndex(h => h.sessionId === sessionId && !h.completed);
+      // 该会话已由结束流程标记完成：自动保存不再追加一条"未完成"的重复记录。
+      // 注意必须单独查一次 completed 条目——上面的查找只匹配未完成的，否则守卫永远不生效。
+      if (existingIdx < 0) {
+        existingIdx = history.findIndex(h => h.sessionId === sessionId && h.completed);
+        if (existingIdx >= 0) {
+          return res.json({ id: history[existingIdx].id, updated: false, skipped: true });
+        }
+      }
+    }
+    // 该会话已由结束流程标记完成：自动保存不再追加一条"未完成"的重复记录
+    if (existingIdx >= 0 && history[existingIdx].completed) {
+      return res.json({ id: history[existingIdx].id, updated: false, skipped: true });
     }
     const isNewAuto = existingIdx < 0;
     const previousEntryAuto =

@@ -284,6 +284,33 @@ animal_caretaker:{
 
 /* ==== GAME ENGINE ==== */
 const G={career:null,careerId:null,runId:null,stage:0,clock:{h:8,m:0},prepDone:[],triageOrder:[],examDone:{},selectedTool:null,diagnosisCorrect:false,placedMeds:[],routeStep:0,routePath:[],dialogueTurn:0,stageResults:[],stageHintTimer:null,process:{startedAt:0,activeFrom:0,activeMs:0,hintCount:0,retryCount:0,adjustmentCount:0,interactionCount:0,completedStages:0}};
+let platformSdk=null,platformConnectionPromise=null,careerSyncPromise=null;
+
+function connectCareerPlatform(){
+  if(platformSdk?.connected())return Promise.resolve({connected:true});
+  if(platformConnectionPromise)return platformConnectionPromise;
+  if(!platformSdk&&window.AIBoleModuleSDK)platformSdk=window.AIBoleModuleSDK.create({moduleId:'career'});
+  if(!platformSdk)return Promise.resolve({notConnected:true,standalone:true});
+  platformConnectionPromise=platformSdk.connectOptional().catch(error=>{platformConnectionPromise=null;throw error});
+  return platformConnectionPromise;
+}
+
+async function syncCareerCompletion(record){
+  const marker='ai-bole-career-evidence-'+G.runId;
+  if(sessionStorage.getItem(marker))return;
+  if(careerSyncPromise)return careerSyncPromise;
+  careerSyncPromise=(async()=>{
+    const connection=await connectCareerPlatform();
+    if(connection.notConnected)return;
+    const key=G.runId+':completed';
+    await platformSdk.emitEvidence(platformSdk.makeEvent('career.task-completed.v1',{taskKey:String(G.careerId||'career-task'),attemptCount:record.interactionCount||0,hintCount:record.hintCount||0,completionSeconds:record.durationSeconds||0,adjustmentCount:(record.adjustmentCount||0)+(record.retryCount||0)},key));
+    const snapshot=await platformSdk.captureSnapshot('#wd-main').catch(()=>null);
+    await platformSdk.publishArtifact({schemaVersion:'1.0',artifactId:'career:'+G.runId,type:'other',title:record.career+'的一天',summary:'完成职业日常任务，并在过程中根据结果进行尝试和调整。',previewResourceId:snapshot&&snapshot.id,sourceResourceId:'career:'+G.runId,createdAt:new Date().toISOString()});
+    await platformSdk.completeSession({completedStages:record.completedStages||0,stageCount:record.stageCount||0});
+    sessionStorage.setItem(marker,'1');
+  })();
+  try{return await careerSyncPromise}finally{careerSyncPromise=null}
+}
 
 /* -- Process observation: participation only, never an ability score. -- */
 function startProcessObservation(){G.process.startedAt=Date.now();G.process.activeFrom=Date.now();document.addEventListener('visibilitychange',()=>{if(document.hidden){if(G.process.activeFrom){G.process.activeMs+=Date.now()-G.process.activeFrom;G.process.activeFrom=0}}else if(!G.process.activeFrom){G.process.activeFrom=Date.now()}})}
@@ -300,6 +327,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const cid=m?m[1]:'doctor';
   G.careerId=cid;
   G.runId=(globalThis.crypto?.randomUUID?.()||('workday-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)));
+  connectCareerPlatform().catch(error=>console.warn('[platform] 职业体验会话暂未连接：',error));
   /* 职业日常只保留“准备—工作判断—专业操作”三段；末段情境决策交给情境模块，避免重复评价。 */
   const sourceCareer=WD[cid]||WD.doctor;
   G.career={...sourceCareer,stages:sourceCareer.stages.slice(0,3)};
@@ -578,7 +606,8 @@ function showComplete(title,msg){
 function showAllDone(){
   if(!G.stageResults[G.stage+'-counted']){G.process.completedStages++;G.stageResults[G.stage+'-counted']=true}
   saveProcessRecord();
-  if(!sessionStorage.getItem('ai-bole-career-evidence-'+G.runId)){const record=processRecord();sessionStorage.setItem('ai-bole-career-evidence-'+G.runId,'1');const sdk=window.AIBoleModuleSDK&&window.AIBoleModuleSDK.create({moduleId:'career'});if(sdk)sdk.connectOptional().then(async connection=>{if(connection.notConnected)return;const key=G.runId+':completed';await sdk.emitEvidence(sdk.makeEvent('career.task-completed.v1',{taskKey:String(G.careerId||'career-task'),attemptCount:record.interactionCount||0,hintCount:record.hintCount||0,completionSeconds:record.durationSeconds||0,adjustmentCount:(record.adjustmentCount||0)+(record.retryCount||0)},key));const snapshot=await sdk.captureSnapshot('#wd-main').catch(()=>null);await sdk.publishArtifact({schemaVersion:'1.0',artifactId:'career:'+G.runId,type:'other',title:record.career+'的一天',summary:'完成职业日常任务，并在过程中根据结果进行尝试和调整。',previewResourceId:snapshot&&snapshot.id,sourceResourceId:'career:'+G.runId,createdAt:new Date().toISOString()});await sdk.completeSession({completedStages:record.completedStages||0,stageCount:record.stageCount||0})}).catch(()=>{})}
+  const record=processRecord();
+  syncCareerCompletion(record).catch(error=>console.error('[platform] 职业体验完成记录保存失败：',error));
   const c=G.career;const nStages=c.stages.length;
   const scenarioUrl='/careers?career_id='+encodeURIComponent(G.careerId)+'&mode=scenario&from_workday=1';
   document.getElementById('wd-main').innerHTML='<div class="final-card"><div class="final-seal">'+S('check2',56)+'</div><h1>'+c.name+'的一天 — 完成！</h1><p class="final-sub">'+nStages+'个阶段的工作日常体验</p><div class="final-summary">'+c.stages.map((s,i)=>'<b>阶段'+(i+1)+'：</b>'+s.title).join('<br>')+'</div><div class="workday-bridge"><b>🌈 下一站：情境体验</b><span>继续完成同一职业的情境任务，今天的参与小记会和你的思考过程一起呈现在最终报告中。</span></div><div class="final-actions"><a href="'+scenarioUrl+'" class="btn-primary" style="text-decoration:none">💬 继续情境体验</a><a href="/careers" class="btn-secondary" style="text-decoration:none">🔄 体验其他职业</a><a href="/" class="btn-secondary">🏠 返回首页</a></div><div class="process-record"><h3>🌱 参与过程小记</h3><p>本记录只用于回顾体验过程，不代表能力分数。</p><div class="process-record-grid"><span>专注体验 '+focusMinutes()+' 分钟</span><span>完成 '+G.process.completedStages+' 个阶段</span><span>主动尝试 '+G.process.interactionCount+' 次</span><span>调整或重试 '+(G.process.adjustmentCount+G.process.retryCount)+' 次</span><span>查看提示 '+G.process.hintCount+' 次</span></div></div><div class="knowledge-box"><h3>📚 '+c.name+'职业知识点</h3><ul>'+(c.knowledge||[]).map(k=>'<li>'+k+'</li>').join('')+'</ul></div></div>';

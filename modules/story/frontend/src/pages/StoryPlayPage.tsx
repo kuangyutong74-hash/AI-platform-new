@@ -43,9 +43,18 @@ export default function StoryPlayPage() {
   const storyStartedRef = useRef(false);
   const storyActiveMsRef = useRef(0);
   const storyActiveFromRef = useRef(0);
+  const platformSdkRef = useRef<any>(null);
+  const platformConnectionRef = useRef<Promise<any> | null>(null);
 
   useEffect(() => {
     storyActiveFromRef.current = Date.now();
+    const sdkFactory = (window as any).AIBoleModuleSDK;
+    if (sdkFactory && !platformSdkRef.current) {
+      platformSdkRef.current = sdkFactory.create({moduleId:'story'});
+      const connection = platformSdkRef.current.connectOptional();
+      platformConnectionRef.current = connection;
+      connection.catch(() => { platformConnectionRef.current = null; });
+    }
     const trackVisibility = () => {
       if (document.hidden) {
         if (storyActiveFromRef.current) {
@@ -150,37 +159,92 @@ export default function StoryPlayPage() {
   }
 
   async function emitStoryCompleted(completionMode: 'child' | 'director', ending = '') {
-    try {
-      const activityId = `story-${id}`;
-      const endingText = ending.trim();
-      const [savedStory, savedMessages] = await Promise.all([
-        getStory(id),
-        getStoryMessages(id),
-      ]);
-      const savedTitle = compactText(savedStory.title || storyTitle) || '故事共创';
-      const contributionCount = savedMessages.filter((message) => message.role === 'child').length;
-      const sdk = (window as any).AIBoleModuleSDK?.create({moduleId:'story'});
-      if (!sdk) return;
-      const connection = await sdk.connectOptional().catch(() => null);
-      if (!connection || connection.notConnected || !sdk.connected()) return;
-      await sdk.emitEvidence(sdk.makeEvent('story.contribution-completed.v1',{contributionCount:Math.max(1,contributionCount),completionSeconds:storyDurationSeconds(),storyTitle:savedTitle.slice(0,120)},`${activityId}:completed`));
-      const snapshot = await sdk.captureSnapshot('.story-chat-area').catch(() => null);
-      if (snapshot?.id) {
-        await sdk.publishArtifact({
-          schemaVersion: '1.0',
-          artifactId: `story:${id}:${Date.now()}`,
-          type: 'story',
-          title: savedTitle,
-          summary: '完成故事共创表达',
-          previewResourceId: snapshot.id,
-          sourceResourceId: `story:${id}`,
-          createdAt: new Date().toISOString(),
-        }).catch(() => null);
-      }
-      await sdk.completeSession({completionMode,endingLength:endingText.length}).catch(() => null);
-    } catch {
-      // 平台留痕失败时静默降级，不影响孩子完成故事。
+try {
+  const activityId = `story-${id}`;
+  const endingText = ending.trim();
+
+  const [savedStory, savedMessages] = await Promise.all([
+    getStory(id),
+    getStoryMessages(id),
+  ]);
+
+  const savedTitle =
+    compactText(savedStory.title || storyTitle) || '故事共创';
+
+  const contributionCount = savedMessages.filter(
+    (message) => message.role === 'child',
+  ).length;
+
+  const sdk =
+    platformSdkRef.current ||
+    (window as any).AIBoleModuleSDK?.create({ moduleId: 'story' });
+
+  if (!sdk) return;
+
+  platformSdkRef.current = sdk;
+
+  const connection = await (
+    platformConnectionRef.current || sdk.connectOptional()
+  ).catch(() => null);
+
+  if (!connection || connection.notConnected || !sdk.connected()) return;
+
+  await sdk.emitEvidence(
+    sdk.makeEvent(
+      'story.contribution-completed.v1',
+      {
+        contributionCount: Math.max(1, contributionCount),
+        completionSeconds: storyDurationSeconds(),
+        storyTitle: savedTitle.slice(0, 120),
+      },
+      `${activityId}:completed`,
+    ),
+  );
+
+  const snapshot = await sdk
+    .captureSnapshot('.story-chat-area')
+    .catch(() => null);
+
+  if (snapshot?.id) {
+    await sdk
+      .publishArtifact({
+        schemaVersion: '1.0',
+        artifactId: `story:${id}:${Date.now()}`,
+        type: 'story',
+        title: savedTitle,
+        summary: '完成故事共创表达',
+        previewResourceId: snapshot.id,
+        sourceResourceId: `story:${id}`,
+        createdAt: new Date().toISOString(),
+      })
+      .catch(() => null);
+  }
+
+  await sdk
+    .completeSession({
+      completionMode,
+      endingLength: endingText.length,
+    })
+    .catch(() => null);
+} catch {
+  // 平台留痕失败时静默降级，不影响孩子完成故事。
+}
+  }
+
+  async function syncCompletedStory(completionMode: 'child' | 'director', ending = '') {
+    setWorkSaveState('saving');
+    setWorkSaveError('');
+    const [timelineResult, workResult] = await Promise.allSettled([
+      emitStoryCompleted(completionMode, ending),
+      addStoryToMyWorks(id),
+    ]);
+    if (workResult.status === 'fulfilled') {
+      setWorkSaveState('saved');
+    } else {
+      setWorkSaveState('idle');
+      setWorkSaveError(workResult.reason instanceof Error ? workResult.reason.message : '作品暂时没有自动加入，请点击按钮重试。');
     }
+    if (timelineResult.status === 'rejected') throw timelineResult.reason;
   }
 
   async function handleAddToMyWorks() {
@@ -203,7 +267,13 @@ export default function StoryPlayPage() {
     try {
       // Keep the story active until the director has written and saved the ending.
       const completed = await startTurn(id, '请从刚才的情节继续，给这个故事写一个完整的大结局吧！', true);
-      if (completed) await emitStoryCompleted('director');
+      if (completed) await syncCompletedStory('director');
+    } catch (cause) {
+      dispatch({
+        type: 'SHOW_SAFETY_NOTICE',
+        message: cause instanceof Error ? cause.message : '成长足迹没有保存成功，请再试一次',
+        level: 'moderate',
+      });
     } finally {
       setCompletionLoading(false);
     }
@@ -221,7 +291,7 @@ export default function StoryPlayPage() {
       const completedStory = await completeStory(id, ending);
       dispatch({ type: 'ADD_CHILD_MESSAGE', content: ending });
       dispatch({ type: 'FINISH_TURN', turnNumber: completedStory.turn_count, isEnding: true });
-      await emitStoryCompleted('child', ending);
+      await syncCompletedStory('child', ending);
       setShowEndModal(false);
       setChildEnding('');
     } catch (cause) {
@@ -272,6 +342,7 @@ export default function StoryPlayPage() {
           <button className={`fs-btn ${fontSize === 'm' ? 'fs-active' : ''}`} onClick={() => setFontSize('m')}>标准</button>
           <button className={`fs-btn ${fontSize === 'l' ? 'fs-active' : ''}`} onClick={() => setFontSize('l')}>大字</button>
         </div>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/story-create')} title="回到故事共创首页">🏠 回首页</Button>
       </div>
 
       {/* Safety notice banner */}

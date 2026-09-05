@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useChannel } from '../../contexts/ChannelContext';
 import './Header.css';
 import PngIcon from '../Shared/PngIcon';
@@ -6,6 +6,8 @@ import PngIcon from '../Shared/PngIcon';
 export default function Header() {
   const { ageGroup } = useChannel();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isHome = pathname === '/story-create';
 
   return (
     <header className="app-header">
@@ -18,6 +20,15 @@ export default function Header() {
         </Link>
       </div>
       <div className="header-user">
+        {!isHome && (
+          <button
+            className="header-home"
+            onClick={() => navigate('/story-create')}
+            title="回到故事共创首页"
+          >
+            🏠 回首页
+          </button>
+        )}
         {ageGroup && (
           <button
             className="header-platform"

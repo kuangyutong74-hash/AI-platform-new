@@ -40,7 +40,8 @@
     };
     return {
       async connectOptional() {
-        const value = readContext();
+        if (context && token) return {connected:true,context};
+        const value = context || readContext();
         if (!value) return standalone;
         context = validate(value);
         const response = await fetch(coreUrl + "/api/v1/module-authorizations:exchange", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({launchCode:context.launchCode})});

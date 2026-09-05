@@ -631,6 +631,7 @@ stateDiagram-v2
     active --> interrupted: 页面关闭、网络中断或主动暂停
     active --> abandoned: 明确放弃
     interrupted --> active: resume + 新授权
+    interrupted --> completed: 补记完成（证据已在中断前写入）
     interrupted --> abandoned: 明确放弃或超过保留期
     completed --> [*]
     abandoned --> [*]
@@ -642,11 +643,11 @@ stateDiagram-v2
 |---|---|
 | `created` | `active`、`abandoned` |
 | `active` | `completed`、`interrupted`、`abandoned` |
-| `interrupted` | `active`、`abandoned` |
+| `interrupted` | `active`、`completed`、`abandoned` |
 | `completed` | 无 |
 | `abandoned` | 无 |
 
-`completeSession()` 和 `interruptSession()` 必须幂等：重复提交相同目标状态返回当前会话，不重复计算时长或触发报告。非法反向转换返回 `409 SESSION_TRANSITION_INVALID`。`state_version` 用于乐观并发控制，防止双击完成和网络重试覆盖较新的状态。
+`completeSession()` 和 `interruptSession()` 必须幂等：重复提交相同目标状态返回当前会话，不重复计算时长或触发报告。非法反向转换返回 `409 SESSION_TRANSITION_INVALID`；会话结束后模块授权即被撤销，之后的所有请求返回 `401`。`state_version` 用于乐观并发控制，防止双击完成和网络重试覆盖较新的状态。
 
 ### 6.4 SQLite 配置
 
@@ -811,7 +812,7 @@ flowchart LR
 |---|---|---|
 | `app/page.tsx` 中登录请求 | Portal + Core API/accounts | 保留界面，抽取 API 客户端 |
 | `app/config/modules.ts` 固定模块数组 | Core API/catalog + `config/modules` | 改为注册表读取 |
-| `PlanetHome` 直接 `location.href` | Portal 模块启动器 | 先创建会话，再打开模块 |
+| `PlanetHome` 直接 `location.href` | Portal 模块启动器 | 先创建会话，再打开模块；启动码一次性兑换后，模块再次进入（如聊天结束页返回再聊）时由模块自行调用 `POST /api/v1/assessment-sessions` 补发会话，保证每次体验都可落档 |
 | `ai-bole-bridge.js` 全局脚本 | `packages/module-sdk` | 保留 V0 兼容层，逐模块迁移 |
 | `platform-core/main.py` 多项职责 | Core API 内部业务模块 | 拆分文件但保留单进程 |
 | `explorer_collection.py` 猜测模块字段 | sessions/artifacts 查询服务 | 改为读取标准会话和作品契约 |
