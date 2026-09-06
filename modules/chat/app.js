@@ -1727,7 +1727,17 @@ function writeTips(data) {
 }
 
 function readTipFavs() {
-  try { return JSON.parse(fs.readFileSync(TIPS_FAV_FILE, 'utf-8')); } catch { return []; }
+  try {
+    var data = JSON.parse(fs.readFileSync(TIPS_FAV_FILE, 'utf-8'));
+    // 收藏表必须是 { userId: [tipId, ...] } 结构；历史版本可能写入数组等错误结构，
+    // 而数组上的 userId 键在 JSON.stringify 时会被静默丢弃，导致收藏永远丢失。
+    // 遇到错误结构视为空表并写回修复。
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      writeTipFavs({});
+      return {};
+    }
+    return data;
+  } catch { return {}; }
 }
 
 function writeTipFavs(data) {
