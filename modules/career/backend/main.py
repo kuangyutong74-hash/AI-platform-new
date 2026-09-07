@@ -428,8 +428,7 @@ async def api_start_session(
 ):
     if not student_name or len(student_name.strip())<1 or len(student_name.strip())>30:
         raise HTTPException(400, detail="名字长度需要在1-30个字符之间")
-    if age<MIN_AGE or age>MAX_AGE:
-        raise HTTPException(400, detail=f"年龄需要在{MIN_AGE}-{MAX_AGE}岁之间")
+    # 从统一平台进入时，年龄用于调整内容与观察解释，不限制学生参与职业体验。
     career = next((c for c in CAREERS if c["id"]==career_id), None)
     if not career: raise HTTPException(404, detail="未找到该职业")
 

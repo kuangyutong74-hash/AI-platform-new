@@ -3,7 +3,7 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}职业体验模拟器{% endblock %}</title>
 <script defer src="http://localhost:8020/sdk/module-sdk.js"></script>
-<link rel="stylesheet" href="/static/css/style.css?v=exploration-map-v15"><link rel="stylesheet" href="/static/css/responsive.css?v=responsive-v2">
+<link rel="stylesheet" href="/static/css/style.css?v=scenario-controls-v16"><link rel="stylesheet" href="/static/css/responsive.css?v=responsive-v2">
 {% block extra_head %}{% endblock %}</head>
 <body class="{% block body_class %}{% endblock %}">
 <a class="platform-return" href="http://localhost:4173/?from=career" aria-label="返回 AI 伯乐探索星球">← 返回探索星球</a>
@@ -29,8 +29,17 @@
   document.getElementById('font-larger').addEventListener('click', function(){ setScale('larger'); });
 
   var ctrl = document.getElementById('font-size-control');
-  var savedPos = localStorage.getItem('font-size-pos');
-  if (savedPos) { var p = JSON.parse(savedPos); ctrl.style.left = p.l + 'px'; ctrl.style.top = p.t + 'px'; ctrl.style.bottom = 'auto'; }
+  // 情境页使用独立且带版本的坐标，避免继续读取旧版左下角遮挡台词的位置。
+  var positionKey = document.body.classList.contains('page-scenario') ? 'font-size-pos-scenario-v2' : 'font-size-pos';
+  var savedPos = localStorage.getItem(positionKey);
+  if (savedPos) {
+    try {
+      var p = JSON.parse(savedPos);
+      var safeLeft = Math.max(0, Math.min(window.innerWidth - ctrl.offsetWidth, Number(p.l) || 0));
+      var safeTop = Math.max(0, Math.min(window.innerHeight - ctrl.offsetHeight, Number(p.t) || 0));
+      ctrl.style.left = safeLeft + 'px'; ctrl.style.top = safeTop + 'px'; ctrl.style.bottom = 'auto';
+    } catch (_) { localStorage.removeItem(positionKey); }
+  }
 
   var dragging = false, startX, startY, startLeft, startTop;
   function onStart(e) {
@@ -55,7 +64,7 @@
   function onEnd() {
     if (!dragging) return;
     dragging = false; ctrl.style.cursor = 'grab'; ctrl.style.transition = '';
-    localStorage.setItem('font-size-pos', JSON.stringify({l: parseInt(ctrl.style.left), t: parseInt(ctrl.style.top)}));
+    localStorage.setItem(positionKey, JSON.stringify({l: parseInt(ctrl.style.left), t: parseInt(ctrl.style.top)}));
   }
   ctrl.addEventListener('mousedown', onStart);
   ctrl.addEventListener('touchstart', onStart, {passive: false});

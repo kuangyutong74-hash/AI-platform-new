@@ -52,3 +52,42 @@ test("story and career keep works and timeline completion in the same successful
     "career must remain retryable until its artifact and timeline session are complete",
   );
 });
+
+test("career restores a missing launch context from the shared account session", async () => {
+  const career = await readFile(new URL("../modules/career/backend/templates/career_select.html", import.meta.url), "utf8");
+  assert.match(career, /readCareerLaunchContext/);
+  assert.match(career, /\/api\/v1\/assessment-sessions/);
+  assert.match(career, /credentials:'include'/);
+  assert.match(career, /JSON\.stringify\(\{module_id:'career'\}\)/);
+  assert.match(career, /window\.name=JSON\.stringify\(\{namespace:'ai-bole\.launch-context\.v1',context:context\}\)/);
+  assert.ok(
+    career.indexOf("resolvePlatformConnection()") < career.indexOf("fd.set('student_name'"),
+    "career must restore platform identity before creating its local scenario session",
+  );
+});
+
+test("platform module launch and career sessions do not reject students by age", async () => {
+  const core = await readFile(new URL("../modules/platform-core/main.py", import.meta.url), "utf8");
+  const createLaunch = core.slice(
+    core.indexOf("def create_assessment_session"),
+    core.indexOf("@app.post(\"/api/v1/module-authorizations:exchange\")"),
+  );
+  assert.doesNotMatch(createLaunch, /if\s+not\s+manifest\[\"targetAge\"\]/);
+  assert.doesNotMatch(createLaunch, /当前年龄不在该体验模块的适用范围/);
+
+  const career = await readFile(new URL("../modules/career/backend/main.py", import.meta.url), "utf8");
+  const startSession = career.slice(
+    career.indexOf("async def api_start_session"),
+    career.indexOf("# === API: SCENARIO ==="),
+  );
+  assert.doesNotMatch(startSession, /MIN_AGE|MAX_AGE/);
+});
+
+test("career scenario floating controls start outside the dialogue action area", async () => {
+  const base = await readFile(new URL("../modules/career/backend/templates/base.html", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../modules/career/backend/static/css/style.css", import.meta.url), "utf8");
+  assert.match(base, /font-size-pos-scenario-v2/);
+  assert.match(base, /localStorage\.setItem\(positionKey/);
+  assert.match(styles, /\.page-scenario \.replay-guide-btn\{top:[^}]+bottom:auto\}/);
+  assert.match(styles, /\.page-scenario \.font-size-control\{top:[^}]+bottom:auto\}/);
+});

@@ -133,6 +133,8 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
   assert.match(growth, /item\.metricValue/);
   assert.match(growth, /item\.firstUsedAt/);
   assert.match(growth, /最近一次完成/);
+  assert.match(growth, /看看高光作品/);
+  assert.doesNotMatch(growth, /再次去探索/);
   assert.match(collectionHook, /explorerModuleName\(summary\.moduleId\)/);
   assert.doesNotMatch(collectionHook, /`\$\{summary\.moduleId\} 的完成小结`/);
 });

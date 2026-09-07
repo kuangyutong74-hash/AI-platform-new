@@ -262,13 +262,6 @@ function TrailDialog({
               <ExplorerIcon name="book" />
               看看高光作品
             </button>
-            <button
-              className="plain-button"
-              onClick={() => onNavigate("planet")}
-            >
-              <ExplorerIcon name="compass" />
-              再次去探索
-            </button>
           </div>
         </article>
       </section>

@@ -1,5 +1,6 @@
 import os
 import base64
+import gc
 import tempfile
 import unittest
 from http.cookies import SimpleCookie
@@ -23,6 +24,9 @@ def session_cookie(response: Response) -> str:
 class AccountTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
+        # sqlite3.Connection 的上下文管理器只提交事务，不负责关闭连接；
+        # Windows 删除临时数据库前先回收测试方法中已离开作用域的连接对象。
+        gc.collect()
         _TEMP_DIR.cleanup()
 
     def test_registration_and_login_are_separate_and_profile_is_stable(self):
@@ -303,6 +307,21 @@ class AccountTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as repeated:
             main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))
         self.assertEqual(repeated.exception.status_code, 401)
+
+    def test_students_at_registration_age_boundaries_can_launch_every_module(self):
+        for age in (4, 18):
+            response = Response()
+            main.register_account(main.AccountRegistrationIn(
+                username=f"all_modules_{age}", display_name=f"探索者{age}",
+                age=age, password="secret77",
+            ), response)
+            cookie = session_cookie(response)
+            for module_id in ("chat", "story", "deep_sea", "career"):
+                context = main.create_assessment_session(
+                    main.AssessmentSessionIn(module_id=module_id), cookie,
+                )
+                self.assertEqual(context["moduleId"], module_id)
+                self.assertEqual(context["student"]["age"], age)
 
     def test_v1_event_artifact_and_completion_are_profile_scoped(self):
         response = Response()

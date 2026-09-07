@@ -39,29 +39,47 @@
 </div>{% endblock %}
 {% block extra_js %}<script>
 const careersData={{ careers | tojson | safe }};
+const PLATFORM_CORE_URL='http://localhost:8020';
 let selectedCareerId = '';
 // 不在职业选择页提前兑换一次性启动码。职业体验会跨多个完整页面跳转，
 // 提前兑换会清空 window.name 中的启动上下文，使最终完成页无法写回作品和进度。
 // 完成页统一连接 SDK、写入证据和作品并结束平台会话。
-// platformConnection：只读解析 window.name 中的启动上下文取学生身份，不调用
-// connectOptional()，因此不会消费/清空 window.name，也不与完成页的 SDK 兑换冲突。
-const platformConnection = new Promise(function(resolve){
-  let settled=false;
-  function finish(value){if(settled)return;settled=true;clearTimeout(timeout);resolve(value);}
-  const timeout=setTimeout(function(){finish({notConnected:true});},3000);
-  function connect(){
-    if(settled)return;
-    try{
-      const raw=window.name;
-      if(!raw){finish({notConnected:true});return;}
-      const parsed=JSON.parse(raw);
-      if(parsed&&parsed.namespace==='ai-bole.launch-context.v1'&&parsed.context&&parsed.context.student){
-        finish({connected:true,context:parsed.context});
-      }else{finish({notConnected:true});}
-    }catch(_){finish({notConnected:true});}
+// 这里只读取启动上下文，不调用 connectOptional()，因此不会提前兑换一次性启动码。
+// 某些浏览器会在跨端口跳转或直接打开 /careers 时丢失 window.name；这时利用
+// localhost 各端口共享的统一账号 Cookie，向 Core 补发一份职业模块启动上下文。
+function readCareerLaunchContext(){
+  try{
+    if(!window.name)return null;
+    const parsed=JSON.parse(window.name);
+    const context=parsed&&parsed.namespace==='ai-bole.launch-context.v1'&&parsed.context;
+    if(!context||context.moduleId!=='career'||!context.student)return null;
+    if(context.launchCodeExpiresAt&&Date.parse(context.launchCodeExpiresAt)<=Date.now())return null;
+    return context;
+  }catch(_){return null;}
+}
+
+async function createCareerLaunchContext(){
+  const response=await fetch(PLATFORM_CORE_URL+'/api/v1/assessment-sessions',{
+    method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({module_id:'career'})
+  });
+  if(!response.ok){
+    const payload=await response.json().catch(function(){return {};});
+    const error=new Error(payload.error||payload.detail||'无法确认平台登录状态');
+    error.status=response.status;
+    throw error;
   }
-  setTimeout(connect,0);
-});
+  const context=await response.json();
+  window.name=JSON.stringify({namespace:'ai-bole.launch-context.v1',context:context});
+  return context;
+}
+
+async function resolvePlatformConnection(){
+  const existing=readCareerLaunchContext();
+  if(existing)return {connected:true,context:existing};
+  const context=await createCareerLaunchContext();
+  return {connected:true,context:context};
+}
 
 function selectCareer(id){
   const c=careersData.find(x=>x.id===id);if(!c)return;
@@ -96,13 +114,10 @@ async function startSession(){
   document.getElementById('loading-overlay').style.display='flex';
   document.getElementById('loading-msg').textContent='正在准备你的体验之旅...';
   try{
-    const connection=await platformConnection;
+    const connection=await resolvePlatformConnection();
     const student=connection&&connection.context&&connection.context.student;
     if(!student||!student.displayName||!student.age){
-      alert('请先从 AI 伯乐探索星球登录并进入职业模拟器');
-      document.getElementById('loading-overlay').style.display='none';
-      window.location.href='http://localhost:4173/?from=career';
-      return;
+      throw new Error('学生资料不完整，请返回探索星球检查姓名和年龄');
     }
     const fd=new FormData();
     fd.set('career_id',selectedCareerId);
@@ -114,7 +129,12 @@ async function startSession(){
       const message=Array.isArray(detail)?detail.map(x=>x.msg||x.message||'提交信息不完整').join('；'):(typeof detail==='object'?(detail.message||'创建体验失败，请检查填写的信息'):String(detail));
       alert(message);document.getElementById('loading-overlay').style.display='none';return}
     const d=await r.json();window.location.href=d.redirect_url;
-  }catch{ alert('网络连接出问题，请重试');document.getElementById('loading-overlay').style.display='none'; }
+  }catch(error){
+    const message=error&&error.status===401?'登录状态已失效，请返回探索星球重新登录':
+      error&&error.status===403?'老师/家长账号不能进入学生职业体验，请使用学生账号登录':
+      (error&&error.message)||'网络连接出问题，请确认统一账号服务已启动后重试';
+    alert(message);document.getElementById('loading-overlay').style.display='none';
+  }
 }
 
 // Bind mode cards

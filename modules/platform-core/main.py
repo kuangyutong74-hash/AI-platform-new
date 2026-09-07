@@ -933,7 +933,11 @@ def generate_report_snapshot(child_name: str, events: list[dict]) -> tuple[dict,
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"ok": True, "service": "ai-bole-platform-core"}
+    return {
+        "ok": True,
+        "service": "ai-bole-platform-core",
+        "moduleAccessPolicy": "all-students",
+    }
 
 
 @app.get("/api/v1/modules")
@@ -956,8 +960,9 @@ def create_assessment_session(payload: AssessmentSessionIn, ai_bole_session: str
     expires = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
     with connect() as db:
         profile = profile_for_account(db, account["id"])
-        if not manifest["targetAge"]["min"] <= profile["age"] <= manifest["targetAge"]["max"]:
-            raise HTTPException(422, "当前年龄不在该体验模块的适用范围")
+        # targetAge 只描述内容设计时参考的年龄段，不能作为学生进入模块的权限门槛。
+        # 统一平台中的任意学生账号都可以启动全部四个探索模块；年龄仅供模块调整
+        # 表达方式和后续观察解释使用。
         db.execute(
             """INSERT INTO assessment_sessions
                (id,child_profile_id,module_id,module_version,status,created_at)
@@ -1990,4 +1995,4 @@ def evidence_summary(ai_bole_session: str | None = Cookie(default=None)) -> dict
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8020, reload=False)
+    uvicorn.run("main:app", host="0.0.0.0", port=8020, reload=True)
