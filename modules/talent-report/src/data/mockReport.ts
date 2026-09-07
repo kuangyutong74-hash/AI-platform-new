@@ -1,5 +1,5 @@
 export type EvidenceLevel = "strong" | "reference";
-export type Evidence = { id:string; behavior:string; source:string; continent:string; time:string; level:EvidenceLevel; raw:string; logTitle?:string; logSummary?:string; logDetails?:string[] };
+export type Evidence = { id:string; behavior:string; source:string; continent:string; time:string; level:EvidenceLevel; raw:string; logTitle?:string; logSummary?:string; logDetails?:string[]; rounds?:Evidence[] };
 export type DeepSeaPipelineScene = { type:"deep_sea_pipeline";version:number;rows:number;cols:number;pipes:{row:number;col:number;def:string;rot:number;energized:boolean}[];obstacles:{row:number;col:number;kind:string}[];start:{row:number;col:number};end:{row:number;col:number};connected:boolean;rotateCount:number;checkAttempts:number|null };
 export type EcologyScene={type:"deep_sea_ecology";pairs:{label:string;done:boolean}[];adjustments:number;checks:number|null};
 export type MediationScene={type:"deep_sea_mediation";harmony:number;rounds:number;solution:string};

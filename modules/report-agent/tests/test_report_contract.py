@@ -28,7 +28,7 @@ class ReportContractTests(unittest.TestCase):
             self.assertIn(field, SYSTEM_PROMPT)
         self.assertIn("family 与 teacher 只能位于 recommendations 内", SYSTEM_PROMPT)
 
-    def test_normalizer_preserves_a_valid_llm_response(self) -> None:
+    def test_normalizer_preserves_safe_model_sections_and_locks_dimension_evidence(self) -> None:
         candidate = {
             "dimensions": [{
                 "key": "logical",
@@ -53,9 +53,10 @@ class ReportContractTests(unittest.TestCase):
 
         report = normalize_report(candidate, [self.event])
         logical = next(item for item in report["dimensions"] if item["key"] == "logical")
-        self.assertEqual(logical["analysis"], "模型生成的逻辑维度分析。")
+        self.assertNotEqual(logical["analysis"], "模型生成的逻辑维度分析。")
+        self.assertIn("职业体验", logical["analysis"])
         self.assertEqual(report["cross_insights"][0]["text"], "模型生成的跨维度观察。")
-        self.assertEqual(report["evidence_explanations"][0]["title"], "模型生成的过程标题")
+        self.assertEqual(report["evidence_explanations"][0]["title"], "职业任务体验")
         self.assertEqual(report["recommendations"]["family"][0], "模型生成的家庭建议。")
         self.assertEqual(report["recommendations"]["teacher"][0], "模型生成的教师建议。")
 

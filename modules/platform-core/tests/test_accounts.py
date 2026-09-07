@@ -411,6 +411,26 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(talents["naturalistic"]["referenceCount"], 1)
         self.assertEqual(talents["naturalistic"]["recentEvidenceRecordId"], records[0]["id"])
 
+    def test_treasure_stars_receive_distinct_deep_sea_levels(self):
+        level_one = {"module": "deep_sea", "event_type": "deep-sea.spatial-task-completed.v1", "raw_evidence": {"level": 1}}
+        level_two = {"module": "deep_sea", "event_type": "deep-sea.spatial-task-completed.v1", "raw_evidence": {"level": 2}}
+        terminal = {"module": "deep_sea", "event_type": "deep-sea.session-completed.v1", "raw_evidence": {"completedLevels": 3}}
+        self.assertEqual(main.treasure_dimensions_for_event(level_one), {"naturalistic", "logical"})
+        self.assertEqual(main.treasure_dimensions_for_event(level_two), {"spatial", "logical"})
+        self.assertEqual(main.treasure_dimensions_for_event(terminal), set())
+
+    def test_deep_sea_level_three_maps_to_partner_and_adult_language_dimensions(self):
+        level_three = {"module": "deep_sea", "event_type": "deep-sea.spatial-task-completed.v1", "raw_evidence": {"level": 3}}
+        self.assertEqual(main.treasure_dimensions_for_event(level_three), {"interpersonal"})
+        report_dimensions = main.evidence_report_dimensions({
+            "constructs_json": '["space","reason"]', "module_id": "deep_sea",
+            "event_type": "deep-sea.spatial-task-completed.v1", "payload_json": '{"level":3}',
+        }, {"space": "spatial", "reason": "logical"})
+        self.assertIn("interpersonal", report_dimensions)
+        self.assertIn("linguistic", report_dimensions)
+        self.assertNotIn("spatial", report_dimensions)
+        self.assertNotIn("logical", report_dimensions)
+
 
 if __name__ == "__main__":
     unittest.main()

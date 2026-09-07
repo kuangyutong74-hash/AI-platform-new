@@ -36,6 +36,19 @@ EVENT_NAMES = {
     "workday_process_summary": "职业任务体验",
     "decision_revision": "方案判断与调整",
 }
+
+CAREER_NAMES = {
+    "doctor": "社区医生", "firefighter": "消防员", "teacher": "小学教师",
+    "chef": "餐厅厨师", "journalist": "报社记者", "animal_caretaker": "动物保护员",
+}
+CAREER_STAGE_TITLES = {
+    "doctor": ["开诊台准备", "病人分诊", "问诊检查"],
+    "firefighter": ["装备柜点检", "接警出动", "现场救援路径规划"],
+    "teacher": ["布置晨间教室", "课堂管理", "和朵朵聊一聊"],
+    "chef": ["后厨开档", "午餐炒饭流程", "出餐高峰应对"],
+    "journalist": ["编辑部线索墙", "组织报道线索", "采访调查"],
+    "animal_caretaker": ["晨间巡护打卡", "动物救助优先级", "动物健康检查"],
+}
 REPORT_RULE = "只统计行为频次、类型和原始上下文，不换算能力分数，不输出排名。"
 PLATFORM_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
 logger = logging.getLogger("report-agent")
@@ -84,38 +97,131 @@ def event_refs(events: list[EvidenceEvent]) -> list[str]:
 def explain_event(event: EvidenceEvent) -> dict[str, Any]:
     """把机器采集字段转换为成人可以直接阅读的过程回顾。"""
     raw = event.raw_evidence
+    context = event.context if isinstance(event.context, dict) else {}
+    session = context.get("sessionSummary", {}) if isinstance(context.get("sessionSummary"), dict) else {}
     details: list[str] = []
+    title = EVENT_NAMES.get(event.event_type, "探索过程回顾")
+    summary_text = event.behavior_summary
     if event.event_type == "chat.observation-shared.v1":
-        details = [
-            f"孩子共进行了 {raw.get('turnCount', 0)} 轮表达。",
-            "系统按会话保存了交流过程；只有带轮次编号的内容才能判断属于哪一轮。",
-        ]
-        summary = event.context.get("sessionSummary", {}) if isinstance(event.context, dict) else {}
-        words = str(summary.get("childWords", "")).strip()
+        title = "聊天观察：真实表达"
+        words = str(session.get("childWords", "")).strip()
+        turns = raw.get("childTurns", []) if isinstance(raw.get("childTurns"), list) else []
+        excerpts = [str(item.get("text", "")).strip() for item in turns if isinstance(item, dict) and str(item.get("text", "")).strip()]
+        words = words or "；".join(excerpts[-2:])
         if words:
-            details.append(f"孩子的真实表达摘录：“{words[:100]}”")
+            details.append(f"表达内容：孩子说：“{words[:120]}”")
+            summary_text = "孩子在聊天中说出了自己的感受、想法或关系期待。"
+        else:
+            details.append("表达内容：这条历史记录没有保存可引用的聊天原文。")
+        details.append(f"交流过程：本次共留下 {raw.get('turnCount', len(excerpts))} 轮表达。")
     elif event.event_type == "career.task-completed.v1":
-        details = [
-            f"过程中主动尝试 {raw.get('attemptCount', 0)} 次，并调整 {raw.get('adjustmentCount', 0)} 次。",
-            f"遇到困难时查看提示 {raw.get('hintCount', 0)} 次，用时约 {raw.get('completionSeconds', 0)} 秒。",
-        ]
+        task_key = str(raw.get("taskKey", "")).strip()
+        career_name = str(session.get("careerName", "")).strip() or CAREER_NAMES.get(task_key, "职业")
+        stages = session.get("stageTitles", []) if isinstance(session.get("stageTitles"), list) else []
+        stages = [str(item).strip() for item in stages if str(item).strip()] or CAREER_STAGE_TITLES.get(task_key, [])
+        title = f"职业体验：{career_name}"
+        summary_text = f"孩子体验了{career_name}一天中的真实工作环节。"
+        details = [f"体验内容：完成了{'、'.join(stages)}。" if stages else "体验内容：完成了本次职业情境中的任务。",
+                   f"过程表现：主动尝试 {raw.get('attemptCount', 0)} 次，调整 {raw.get('adjustmentCount', 0)} 次，查看提示 {raw.get('hintCount', 0)} 次。"]
+        reflections = session.get("mentorReflections", []) if isinstance(session.get("mentorReflections"), list) else []
+        for reflection in reflections[-2:]:
+            if isinstance(reflection, dict) and str(reflection.get("answer", "")).strip():
+                details.insert(-1, f"导师对话：孩子回答：“{str(reflection['answer']).strip()[:120]}”")
     elif event.event_type == "deep-sea.spatial-task-completed.v1":
-        details = [
-            f"完成第 {raw.get('level', 0)} 个深海任务，用时约 {raw.get('completionSeconds', 0)} 秒。",
-            f"根据反馈调整了 {raw.get('adjustmentCount', 0)} 次。",
-        ]
+        level = int(raw.get("level", 0) or 0)
+        if level == 1:
+            review = session.get("levelOneReview", {}) if isinstance(session.get("levelOneReview"), dict) else {}
+            pairs = review.get("matchedRelationships", []) if isinstance(review.get("matchedRelationships"), list) else []
+            pairs = [str(item).strip() for item in pairs if str(item).strip()]
+            title, summary_text = "深海基地第一关：珊瑚公寓", "孩子依据生物的栖息地和共生关系，为海洋生物安排住处。"
+            details = [f"观察与判断：孩子完成了{'、'.join(pairs)}的生态关系配对。" if pairs else "观察与判断：孩子比较生物特征、栖息地和共生关系后完成配对。",
+                       f"任务结果：成功配对 {raw.get('successfulPairs', 0)}/{raw.get('totalPairs', 4)} 组。"]
+        elif level == 2:
+            review = session.get("levelTwoReview", {}) if isinstance(session.get("levelTwoReview"), dict) else {}
+            connected = review.get("connected")
+            result = "接通了起点与终点" if connected is not False else "继续尝试接通线路"
+            title, summary_text = "深海基地第二关：洋流电网", "孩子通过摆放、旋转和检查管件方向来规划洋流线路。"
+            details = [f"建造过程：孩子组合管件、检查水流方向，最终{result}。",
+                       f"调整记录：旋转或调整了 {review.get('rotateCount', raw.get('adjustmentCount', 0))} 次。"]
+        elif level == 3:
+            review = session.get("levelThreeReview", {}) if isinstance(session.get("levelThreeReview"), dict) else {}
+            solution = str(review.get("solutionSummary", "")).strip() if isinstance(review, dict) else ""
+            utterances = review.get("childUtterances", []) if isinstance(review, dict) else []
+            utterances = [str(item).strip() for item in utterances if str(item).strip()] if isinstance(utterances, list) else []
+            details = [f"调解表达：孩子说：“{utterances[-1][:120]}”" if utterances else "调解表达：这条历史记录未保存孩子当时的逐字表达。",
+                       f"方案选择：{solution[:140]}" if solution else "方案选择：这条历史记录未保存孩子当时选择的具体方案。"]
+            title, summary_text = "深海基地第三关：海洋议事厅", "孩子在角色分歧情境中完成了调解表达和方案选择。"
+        else:
+            details = ["完成了一次深海基地重建任务。"]
     elif event.event_type == "deep-sea.session-completed.v1":
-        details = [f"完成 {raw.get('completedLevels', 0)} / {raw.get('totalLevels', 0)} 个深海任务。", f"总用时约 {raw.get('completionSeconds', 0)} 秒，调整 {raw.get('adjustmentCount', 0)} 次。"]
+        title, summary_text = "深海基地重建：完整探索", "孩子依次经历了生态配对、洋流线路建造和角色协商三类任务。"
+        details = ["探索内容：完成珊瑚公寓、洋流电网和海洋议事厅的重建任务。", f"过程记录：完成 {raw.get('completedLevels', 0)}/{raw.get('totalLevels', 3)} 关，共调整 {raw.get('adjustmentCount', 0)} 次。"]
     elif event.event_type == "story.contribution-completed.v1":
-        details = [f"本次贡献了 {raw.get('contributionCount', 0)} 个故事片段。", f"故事《{raw.get('storyTitle', '故事共创')}》已完成并保存。"]
+        story_title = str(session.get("storyTitle", "")).strip() or str(raw.get("storyTitle", "")).strip() or "故事共创"
+        synopsis = str(session.get("storySynopsis", "") or session.get("storyOutline", "")).strip()
+        highlight = str(session.get("childHighlight", "")).strip()
+        title, summary_text = f"故事共创：《{story_title}》", "孩子参与了故事情节的发展和结局创作。"
+        details = [f"故事梗概：{synopsis[:160].rstrip('。')}。" if synopsis else "故事梗概：这条历史记录没有保存可复述的完整梗概。"]
+        if highlight:
+            details.append(f"精彩表达：“{highlight[:100]}”")
+        details.append(f"共创过程：孩子贡献了 {raw.get('contributionCount', 0)} 个故事片段。")
     if not details:
         details = ["系统保留了这次活动中的关键行为过程，供家长和老师后续对照观察。"]
     return {
         "evidence_ref": event.id,
-        "title": EVENT_NAMES.get(event.event_type, "探索过程回顾"),
-        "summary": event.behavior_summary,
+        "title": title,
+        "summary": summary_text,
         "details": details,
     }
+
+
+def dimension_event_story(event: EvidenceEvent, dimension: str) -> str:
+    """按智能维度解释同一事件，避免把语言表达和人际选择写成同一结论。"""
+    if event.module == "chat":
+        summary = event.context.get("sessionSummary", {}) if isinstance(event.context, dict) else {}
+        words = str(summary.get("childWords", "")).strip() if isinstance(summary, dict) else ""
+        people = [name for name in ("同学", "朋友", "老师", "爸爸", "妈妈", "家人", "伙伴") if name in words]
+        if dimension == "interpersonal":
+            return (f"孩子在聊天中提到{'、'.join(people)}，并说：“{words[:120]}”。人际维度只观察这段表达中对他人和关系的关注。"
+                    if people else "孩子参与了聊天，但现有记录没有保存可确认的他人观点或互动细节，因此人际维度不根据个人感受反推关系表现。")
+        if dimension == "intrapersonal":
+            return (f"孩子在聊天中说：“{words[:120]}”。内省维度观察的是孩子如何说出自己的感受、偏好、想法或期待。"
+                    if words else "孩子完成了聊天，但现有记录没有保存可引用的自我表达，因此内省维度不作进一步推断。")
+    if event.module == "career" and dimension == "intrapersonal":
+        summary = event.context.get("sessionSummary", {}) if isinstance(event.context, dict) else {}
+        reflections = summary.get("mentorReflections", []) if isinstance(summary, dict) and isinstance(summary.get("mentorReflections"), list) else []
+        answers = [str(item.get("answer", "")).strip() for item in reflections if isinstance(item, dict) and str(item.get("answer", "")).strip()]
+        if answers:
+            return f"在职业导师追问中，孩子回答：“{answers[-1][:140]}”。这条记录呈现的是孩子如何说明自己的想法、理由或感受。"
+    if event.module == "deep_sea":
+        level = int(event.raw_evidence.get("level", 0) or 0)
+        summary = event.context.get("sessionSummary", {}) if isinstance(event.context, dict) else {}
+        if level == 1:
+            review = summary.get("levelOneReview", {}) if isinstance(summary, dict) else {}
+            pairs = review.get("matchedRelationships", []) if isinstance(review, dict) else []
+            pairs = [str(item).strip() for item in pairs if str(item).strip()] if isinstance(pairs, list) else []
+            if dimension == "naturalistic":
+                pair_text = f"：{'、'.join(pairs)}" if pairs else ""
+                return f"孩子依据栖息地和共生关系完成生态配对{pair_text}，自然观察维度关注其对生物特征与关系的辨认。"
+            if dimension == "logical":
+                return "孩子比较配对条件并检查结果，逻辑维度关注其如何验证判断，而不是生物知识本身。"
+        if level == 2:
+            if dimension == "spatial":
+                return "孩子摆放并旋转管件来规划洋流线路，空间维度关注位置、方向和连接关系。"
+            if dimension == "logical":
+                return "孩子检查线路断点与连通结果后调整方案，逻辑维度关注排查和验证过程。"
+    if event.module != "deep_sea" or int(event.raw_evidence.get("level", 0) or 0) != 3:
+        return child_story_for_event(event)
+    summary = event.context.get("sessionSummary", {}) if isinstance(event.context, dict) else {}
+    review = summary.get("levelThreeReview", {}) if isinstance(summary, dict) else {}
+    solution = str(review.get("solutionSummary", "")).strip() if isinstance(review, dict) else ""
+    utterances = review.get("childUtterances", []) if isinstance(review, dict) else []
+    utterances = [str(item).strip() for item in utterances if str(item).strip()] if isinstance(utterances, list) else []
+    if dimension == "linguistic":
+        return f"在海洋议事厅的调解中，孩子说：“{utterances[-1][:120]}”。这条记录呈现的是孩子如何用语言回应双方、组织调解意见。" if utterances else "孩子完成了海洋议事厅调解，但这条历史记录没有保存逐字表达，因此语言智能不根据所选方案反推说话内容。"
+    if dimension == "interpersonal":
+        return f"在海洋议事厅中，孩子选择的协调方案是：{solution[:140].rstrip('。')}。这条记录呈现的是方案如何回应双方需要。" if solution else "孩子完成了海洋议事厅调解，但这条历史记录没有保存具体方案，因此人际智能只确认参与了双方需要的协调情境。"
+    return child_story_for_event(event)
 
 
 def child_story_for_event(event: EvidenceEvent) -> str:
@@ -130,30 +236,145 @@ def child_story_for_event(event: EvidenceEvent) -> str:
         words = str(summary.get("childWords", "")).strip()
         topic = str(raw.get("topicKey", "")).strip() or title
         if words:
-            if topic:
-                return f"这次聊天进入时选择了“{topic}”主题；在会话中的另一段表达里，你提到：{words[:80]}。现有记录没有把这两段内容标为同一轮。"
-            return f"这次聊天中，你有一段真实表达：{words[:80]}。"
+            people = [name for name in ("同学", "朋友", "老师", "爸爸", "妈妈", "家人", "伙伴") if name in words]
+            relation = f"你还说清了自己对{'、'.join(people)}的关注和期待。" if people else "你把自己的感受和在意的事情说得很清楚。"
+            return f"这次聊天中，你说：“{words[:90]}”。{relation}"
         if topic:
             return f"这次聊天里，你围绕“{topic}”进行了 {raw.get('turnCount', 0)} 轮表达。智能体只记录了这次真实聊过的内容。"
-    if event.module == "story" and title:
-        detail = artifact_summary or f"你为故事贡献了 {raw.get('contributionCount', 0)} 个片段"
-        return f"在《{title}》的共创里，{detail.rstrip('。')}。这是这次故事游戏留下的真实记录。"
+    if event.module == "story":
+        title = title or str(summary.get("storyTitle", "")).strip() or str(raw.get("storyTitle", "")).strip() or "这次故事"
+        outline = str(summary.get("storySynopsis", "") or summary.get("storyOutline", "")).strip()
+        highlight = str(summary.get("childHighlight", "")).strip()
+        ideas = summary.get("childIdeas", []) if isinstance(summary, dict) else []
+        ideas = [str(item).strip() for item in ideas if str(item).strip()] if isinstance(ideas, list) else []
+        detail = outline or artifact_summary.removeprefix("故事讲到：").strip()
+        if detail:
+            highlight_text = f" 精彩的一句是：“{highlight[:70]}”。" if highlight else (f" 你提出过：“{ideas[-1][:60]}”。" if ideas else "")
+            return f"你和伙伴共创了《{title}》。故事梗概：{detail[:120].rstrip('。')}。{highlight_text}".strip()
+        return f"你完成了《{title}》的共创，并为故事写下了 {raw.get('contributionCount', 0)} 个片段。"
     if event.module == "deep_sea":
-        if int(raw.get("level", 0)) == 1:
+        level = int(raw.get("level", 0))
+        if level == 1:
+            review = summary.get("levelOneReview", {}) if isinstance(summary, dict) else {}
+            pairs = review.get("matchedRelationships", []) if isinstance(review, dict) else []
+            pairs = [str(item).strip() for item in pairs if str(item).strip()] if isinstance(pairs, list) else []
             successful = int(raw.get("successfulPairs", 0))
             total = int(raw.get("totalPairs", 4))
             accuracy = round(float(raw.get("accuracyPercent", successful / max(total, 1) * 100)))
             checks = raw.get("checkAttempts")
             check_text = f"，一共检查了 {checks} 次" if checks is not None else ""
             result = "全部配对成功" if successful == total else "还没有全部配对成功"
-            return f"第一关生物配对中，你成功配对了 {successful}/{total} 组，最终准确度 {accuracy}%（{result}）{check_text}。"
+            if pairs:
+                return f"在第一关“珊瑚公寓”里，你根据栖息地和共生关系，为{'、'.join(pairs)}找到了合适的位置；{result}{check_text}。"
+            return f"在第一关“珊瑚公寓”里，你观察生物的栖息地和共生关系来安排住处，成功完成 {successful}/{total} 组配对（{result}）{check_text}。"
+        if level == 2:
+            review = summary.get("levelTwoReview", {}) if isinstance(summary, dict) else {}
+            connected = review.get("connected") if isinstance(review, dict) else None
+            rotations = int(review.get("rotateCount", raw.get("adjustmentCount", 0)) or 0) if isinstance(review, dict) else int(raw.get("adjustmentCount", 0) or 0)
+            result = "接通了起点和终点" if connected is not False else "继续寻找接通线路的办法"
+            return f"在第二关“洋流电网”里，你摆放并旋转管件，检查水流方向，经过 {rotations} 次旋转调整后{result}。"
+        if level == 3:
+            review = summary.get("levelThreeReview", {}) if isinstance(summary, dict) else {}
+            solution = str(review.get("solutionSummary", "")).strip() if isinstance(review, dict) else ""
+            utterances = review.get("childUtterances", []) if isinstance(review, dict) else []
+            utterances = [str(item).strip() for item in utterances if str(item).strip()] if isinstance(utterances, list) else []
+            if solution:
+                quote = f" 你在协商中说：“{utterances[-1][:90]}”。" if utterances else ""
+                return f"在第三关“海洋议事厅”里，你听取双方需要，并提出了协调办法：{solution[:120].rstrip('。')}。{quote}".strip()
+            return "在第三关“海洋议事厅”里，你听取不同角色的需要，选择回应方式并尝试提出协调方案。"
         return f"在深海任务中，你完成了 {raw.get('completedLevels', raw.get('level', 0))} 个关卡，并根据反馈调整了 {raw.get('adjustmentCount', 0)} 次。"
     if event.module == "career":
-        task = str(raw.get("taskKey", "这次职业任务")).strip()
-        return f"在“{task}”职业任务里，你尝试了 {raw.get('attemptCount', 0)} 次，并调整了 {raw.get('adjustmentCount', 0)} 次选择。"
+        task_key = str(raw.get("taskKey", "")).strip()
+        career_name = str(summary.get("careerName", "")).strip() if isinstance(summary, dict) else ""
+        if not career_name and title:
+            career_name = title.removesuffix("的一天").strip()
+        career_name = career_name or CAREER_NAMES.get(task_key, "这次职业")
+        stage_titles = summary.get("stageTitles", []) if isinstance(summary, dict) else []
+        if not isinstance(stage_titles, list) or not stage_titles:
+            stage_titles = CAREER_STAGE_TITLES.get(task_key, [])
+        stage_titles = [str(item).strip() for item in stage_titles if str(item).strip()]
+        if stage_titles:
+            return f"在“{career_name}”体验里，你完成了{'、'.join(stage_titles)}，走完了这个职业一天里的几项真实任务。"
+        if artifact_summary:
+            return f"在“{career_name}”体验里，{artifact_summary.rstrip('。')}。"
+        return f"你完成了一次“{career_name}”职业体验。"
     if artifact_summary:
         return f"这次探索留下的真实记录是：{artifact_summary}"
     return "这次体验已经完成，但目前保存的记录还不足以写出这颗星的专属发现。"
+
+
+def child_story_for_events(events: list[EvidenceEvent]) -> str:
+    """把同一颗星的全部历史体验压缩成儿童可读的累计反馈。"""
+    if not events:
+        return "还没有可回看的探索记录。去对应的大陆完成一次游戏后，我会把你的真实表现写在这里。"
+    if len(events) == 1:
+        return child_story_for_event(events[0])
+
+    if any(event.module == "deep_sea" for event in events) and all(event.module == "chat" or (event.module == "deep_sea" and int(event.raw_evidence.get("level", 0) or 0) == 3) for event in events):
+        chats = [event for event in events if event.module == "chat"]
+        negotiations = [event for event in events if event.module == "deep_sea"]
+        parts = [child_story_for_event(event).rstrip("。") for event in events[-3:]]
+        lead = f"你留下了 {len(chats)} 次聊天交流和 {len(negotiations)} 次议事厅协商记录。"
+        return f"{lead}{'；'.join(parts)}。"
+
+    if all(event.module == "story" for event in events):
+        contributions = sum(max(0, int(event.raw_evidence.get("contributionCount", 0) or 0)) for event in events)
+        titles = []
+        for event in events:
+            artifacts = event.context.get("artifacts", []) if isinstance(event.context, dict) else []
+            title = next((str(item.get("title", "")).strip() for item in artifacts if isinstance(item, dict) and item.get("title")), "")
+            if title and title not in titles:
+                titles.append(title)
+        title_text = ""
+        if titles:
+            shown = "、".join(f"《{title}》" for title in titles[-3:])
+            title_text = f"你创作过{shown}{f'等 {len(titles)} 个故事' if len(titles) > 3 else ''}。"
+        outlines = []
+        for event in events:
+            summary = event.context.get("sessionSummary", {}) if isinstance(event.context, dict) else {}
+            outline = str(summary.get("storySynopsis", "") or summary.get("storyOutline", "")).strip() if isinstance(summary, dict) else ""
+            if outline and outline not in outlines:
+                outlines.append(outline)
+        highlights = [str(event.context.get("sessionSummary", {}).get("childHighlight", "")).strip() for event in events if isinstance(event.context, dict) and isinstance(event.context.get("sessionSummary"), dict)]
+        highlights = [text for text in highlights if text]
+        outline_text = f"最近的故事讲到：{'；'.join(text[:70] for text in outlines[-2:])}。" if outlines else ""
+        highlight_text = f"精彩的一句是：“{highlights[-1][:70]}”。" if highlights else ""
+        return f"你已经完成了 {len(events)} 次故事共创，共贡献了 {contributions} 个故事片段。{title_text}{outline_text}{highlight_text}"
+
+    if all(event.module == "chat" for event in events):
+        turns = sum(max(0, int(event.raw_evidence.get("turnCount", 0) or 0)) for event in events)
+        topics: list[str] = []
+        excerpts: list[str] = []
+        for event in events:
+            topic = str(event.raw_evidence.get("topicKey", "")).strip()
+            if topic and topic not in topics:
+                topics.append(topic)
+            child_turns = event.raw_evidence.get("childTurns", [])
+            if isinstance(child_turns, list):
+                for turn in child_turns:
+                    text = str(turn.get("text", "")).strip() if isinstance(turn, dict) else ""
+                    if text and text not in excerpts:
+                        excerpts.append(text)
+            summary = event.context.get("sessionSummary", {}) if isinstance(event.context, dict) else {}
+            words = str(summary.get("childWords", "")).strip() if isinstance(summary, dict) else ""
+            if words and words not in excerpts:
+                excerpts.append(words)
+        details = []
+        if topics:
+            details.append(f"你聊过“{'”“'.join(topics[-3:])}”{f'等 {len(topics)} 个主题' if len(topics) > 3 else ''}")
+        if excerpts:
+            details.append(f"你还说过：“{'”“'.join(text[:42] for text in excerpts[-2:])}”")
+        detail_text = "，".join(details)
+        people = [name for name in ("同学", "朋友", "老师", "爸爸", "妈妈", "家人", "伙伴") if any(name in text for text in excerpts)]
+        relation_text = f"你在分享中提到了{'、'.join(people)}，也说出了自己对这些关系的感受和期待。" if people else ""
+        return f"你已经完成了 {len(events)} 次聊天。{detail_text + '。' if detail_text else ''}{relation_text}"
+
+    if all(event.module == "career" for event in events):
+        reviews = list(dict.fromkeys(child_story_for_event(event).rstrip("。") for event in events))
+        return f"你已经完成了 {len(events)} 次职业体验。{'；'.join(reviews[-3:])}。之前体验过的职业内容也都收藏在这颗星里。"
+
+    examples = "；".join(child_story_for_event(event).rstrip("。；") for event in events[-3:])
+    return f"你已经完成了 {len(events)} 次相关探索。最近的真实记录包括：{examples}。这颗星也保留着之前的全部互动。"
 
 
 class RuleAnalyzer:
@@ -174,7 +395,7 @@ class RuleAnalyzer:
             status = "采集行为较少" if len(items) < 2 else ("证据丰富" if strong >= 2 else "证据均衡")
             refs = event_refs(items)
             analysis = (
-                f"具体记录：{'；'.join(child_story_for_event(item).rstrip('。；') for item in items[:4])}。"
+                f"具体记录：{'；'.join(dimension_event_story(item, key).rstrip('。；') for item in items[:4])}。"
                 f"本阶段在{'、'.join(modules)}中共留下{len(items)}条相关过程记录，其中{strong}条较完整。"
                 "这些内容只说明孩子在当时任务里采用了哪些做法，不等同于固定能力结论。"
                 if items else "本阶段暂未收集到该维度的可回溯行为线索，因此不作判断。"
@@ -186,7 +407,7 @@ class RuleAnalyzer:
                 "隔一至两周在家庭或课堂的新情境中再次观察，比较这种做法是否会自然出现。"
                 if items else "暂无可观测数据。完成相关探索后，这里会结合孩子的真实行为生成观察提示。"
             )
-            child_story = child_story_for_event(items[0]) if items else "还没有可回看的探索记录。去对应的大陆完成一次游戏后，我会根据那一局的真实内容写在这里。"
+            child_story = child_story_for_events(items)
             dimensions.append({"key": key, "name": name, "status": status, "evidence_refs": refs, "analysis": analysis, "adult_observation": observation, "child_story": child_story})
         active = [MODULE_NAMES.get(name, name) for name, count in Counter(event.module for event in events).items() if count]
         refs = event_refs(events)
@@ -240,7 +461,7 @@ logical_mathematical 归一化为 logical。
 每个维度还要返回 adult_observation：这是右页的“迁移观察清单”，不得复述 analysis。请给出3至5个彼此不同、可执行的观察方向，
 覆盖新情境迁移、理由表达、受挫后的调整、合作方式或一至两周后的复现；各项用“；”分隔，不得对孩子下结论。没有记录时固定返回
 “暂无可观测数据。完成相关探索后，这里会结合孩子的真实行为生成观察提示。”。每个维度还要返回 child_story：面向孩子，
-用第二人称和一至两句儿童能读懂的话，只复述该维度已有的真实游戏表现，尽量点明真实话题、故事名、任务名、孩子原话或实际调整次数。
+用第二人称和一至三句儿童能读懂的话，综合该维度全部历史事件：必须说明累计体验次数与累计互动结果，并尽量点明不同的真实话题、故事名、任务名、孩子原话或实际调整次数。
 不得套用示例、虚构引语或泛泛夸奖，也不得因为事件被标记为某维度就虚构该维度行为（例如聊天记录没有自然观察内容时，不能写成观察了自然）；没有记录时说明
 还没有可回看的探索记录。另外返回 evidence_explanations 数组，
 每条包含 evidence_ref、中文 title、自然语言 summary 和 2 至 4 条 details；只能解释已有数据，不显示事件代码、字段名、
@@ -342,8 +563,9 @@ interpersonal 只写理解/回应他人、合作、关系互动；intrapersonal 
             raise RuntimeError("维度深描模型请求失败") from exc
 
 
-def apply_dimension_expansion(report: dict[str, Any], expansion: dict[str, Any]) -> dict[str, Any]:
+def apply_dimension_expansion(report: dict[str, Any], expansion: dict[str, Any], events: list[EvidenceEvent] | None = None) -> dict[str, Any]:
     supplied = {canonical_key(str(item.get("key", ""))): item for item in expansion.get("dimensions", []) if isinstance(item, dict)}
+    protected = {key for event in (events or []) if len(event.intelligence_candidates) > 1 for key in event.intelligence_candidates}
     for dimension in report.get("dimensions", []):
         item = supplied.get(dimension.get("key"))
         if not item or not dimension.get("evidence_refs"):
@@ -353,7 +575,7 @@ def apply_dimension_expansion(report: dict[str, Any], expansion: dict[str, Any])
         interpretations = clean_list(item.get("interpretations"))[:4]
         limits = clean_list(item.get("limits"))[:2]
         observation_items = clean_list(item.get("adult_observations"))
-        if facts and interpretations and limits:
+        if facts and interpretations and limits and dimension.get("key") not in protected:
             dimension["analysis"] = (
                 f"具体表现：{'；'.join(facts)}。"
                 f"本维度观察：{'；'.join(interpretations)}。"
@@ -380,10 +602,19 @@ def normalize_report(candidate: dict[str, Any], events: list[EvidenceEvent]) -> 
             "key": fallback_item["key"], "name": fallback_item["name"],
             "status": item.get("status") if item.get("status") in {"证据丰富", "证据均衡", "采集行为较少"} else fallback_item["status"],
             "evidence_refs": refs,
-            "analysis": str(item.get("analysis", "")).strip() if refs else fallback_item["analysis"],
+            # 同一事件跨维度时必须使用维度专属的确定性解释，避免模型把
+            # 人际、内省、逻辑等页面复写成同一段话。
+            "analysis": fallback_item["analysis"],
             "adult_observation": str(item.get("adult_observation", "")).strip() if refs else fallback_item["adult_observation"],
-            "child_story": str(item.get("child_story", "")).strip() if refs else fallback_item["child_story"],
+            # 星星反馈必须稳定覆盖全部历史事件，不允许模型退化成只复述一条。
+            "child_story": fallback_item["child_story"],
         })
+    level_three_refs = {event.id for event in events if event.id and event.module == "deep_sea" and int(event.raw_evidence.get("level", 0) or 0) == 3}
+    if level_three_refs:
+        fallback_by_key = {item["key"]: item for item in fallback["dimensions"]}
+        for dimension in dimensions:
+            if dimension["key"] in {"linguistic", "interpersonal"} and level_three_refs.intersection(dimension["evidence_refs"]):
+                dimension["analysis"] = fallback_by_key[dimension["key"]]["analysis"]
     cross_insights = []
     for item in candidate.get("cross_insights", []):
         if isinstance(item, dict):
@@ -393,21 +624,9 @@ def normalize_report(candidate: dict[str, Any], events: list[EvidenceEvent]) -> 
                 cross_insights.append({"text": text, "evidence_refs": refs})
     if not cross_insights:
         cross_insights = fallback["cross_insights"]
-    explanations_by_ref = {
-        str(item.get("evidence_ref")): item for item in candidate.get("evidence_explanations", [])
-        if isinstance(item, dict) and str(item.get("evidence_ref")) in valid_refs
-    }
-    evidence_explanations = []
-    for fallback_item in fallback["evidence_explanations"]:
-        item = explanations_by_ref.get(str(fallback_item["evidence_ref"]), {})
-        details = item.get("details", []) if isinstance(item.get("details"), list) else []
-        clean_details = [str(detail).strip() for detail in details if str(detail).strip()]
-        evidence_explanations.append({
-            "evidence_ref": fallback_item["evidence_ref"],
-            "title": str(item.get("title", "")).strip() or fallback_item["title"],
-            "summary": str(item.get("summary", "")).strip() or fallback_item["summary"],
-            "details": clean_details[:4] or fallback_item["details"],
-        })
+    # 过程回顾由确定性规则从原始证据生成，避免模型把不同活动都改写成
+    # “用时/调整次数/成功率”的同一种说明。
+    evidence_explanations = fallback["evidence_explanations"]
     supplied = candidate.get("recommendations", {}) if isinstance(candidate.get("recommendations"), dict) else {}
     def advice_list(value: Any, fallback_items: list[str]) -> list[str]:
         values = value if isinstance(value, list) else [value] if isinstance(value, str) else []
@@ -438,7 +657,7 @@ def generate_report(report_request: ReportRequest) -> dict[str, Any]:
             logger.exception("第一阶段报告生成失败，改用规则报告")
             return RuleAnalyzer().analyze(report_request.events)
         try:
-            return apply_dimension_expansion(report, analyzer.expand_dimensions(report_request.events, report))
+            return apply_dimension_expansion(report, analyzer.expand_dimensions(report_request.events, report), report_request.events)
         except (RuntimeError, KeyError, IndexError, TypeError, ValueError):
             logger.exception("第二阶段维度深描失败，暂时返回第一阶段报告")
             return report

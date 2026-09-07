@@ -32,6 +32,23 @@ function compactText(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
 }
 
+function storySynopsis(value: string): string {
+  const clean = compactText(value.replace(/【[^】]+】/g, ' ').replace(/你觉得接下来会发生什么呢？/g, ' '));
+  const sentences = clean.match(/[^。！？!?]+[。！？!?]?/g)?.map(compactText).filter(Boolean) || [];
+  if (sentences.length <= 4) return sentences.join('').slice(0, 260);
+  return [...sentences.slice(0, 2), ...sentences.slice(-2)].join('').slice(0, 260);
+}
+
+function vividChildSentence(messages: StoryMessage[]): string {
+  const candidates = messages
+    .filter((message) => message.role === 'child')
+    .flatMap((message) => compactText(message.content).match(/[^。！？!?]+[。！？!?]?/g) || [])
+    .map(compactText)
+    .filter((sentence) => sentence.length >= 12);
+  const vivid = candidates.filter((sentence) => /像|仿佛|轻轻|忽然|闪|光|声音|香气|颜色|笑|眼睛/.test(sentence));
+  return (vivid.sort((a, b) => b.length - a.length)[0] || candidates.sort((a, b) => b.length - a.length)[0] || '').slice(0, 140);
+}
+
 export default function StoryPlayPage() {
   const { storyId } = useParams<{ storyId: string }>();
   const navigate = useNavigate();
@@ -174,6 +191,16 @@ try {
   const contributionCount = savedMessages.filter(
     (message) => message.role === 'child',
   ).length;
+  const synopsis = storySynopsis(savedStory.full_text || savedMessages.map((message) => message.content).join(' '));
+  const childHighlight = vividChildSentence(savedMessages);
+  const childIdeas = savedMessages
+    .filter((message) => message.role === 'child')
+    .map((message) => compactText(message.content))
+    .filter(Boolean)
+    .slice(-3);
+  const artifactSummary = synopsis
+    ? `故事梗概：${synopsis}${childHighlight ? ` 精彩表达：“${childHighlight}”` : ''}`.slice(0, 520)
+    : '完成故事共创表达';
 
   const sdk =
     platformSdkRef.current ||
@@ -212,7 +239,7 @@ try {
         artifactId: `story:${id}:${Date.now()}`,
         type: 'story',
         title: savedTitle,
-        summary: '完成故事共创表达',
+        summary: artifactSummary,
         previewResourceId: snapshot.id,
         sourceResourceId: `story:${id}`,
         createdAt: new Date().toISOString(),
@@ -224,6 +251,10 @@ try {
     .completeSession({
       completionMode,
       endingLength: endingText.length,
+      storyTitle: savedTitle,
+      storySynopsis: synopsis,
+      childHighlight,
+      childIdeas,
     })
     .catch(() => null);
 } catch {

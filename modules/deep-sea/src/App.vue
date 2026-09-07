@@ -253,7 +253,34 @@ async function syncCompletion(event) {
     const raw = event.raw_evidence || {}
     const snapshot = await sdk.captureSnapshot('#app').catch(() => null)
     await sdk.publishArtifact({ schemaVersion: '1.0', artifactId: `deep-sea:${gameState.studentId}`, type: 'game-result', title: raw.title || '深海基地完整重建', summary: event.behavior_summary, previewResourceId: snapshot?.id, sourceResourceId: `deep-sea:${gameState.studentId}`, createdAt: new Date().toISOString() })
-    await sdk.completeSession({ completedLevels: raw.completed_levels || 0 })
+    const levelOnePairs = (gameState.level1_raw?.pair_details || [])
+      .filter(pair => pair?.done)
+      .map(pair => pair?.label)
+      .filter(Boolean)
+    await sdk.completeSession({
+      completedLevels: raw.completed_levels || 0,
+      levelOneReview: {
+        taskName: '珊瑚公寓生物安家',
+        matchedRelationships: levelOnePairs,
+        checkAttempts: gameState.level1_raw?.check_attempts ?? 0,
+        adjustmentCount: gameState.level1_raw?.removal_count ?? 0,
+      },
+      levelTwoReview: {
+        taskName: '洋流电网重建',
+        connected: gameState.level2_raw?.is_connected !== false,
+        rotateCount: gameState.level2_raw?.rotate_count ?? 0,
+        pipesUsed: gameState.level2_raw?.pipe_count ?? gameState.level2_pipes_used ?? 0,
+      },
+      levelThreeReview: {
+        taskName: '海洋议事厅调解',
+        solutionSummary: gameState.level3_raw?.solution_summary || '',
+        harmonyScore: gameState.level3_harmony_score || 0,
+        childUtterances: (gameState.level3_dialogue || [])
+          .filter(message => message?.role === 'player' && message?.text)
+          .map(message => message.text)
+          .slice(-3),
+      },
+    })
     syncStatus.value = result?.queued ? 'queued' : 'saved'
   } catch (_) {
     syncStatus.value = 'error'

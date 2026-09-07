@@ -305,8 +305,10 @@ async function syncCareerCompletion(record){
     const key=G.runId+':completed';
     await platformSdk.emitEvidence(platformSdk.makeEvent('career.task-completed.v1',{taskKey:String(G.careerId||'career-task'),attemptCount:record.interactionCount||0,hintCount:record.hintCount||0,completionSeconds:record.durationSeconds||0,adjustmentCount:(record.adjustmentCount||0)+(record.retryCount||0)},key));
     const snapshot=await platformSdk.captureSnapshot('#wd-main').catch(()=>null);
-    await platformSdk.publishArtifact({schemaVersion:'1.0',artifactId:'career:'+G.runId,type:'other',title:record.career+'的一天',summary:'完成职业日常任务，并在过程中根据结果进行尝试和调整。',previewResourceId:snapshot&&snapshot.id,sourceResourceId:'career:'+G.runId,createdAt:new Date().toISOString()});
-    await platformSdk.completeSession({completedStages:record.completedStages||0,stageCount:record.stageCount||0});
+    const stageTitles=(G.career?.stages||[]).map(stage=>stage.title).filter(Boolean);
+    const reviewSummary=stageTitles.length?'体验了'+stageTitles.join('、')+'。':'完成了这次职业日常体验。';
+    await platformSdk.publishArtifact({schemaVersion:'1.0',artifactId:'career:'+G.runId,type:'other',title:record.career+'的一天',summary:reviewSummary,previewResourceId:snapshot&&snapshot.id,sourceResourceId:'career:'+G.runId,createdAt:new Date().toISOString()});
+    await platformSdk.completeSession({careerName:record.career,stageTitles:stageTitles,completedStages:record.completedStages||0,stageCount:record.stageCount||0});
     sessionStorage.setItem(marker,'1');
   })();
   try{return await careerSyncPromise}finally{careerSyncPromise=null}

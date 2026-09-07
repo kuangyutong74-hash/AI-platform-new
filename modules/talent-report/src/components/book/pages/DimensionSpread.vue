@@ -72,12 +72,17 @@ const crossSceneText = computed(() => {
               {{ metaFor(item.source).stamp }}
             </div>
             <div class="ds-evidence-body">
-              <div class="ds-evidence-meta">
+              <div v-if="!item.rounds?.length" class="ds-evidence-meta">
                 <time>{{ item.time }}</time>
                 <span class="ds-level" :class="item.level">{{ item.level === "strong" ? "较完整记录" : "参考线索" }}</span>
               </div>
               <p class="ds-evidence-text">{{ item.behavior }}</p>
-              <button class="ds-evidence-open" type="button" @click.stop="$emit('open', item)">查看回顾</button>
+              <div v-if="item.rounds?.length" class="ds-round-list">
+                <button v-for="(round,index) in item.rounds" :key="round.id" type="button" @click.stop="$emit('open', round)">
+                  <time>{{ round.time }}</time><span>第 {{ index + 1 }} 轮</span><b>查看回顾</b>
+                </button>
+              </div>
+              <button v-else class="ds-evidence-open" type="button" @click.stop="$emit('open', item)">查看回顾</button>
             </div>
             <img class="ds-evidence-wash" :src="metaFor(item.source).wash" alt="" />
           </article>
@@ -274,6 +279,7 @@ const crossSceneText = computed(() => {
   transform: scale(1.02);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--talent) 45%, transparent), 0 6px 16px rgba(104, 71, 45, 0.1);
 }
+.ds-round-list{display:grid;gap:5px;margin-top:8px}.ds-round-list button{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;width:100%;min-height:34px;padding:6px 9px;border:0;border-radius:10px;background:rgba(255,255,255,.72);color:#756252;font:inherit;text-align:left;cursor:pointer}.ds-round-list time{font-size:10px;font-variant-numeric:tabular-nums}.ds-round-list span{font-size:10px;color:#927d6a}.ds-round-list b{color:#a86d4d;font-size:10px;text-decoration:underline;text-underline-offset:3px}.ds-round-list button:hover,.ds-round-list button:focus-visible{background:#fff;outline:2px solid color-mix(in srgb,var(--talent) 65%,#8b684f);outline-offset:1px}
 .ds-evidence-wash {
   position: absolute;
   right: -30px;

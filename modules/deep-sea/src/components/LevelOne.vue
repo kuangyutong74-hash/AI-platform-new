@@ -819,7 +819,7 @@ async function goNextLevel() {
       successful_pairs: successfulPairs,
       pair_details: rules.map(r => ({
         id: r.id,
-        label: r.label,
+        label: r.shortLabel,
         done: r.done,
       })),
       check_history: checkHistory.value,

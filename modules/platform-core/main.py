@@ -507,6 +507,13 @@ def evidence_report_dimensions(row: sqlite3.Row, dimensions: dict[str, str]) -> 
             payload = {}
         if int(payload.get("level", 0)) == 1 and "naturalistic" not in normalized:
             normalized.append("naturalistic")
+        if int(payload.get("level", 0)) == 3:
+            # 第三关观察的是协商表达和方案选择，不把同一个完成事件重复
+            # 解释为空间搭建或逻辑解谜证据。
+            normalized = [item for item in normalized if item not in {"spatial", "logical"}]
+            for dimension in ("interpersonal", "linguistic"):
+                if dimension not in normalized:
+                    normalized.append(dimension)
     return normalized
 
 
@@ -516,6 +523,24 @@ TREASURE_DIMENSIONS_BY_MODULE = {
     "chat": {"interpersonal"},
     "career": {"intrapersonal"},
 }
+
+
+def treasure_dimensions_for_event(event: dict) -> set[str]:
+    """按实际玩法环节分配藏宝图星星，避免不同星星复述同一段内容。"""
+    module = str(event.get("module", ""))
+    if module != "deep_sea":
+        return set(TREASURE_DIMENSIONS_BY_MODULE.get(module, set()))
+    if event.get("event_type") != "deep-sea.spatial-task-completed.v1":
+        return set()
+    raw = event.get("raw_evidence", {}) if isinstance(event.get("raw_evidence"), dict) else {}
+    level = int(raw.get("level", 0) or 0)
+    if level == 1:
+        return {"naturalistic", "logical"}
+    if level == 2:
+        return {"spatial", "logical"}
+    if level == 3:
+        return {"interpersonal"}
+    return set()
 
 
 def build_talent_eligibility(rows: list[sqlite3.Row], completed_modules: set[str] | None = None) -> list[dict]:
@@ -778,6 +803,45 @@ def policy_for_event(event_type: str) -> dict:
 
 initialize_database()
 
+CAREER_DB_PATH = REPO_ROOT / "modules" / "career" / "backend" / "career_sim.db"
+
+
+def career_mentor_reflections(db: sqlite3.Connection, profile_id: str, career_id: str, occurred_at: str) -> list[dict[str, str]]:
+    """关联同一孩子、同一职业且时间最接近的导师对话；不跨孩子猜测。"""
+    profile = db.execute("SELECT display_name FROM child_profiles WHERE id=?", (profile_id,)).fetchone()
+    child_name = str(profile["display_name"] or "").strip() if profile else ""
+    if not child_name or not career_id or not CAREER_DB_PATH.exists():
+        return []
+    try:
+        target = datetime.fromisoformat(occurred_at.replace("Z", "+00:00")).replace(tzinfo=None)
+        with sqlite3.connect(CAREER_DB_PATH) as career_db:
+            career_db.row_factory = sqlite3.Row
+            sessions = career_db.execute(
+                "SELECT id,created_at FROM sessions WHERE student_name=? AND career_id=? ORDER BY created_at DESC LIMIT 12",
+                (child_name, career_id),
+            ).fetchall()
+            if not sessions:
+                return []
+            ranked = []
+            for session in sessions:
+                try: distance = abs((datetime.fromisoformat(str(session["created_at"])).replace(tzinfo=None) - target).total_seconds())
+                except ValueError: continue
+                if distance <= 3 * 86400: ranked.append((distance, session["id"]))
+            if not ranked:
+                return []
+            session_id = min(ranked)[1]
+            rows = career_db.execute(
+                """SELECT sr.scenario_title,fu.ai_question,fu.student_answer
+                   FROM scenario_records sr JOIN choice_records cr ON cr.scenario_record_id=sr.id
+                   JOIN follow_up_records fu ON fu.choice_record_id=cr.id
+                   WHERE sr.session_id=? AND length(trim(coalesce(fu.student_answer,'')))>0
+                   ORDER BY sr.scenario_index,fu.created_at""", (session_id,),
+            ).fetchall()
+        return [{"scenarioTitle": str(item["scenario_title"] or "").strip(), "question": str(item["ai_question"] or "").strip(), "answer": str(item["student_answer"] or "").strip()[:500]} for item in rows]
+    except (sqlite3.Error, OSError):
+        logger.warning("无法读取职业导师对话", exc_info=True)
+        return []
+
 
 def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple[list[dict], list[str]]:
     """将 V1 事件和派生证据投影为报告输入，引用始终使用 evidence record ID。"""
@@ -800,10 +864,30 @@ def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple
             payload.setdefault("totalPairs", 4)
             payload.setdefault("accuracyPercent", 100)
         artifacts = db.execute(
-            "SELECT type,title,summary,created_at FROM artifacts WHERE session_id=? ORDER BY created_at DESC",
+            "SELECT type,title,summary,source_resource_id,created_at FROM artifacts WHERE session_id=? ORDER BY created_at DESC",
             (row["session_id"],),
         ).fetchall()
-        context = {"sourceEventId": row["id"], "constructs": constructs, "sessionSummary": json.loads(row["summary_json"] or "{}"), "artifacts": [{"type": item["type"], "title": item["title"], "summary": item["summary"], "createdAt": item["created_at"]} for item in artifacts]}
+        context = {"sourceEventId": row["id"], "constructs": constructs, "sessionSummary": json.loads(row["summary_json"] or "{}"), "artifacts": [{"type": item["type"], "title": item["title"], "summary": item["summary"], "sourceResourceId": item["source_resource_id"], "createdAt": item["created_at"]} for item in artifacts]}
+        if row["module_id"] == "story" and not context["sessionSummary"].get("storySynopsis"):
+            source = next((item["source_resource_id"] for item in artifacts if str(item["source_resource_id"] or "").startswith("story:")), "")
+            match = re.fullmatch(r"story:(\d+)", source)
+            story_db_path = REPO_ROOT / "modules" / "story" / "story_cocreate.db"
+            if match and story_db_path.exists():
+                try:
+                    with sqlite3.connect(story_db_path) as story_db:
+                        story_db.row_factory = sqlite3.Row
+                        story = story_db.execute("SELECT title,full_text FROM stories WHERE id=?", (int(match.group(1)),)).fetchone()
+                        child_rows = story_db.execute("SELECT content FROM story_messages WHERE story_id=? AND role='child' ORDER BY turn_number,id", (int(match.group(1)),)).fetchall()
+                    if story:
+                        clean = re.sub(r"【[^】]+】|你觉得接下来会发生什么呢？", " ", story["full_text"] or "")
+                        sentences = [part.strip() for part in re.findall(r"[^。！？!?]+[。！？!?]?", re.sub(r"\s+", " ", clean)) if part.strip()]
+                        synopsis_parts = sentences if len(sentences) <= 4 else sentences[:2] + sentences[-2:]
+                        child_sentences = [part.strip() for item in child_rows for part in re.findall(r"[^。！？!?]+[。！？!?]?", re.sub(r"\s+", " ", item["content"] or "")) if len(part.strip()) >= 12]
+                        vivid = [part for part in child_sentences if re.search(r"像|仿佛|轻轻|忽然|闪|光|声音|香气|颜色|笑|眼睛", part)]
+                        highlight = max(vivid or child_sentences, key=len, default="")
+                        context["sessionSummary"].update({"storyTitle": story["title"] or payload.get("storyTitle", ""), "storySynopsis": "".join(synopsis_parts)[:260], "childHighlight": highlight[:140]})
+                except sqlite3.Error:
+                    logger.warning("无法从故事库恢复故事 %s 的回顾内容", match.group(1))
         if row["module_id"] == "chat":
             context["fieldSemantics"] = {
                 "topicKey": "进入本次聊天时选择的入口主题，不代表每一轮表达的话题",
@@ -814,10 +898,21 @@ def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple
                 # 错误拼成一句话，因此报告输入只保留可引用的孩子表达。
                 payload.pop("topicKey", None)
                 context["artifacts"] = [{**item, "title": "聊天记录"} for item in context["artifacts"]]
+        if row["module_id"] == "career":
+            reflections = career_mentor_reflections(db, profile_id, str(payload.get("taskKey", "")), row["occurred_at"])
+            if reflections:
+                context["sessionSummary"]["mentorReflections"] = reflections
         intelligence_candidates = list(dict.fromkeys(dimension_by_construct.get(key) for key in constructs if dimension_by_construct.get(key)))
         # 深海基地第一关（生态配对）映射到自然观察智能
         if row["event_type"] == "deep-sea.spatial-task-completed.v1" and int(payload.get("level", 0)) == 1 and "naturalistic" not in intelligence_candidates:
             intelligence_candidates.append("naturalistic")
+        if row["event_type"] == "deep-sea.spatial-task-completed.v1" and int(payload.get("level", 0)) == 3:
+            intelligence_candidates = [item for item in intelligence_candidates if item not in {"spatial", "logical"}]
+            for dimension in ("interpersonal", "linguistic"):
+                if dimension not in intelligence_candidates:
+                    intelligence_candidates.append(dimension)
+        if row["module_id"] == "career" and context["sessionSummary"].get("mentorReflections") and "intrapersonal" not in intelligence_candidates:
+            intelligence_candidates.append("intrapersonal")
         events.append({"id": row["evidence_id"], "module": row["module_id"], "event_type": row["event_type"], "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": intelligence_candidates, "behavior_summary": row["behavior_summary"], "raw_evidence": payload, "context": context})
     return events, [row["evidence_id"] for row in rows]
 
@@ -1123,32 +1218,32 @@ def create_talent_stories_v1(ai_bole_session: str | None = Cookie(default=None))
     for event in events:
         if event["module"] not in completed_modules:
             continue
-        dimensions = set(TREASURE_DIMENSIONS_BY_MODULE.get(event["module"], set()))
-        # 自然发现星只读取深海第一关的生物配对过程。
-        if event["module"] == "deep_sea":
-            dimensions.discard("naturalistic")
-            if event["event_type"] == "deep-sea.spatial-task-completed.v1" and int(event["raw_evidence"].get("level", 0)) == 1:
-                dimensions.add("naturalistic")
+        dimensions = treasure_dimensions_for_event(event)
         if dimensions:
             star_events.append({**event, "intelligence_candidates": sorted(dimensions)})
     report, generator = generate_report_snapshot(profile["display_name"], star_events)
     level_one_events = [event for event in star_events if event["module"] == "deep_sea"
                         and event["event_type"] == "deep-sea.spatial-task-completed.v1"
                         and int(event["raw_evidence"].get("level", 0)) == 1]
-    latest_level_one = level_one_events[-1] if level_one_events else None
-    if latest_level_one:
-        raw = latest_level_one["raw_evidence"]
-        successful, total = int(raw.get("successfulPairs", 0)), int(raw.get("totalPairs", 4))
-        accuracy = round(float(raw.get("accuracyPercent", successful / max(total, 1) * 100)))
-        checks = raw.get("checkAttempts")
-        adjustments = int(raw.get("adjustmentCount", 0))
-        result = "全部配对成功" if successful == total else "尚未全部配对成功"
-        checks_text = f"，检查了 {checks} 次" if checks is not None else ""
-        exact_story = f"第一关生物配对中，你成功配对了 {successful}/{total} 组，最终准确度 {accuracy}%（{result}）{checks_text}，修正了 {adjustments} 次。"
+    if level_one_events:
+        reviews = []
+        for event in level_one_events[-3:]:
+            raw = event["raw_evidence"]
+            context = event.get("context", {}) if isinstance(event.get("context"), dict) else {}
+            summary = context.get("sessionSummary", {}) if isinstance(context.get("sessionSummary"), dict) else {}
+            review = summary.get("levelOneReview", {}) if isinstance(summary.get("levelOneReview"), dict) else {}
+            pairs = [str(item).strip() for item in review.get("matchedRelationships", []) if str(item).strip()] if isinstance(review.get("matchedRelationships"), list) else []
+            successful, total = int(raw.get("successfulPairs", 0)), int(raw.get("totalPairs", 4))
+            checks = raw.get("checkAttempts")
+            result = "完成了全部配对" if successful == total else f"完成了 {successful}/{total} 组配对"
+            pair_text = f"，为{'、'.join(pairs)}找到了合适的位置" if pairs else "，按照栖息地和共生关系安排生物住处"
+            check_text = f"，经过 {checks} 次检查" if checks is not None else ""
+            reviews.append(f"你在第一关“珊瑚公寓”里{pair_text}{check_text}，{result}")
+        exact_story = (f"你体验了 {len(level_one_events)} 次深海第一关。" if len(level_one_events) > 1 else "") + "；".join(reviews) + "。"
         for item in report["dimensions"]:
             if item["key"] == "naturalistic":
                 item["child_story"] = exact_story
-                item["evidence_refs"] = [latest_level_one["id"]] if latest_level_one.get("id") else []
+                item["evidence_refs"] = [event["id"] for event in level_one_events if event.get("id")]
     return {
         "generatedAt": report["generated_at"],
         "generator": generator["generatorVersion"],

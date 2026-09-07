@@ -65,6 +65,8 @@ $conflicts = [System.Collections.Generic.List[object]]::new()
 $services = @(Get-ServiceDefinitions)
 $platformService = $services | Where-Object Name -eq '整合平台' | Select-Object -First 1
 $platformBuildLog = Join-Path $logDirectory '整合平台.build.log'
+$deepSeaFrontendService = $services | Where-Object Name -eq '深海基地前端' | Select-Object -First 1
+$deepSeaBuildLog = Join-Path $logDirectory '深海基地前端.build.log'
 
 Write-Host "`nAI伯乐一键启动" -ForegroundColor Cyan
 Write-Host '正在检查端口并启动所需服务，请稍候…' -ForegroundColor DarkGray
@@ -89,6 +91,28 @@ if ($platformService -and -not (Test-ServiceEndpoint $platformService.Url)) {
     }
     if ($LASTEXITCODE -ne 0) {
       throw "前端构建失败（退出码 $LASTEXITCODE），请查看：$platformBuildLog"
+    }
+  } finally {
+    Pop-Location
+  }
+}
+
+# 深海基地的 Vite 开发服务器在依赖预构建阶段偶发提前退出。
+# 启动前生成最新生产构建，再通过 preview 提供稳定的 3001 服务。
+if ($deepSeaFrontendService -and -not (Test-ServiceEndpoint $deepSeaFrontendService.Url)) {
+  $deepSeaCommand = Resolve-ServiceCommand $deepSeaFrontendService.Command $deepSeaFrontendService.WorkingDirectory
+  Write-Host '[构建中] 深海基地前端' -ForegroundColor Yellow
+  Push-Location $deepSeaFrontendService.WorkingDirectory
+  try {
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+      & $deepSeaCommand run build *> $deepSeaBuildLog
+    } finally {
+      $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($LASTEXITCODE -ne 0) {
+      throw "深海基地前端构建失败（退出码 $LASTEXITCODE），请查看：$deepSeaBuildLog"
     }
   } finally {
     Pop-Location
