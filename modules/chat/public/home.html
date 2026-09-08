@@ -324,6 +324,7 @@
     .avatar-cell img {
       width: 100%; height: 100%; object-fit: cover; display: block;
     }
+    .feature-student-avatar { object-fit: contain; object-position: center bottom; }
 
     /* ---- 左右箭头 ---- */
     .avatar-arrow {
@@ -500,10 +501,10 @@
           </div>
         </a>
         <div class="feature-card yellow" id="btnAvatarSelect" tabindex="0" role="button" aria-label="选择形象">
-          <img class="feature-art" src="assets/find.png" alt="选择形象插图">
+          <img class="feature-art feature-student-avatar" id="selectedStudentPreview" src="assets/avatars/student/student-1.png" alt="当前选择的学生形象">
           <div class="feature-meta">
             <h2>选择形象</h2>
-            <p>换上你喜欢的模样</p>
+            <p id="selectedAvatarStatus" aria-live="polite">换上你喜欢的模样</p>
             <span class="feature-go" aria-hidden="true">›</span>
           </div>
         </div>
@@ -635,6 +636,7 @@
           } else {
             selectedStudent = src;
             setStudentAvatar(src);
+            updateGlobalAvatar();
           }
           refreshCarouselSelection();
         });
@@ -660,6 +662,8 @@
                        (type === 'student' && src === selectedStudent);
       cell.classList.toggle('selected', isSelected);
     });
+    var label = document.getElementById('avCollLabel');
+    if (label && currentSlide === 1) label.textContent = '男生女生 · 已选好你的形象';
   }
 
   // ===== 切换到第 n 页 =====
@@ -686,6 +690,10 @@
     if (heroImg) heroImg.src = full;
     var brandImg = document.querySelector('.brand img');
     if (brandImg) brandImg.src = logo;
+    var studentPreview = document.getElementById('selectedStudentPreview');
+    if (studentPreview) studentPreview.src = getStudentAvatar();
+    var status = document.getElementById('selectedAvatarStatus');
+    if (status) status.textContent = '当前形象已保存，进入聊天就会使用';
   }
 
   // ===== 初始化 =====

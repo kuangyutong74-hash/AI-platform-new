@@ -22,18 +22,36 @@ var validator = require('./response-validator');
 //  确定性 fallback 回复
 // ============================================================
 
-var FALLBACK_CLOSING = '今天聊得很开心，下次再聊啦。';
-var FALLBACK_BUDGET_ZERO = '谢谢你愿意跟我说这些。';
-var FALLBACK_DEFAULT = '听你这么说，我觉得很有意思。';
-var FALLBACK_HARD = '谢谢你跟我聊这些。';
+var FALLBACK_CLOSING = '今天说到的这些，小新会好好收进手账里。下次我们可以从这里继续。';
+var FALLBACK_BUDGET_ZERO = '我记住你刚才说的这个细节了。想继续时，可以从发生的变化或你最在意的部分往下说。';
+var FALLBACK_DEFAULT = '你刚才说的内容里藏着一个很值得展开的细节。要是把镜头停在那一刻，你最想先说说什么？';
+var FALLBACK_REFLECTION = '刚才的小任务已经完成了。哪一步最像你自己的想法？';
+var FALLBACK_HARD = '我想顺着你刚才的想法继续听下去。你最想先展开哪个细节？';
 
-function selectFallback(stage, questionBudget) {
+function selectFallback(stage, questionBudget, studentMessage) {
   if (stage === 'closing') {
     return FALLBACK_CLOSING;
   }
 
+  if (stage === 'reflection') {
+    return FALLBACK_REFLECTION;
+  }
+
   if (questionBudget === 0) {
     return FALLBACK_BUDGET_ZERO;
+  }
+
+  var message = String(studentMessage || '');
+  if (/职业|工作|导师|小任务/.test(message)) {
+    return '你已经不只是在想一份工作，还在琢磨遇到困难时人会怎样继续。真正走进工作现场，最有意思的也许正是那些计划之外的时刻。你最想先看看哪个瞬间？';
+  }
+
+  if (/故事|伙伴|秘密|发生/.test(message)) {
+    return '你已经给故事留出了一扇门，门后还有一个没有揭开的变化。顺着刚才的开场，接下来最可能发生什么？';
+  }
+
+  if (/观察|线索|答案|弄明白/.test(message)) {
+    return '你不是只想知道答案，还想沿着线索一步步找到它。哪条线索最让你想追下去？';
   }
 
   return FALLBACK_DEFAULT;
@@ -260,7 +278,8 @@ async function runV2Turn(input) {
 
     var stageFallback = selectFallback(
       advancedState.stage,
-      advancedState.question_budget
+      advancedState.question_budget,
+      studentMessage
     );
 
     var fbValidation = validator.validateReply(
@@ -279,8 +298,11 @@ async function runV2Turn(input) {
       finalValidation = fbValidation;
     } else {
       // 阶段 fallback 也失败 → 硬 fallback
+      var hardFallback = advancedState.question_budget > 0 && advancedState.stage !== 'closing'
+        ? FALLBACK_HARD
+        : FALLBACK_BUDGET_ZERO;
       var hardValidation = validator.validateReply(
-        FALLBACK_HARD,
+        hardFallback,
         {
           stage: advancedState.stage,
           question_budget: advancedState.question_budget,
@@ -290,7 +312,7 @@ async function runV2Turn(input) {
         }
       );
 
-      finalReply = FALLBACK_HARD;
+      finalReply = hardFallback;
       finalValidation = hardValidation;
     }
   }

@@ -4,7 +4,7 @@
  * 纯函数模块。不发起网络请求、不读写文件、不修改输入参数。
  *
  * 阶段：
- *   opening | interest | deepening | open_task | closing
+ *   opening | interest | deepening | open_task | reflection | closing
  *
  * question_budget：
  *   只能为 0、1 或 2
@@ -31,6 +31,7 @@ const VALID_STAGES = Object.freeze([
   'interest',
   'deepening',
   'open_task',
+  'reflection',
   'closing',
 ]);
 
@@ -328,9 +329,10 @@ function normalizeConversationState(candidate) {
     ),
   };
 
-  // opening 和 closing 不允许观察焦点。
+  // opening、reflection 和 closing 不允许观察焦点。
   if (
     normalized.stage === 'opening' ||
+    normalized.stage === 'reflection' ||
     normalized.stage === 'closing'
   ) {
     normalized.observation_focus = 'none';
@@ -512,9 +514,10 @@ function advanceConversationState(previousState, event) {
       requestedFocus
     );
 
-  // opening / closing 最终强制为 none。
+  // opening / reflection / closing 最终强制为 none。
   if (
     next.stage === 'opening' ||
+    next.stage === 'reflection' ||
     next.stage === 'closing'
   ) {
     next.observation_focus = 'none';
@@ -601,12 +604,12 @@ function computeNextStage(
     return 'closing';
   }
 
-  // open_task 完成后收尾。
+  // 小任务完成后先回看一次，不立刻结束。
   if (
     previous.stage === 'open_task' &&
     next.open_task_completed
   ) {
-    return 'closing';
+    return 'reflection';
   }
 
   if (previous.stage === 'opening') {
@@ -659,10 +662,15 @@ function computeNextStage(
       next.student_refused_topic ||
       next.engagement === 'low'
     ) {
-      return 'closing';
+      return next.open_task_completed ? 'reflection' : 'closing';
     }
 
     return 'open_task';
+  }
+
+  // 回看结束后回到原话题继续聊天；只有明确告别、达到轮次上限或后期持续低参与才收尾。
+  if (previous.stage === 'reflection') {
+    return next.active_topic ? 'deepening' : 'interest';
   }
 
   // 理论上不会到这里。
@@ -710,6 +718,11 @@ function computeQuestionBudget(state) {
 
   if (state.stage === 'closing') {
     return 0;
+  }
+
+  // 小任务完成后的唯一回看轮允许问一个简单问题。
+  if (state.stage === 'reflection') {
+    return 1;
   }
 
   if (
@@ -769,6 +782,7 @@ function selectObservationFocus(
 
   if (
     state.stage === 'opening' ||
+    state.stage === 'reflection' ||
     state.stage === 'closing' ||
     state.engagement === 'low' ||
     state.student_refused_topic === true

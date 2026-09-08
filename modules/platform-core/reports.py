@@ -20,6 +20,28 @@ CAREER_STAGE_TITLES = {
     "teacher":["布置晨间教室","课堂管理","和朵朵聊一聊"], "chef":["后厨开档","午餐炒饭流程","出餐高峰应对"],
     "journalist":["编辑部线索墙","组织报道线索","采访调查"], "animal_caretaker":["晨间巡护打卡","动物救助优先级","动物健康检查"],
 }
+CHAT_ACTIVITY_NAMES = {"picture_choice": "图片选择", "sequence_order": "顺序整理", "sentence_completion": "补句创作"}
+
+
+def _chat_activity_details(raw: dict[str, Any]) -> list[str]:
+    activities = raw.get("interactionActivities", []) if isinstance(raw.get("interactionActivities"), list) else []
+    details = []
+    for activity in activities:
+        if not isinstance(activity, dict):
+            continue
+        name = CHAT_ACTIVITY_NAMES.get(str(activity.get("activityType", "")), "互动小任务")
+        response = str(activity.get("response", "")).strip()
+        revisions = max(0, int(activity.get("revisionCount", 0) or 0))
+        text = f"{name}：孩子留下“{response[:140]}”" if response else f"{name}：孩子完成了这项互动"
+        if revisions:
+            text += f"，过程中修改了 {revisions} 次"
+        details.append(text + "。")
+    return details
+
+
+def _chat_activity_source(raw: dict[str, Any]) -> str:
+    names = list(dict.fromkeys(detail.split("：", 1)[0] for detail in _chat_activity_details(raw)))
+    return "、".join(names)
 
 
 def _key(value: str) -> str | None:
@@ -50,12 +72,16 @@ def _cumulative_child_story(items: list[dict[str, Any]]) -> str:
             if words:
                 people = [name for name in ("同学", "朋友", "老师", "爸爸", "妈妈", "家人", "伙伴") if name in words]
                 relation = f"你还说清了自己对{'、'.join(people)}的关注和期待。" if people else "你把自己的感受和在意的事情说得很清楚。"
-                return f"这次聊天中，你说：“{words[:90]}”。{relation}"
+                activity = _chat_activity_source(raw)
+                source = f" 你还通过{activity}留下了更具体的想法。" if activity else ""
+                return f"这次聊天中，你说：“{words[:90]}”。{relation}{source}"
             if excerpts:
                 words = excerpts[-1]
                 people = [name for name in ("同学", "朋友", "老师", "爸爸", "妈妈", "家人", "伙伴") if name in words]
                 relation = f"你还说清了自己对{'、'.join(people)}的关注和期待。" if people else "你把自己的感受和在意的事情说得很清楚。"
-                return f"这次聊天中，你说：“{words[:90]}”。{relation}"
+                activity = _chat_activity_source(raw)
+                source = f" 你还通过{activity}留下了更具体的想法。" if activity else ""
+                return f"这次聊天中，你说：“{words[:90]}”。{relation}{source}"
             return f"这次聊天里，你围绕“{topic}”留下了自己的想法。"
         if module == "deep_sea":
             level = int(raw.get("level", 0) or 0)
@@ -99,7 +125,9 @@ def _cumulative_child_story(items: list[dict[str, Any]]) -> str:
         excerpt_text = f"你分享过：“{'”“'.join(text[:45] for text in excerpts[-2:])}”。" if excerpts else ""
         people = [name for name in ("同学", "朋友", "老师", "爸爸", "妈妈", "家人", "伙伴") if any(name in text for text in excerpts)]
         relation_text = f"你还谈到了自己对{'、'.join(people)}的关注和期待。" if people else ""
-        return f"你已经完成了 {len(items)} 次聊天。{topic_text}{excerpt_text}{relation_text}"
+        activities = list(dict.fromkeys(name for raw in raw_items for name in _chat_activity_source(raw).split("、") if name))
+        activity_text = f"你还做过{'、'.join(activities)}，这些小任务里的选择和原话也一起保留了。" if activities else ""
+        return f"你已经完成了 {len(items)} 次聊天。{topic_text}{excerpt_text}{relation_text}{activity_text}"
     if module == "career":
         careers = list(dict.fromkeys(CAREER_NAMES.get(str(raw.get("taskKey", "")), "这次职业") for raw in raw_items))
         return f"你已经完成了 {len(items)} 次职业体验，体验过{'、'.join(careers)}。这些职业一天中的真实任务都收藏在这颗星里。"
@@ -113,10 +141,12 @@ def _dimension_event_summary(item: dict[str, Any], dimension: str) -> str:
     if str(item.get("module")) == "chat":
         words = str(summary.get("childWords", "")).strip()
         people = [name for name in ("同学", "朋友", "老师", "爸爸", "妈妈", "家人", "伙伴") if name in words]
+        source = _chat_activity_source(raw)
+        source_text = f"（来自{source}活动）" if source else ""
         if dimension == "interpersonal":
-            return f"孩子提到{'、'.join(people)}并表达了对关系的关注：{words[:120]}" if people else "孩子参与了聊天，但现有记录没有可确认的他人观点或互动细节"
+            return (f"孩子提到{'、'.join(people)}并表达了对关系的关注：{words[:120]}{source_text}" if people else f"孩子参与了聊天，但现有记录没有可确认的他人观点或互动细节{source_text}")
         if dimension == "intrapersonal":
-            return f"孩子说出自己的感受、偏好、想法或期待：{words[:120]}" if words else "孩子完成了聊天，但现有记录没有可引用的自我表达"
+            return (f"孩子说出自己的感受、偏好、想法或期待：{words[:120]}{source_text}" if words else f"孩子完成了聊天，但现有记录没有可引用的自我表达{source_text}")
     if str(item.get("module")) == "career" and dimension == "intrapersonal":
         reflections = summary.get("mentorReflections", []) if isinstance(summary.get("mentorReflections"), list) else []
         answers = [str(value.get("answer", "")).strip() for value in reflections if isinstance(value, dict) and str(value.get("answer", "")).strip()]
@@ -173,6 +203,7 @@ def _explain_event(item: dict[str, Any]) -> dict[str, Any]:
         words = str(session.get("childWords", "")).strip()
         title, summary = "聊天观察：真实表达", "孩子在聊天中说出了自己的感受、想法或关系期待。"
         details = [f"表达内容：孩子说：“{words[:120]}”" if words else "表达内容：这条历史记录没有保存可引用的聊天原文。", f"交流过程：本次共留下 {raw.get('turnCount', 0)} 轮表达。"]
+        details.extend(f"活动来源：{detail}" for detail in _chat_activity_details(raw))
     elif module == "career":
         task_key = str(raw.get("taskKey", "")); career = str(session.get("careerName", "")).strip() or CAREER_NAMES.get(task_key, "职业")
         stages = session.get("stageTitles", []) if isinstance(session.get("stageTitles"), list) else []

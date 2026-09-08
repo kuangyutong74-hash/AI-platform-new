@@ -32,6 +32,7 @@ var VALID_STAGES = Object.freeze([
   'interest',
   'deepening',
   'open_task',
+  'reflection',
   'closing',
 ]);
 

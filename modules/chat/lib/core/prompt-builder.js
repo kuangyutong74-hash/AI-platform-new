@@ -35,7 +35,7 @@ function computeNotebookHint(history) {
       .map(function (m) { return m.content.slice(0, 50); });
     if (earlierTopics.length > 0) {
       var pick = earlierTopics[earlierTopics.length - 1];
-      notebookHint = '\n\n【小新的笔记本提醒】学生已经连续两轮回复很短（少于5个字），看起来不太想主动展开。请你从之前聊过的内容里挑一个未被深入追问的话题，自然地重新提起。例如可以问："对了，你之前说过「' + pick + '」，那个后来怎么样了呀？" 注意：不要用"对了"这种机械的开头，请自然地融入对话，也不要复读上面那句示范。';
+      notebookHint = '\n\n【短回答恢复】学生已经连续两轮回复很短（少于5个字）。不要把同一个问题换个说法继续追问。先接住他已经说出的内容「' + pick + '」，再提供一个很具体的句子开头或一个小提示，并明确告诉他也可以换个话题。最多保留一个容易回答的问题。';
     }
   }
 

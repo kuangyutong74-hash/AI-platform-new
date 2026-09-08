@@ -326,7 +326,7 @@ state_events 是对最新一条学生消息的结构化事件分析结果。每�
 - student_refused_topic === false
 - 学生的新信息足以支持围绕当前话题继续深入
 不得仅根据 suggested_stage、消息长度或积极语气判 true。
-在 opening、deepening、open_task、closing 阶段必须为 false。
+在 opening、deepening、open_task、reflection、closing 阶段必须为 false。
 
 7. allow_open_task
 只有同时满足以下全部条件时才为 true：
@@ -336,7 +336,7 @@ state_events 是对最新一条学生消息的结构化事件分析结果。每�
 - 当前 active_topic 已有足够具体信息
 - 开放任务与当前话题自然相关
 - 不是重复开放任务（open_task 每段对话最多一次）
-在 opening、interest、open_task、closing 阶段必须为 false。
+在 opening、interest、open_task、reflection、closing 阶段必须为 false。
 不得仅因为学生回复较长就判 true。
 
 8. state_events 不负责直接修改 stage。最终阶段转换由后端状态机根据 state_events 和其他输入统一决定。

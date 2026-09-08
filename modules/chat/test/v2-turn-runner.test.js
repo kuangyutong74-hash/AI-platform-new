@@ -337,6 +337,20 @@ describe('runV2Turn — repair 流程', function () {
     assert.strictEqual(result.usedFallback, true);
   });
 
+  it('职业开场的 fallback 仍应承接话题并通过校验', async function () {
+    var result = await runner.runV2Turn(baseInput({
+      studentMessage: '我想帮助别人解决困难，也想看看真实工作现场，问导师遇到困难时怎么办。',
+      generateReply: makeGenerate('第一句。第二句。第三句。第四句。'),
+      repairReply: makeRepair('第一句。第二句。第三句。第四句。'),
+    }));
+
+    assert.strictEqual(result.usedFallback, true);
+    assert.strictEqual(result.validation.valid, true);
+    assert.match(result.finalReply, /工作现场/);
+    assert.match(result.finalReply, /？$/);
+    assert.doesNotMatch(result.finalReply, /记下来|慢慢继续/);
+  });
+
   it('repair 缺失时使用 fallback', async function () {
     var result = await runner.runV2Turn({
       previousState: noBudgetState(3),
@@ -654,6 +668,7 @@ describe('runV2Turn — previous_assistant_asked', function () {
 
   it('final reply 无问题时 previous_assistant_asked=false', async function () {
     var result = await runner.runV2Turn(baseInput({
+      previousState: noBudgetState(3),
       generateReply: makeGenerate('今天天气很不错。'),
     }));
 
@@ -688,12 +703,12 @@ describe('runV2Turn — previous_assistant_asked', function () {
       studentMessage: '打球',
       analyze: makeAnalyze(okAnalysis()),
       generateReply: makeGenerate('你今天打球开心吗？还有什么趣事？还有谁一起打的？'),
-      repairReply: makeRepair('打球听起来很有意思。'),
+      repairReply: makeRepair('打球的画面一下子有了。哪一刻最值得接着说？'),
     });
 
-    // repair 回复无问题 → previous_assistant_asked=false → budget 保持正常值（现为 2）
-    assert.strictEqual(result.nextState.previous_assistant_asked, false);
-    assert.strictEqual(result.nextState.question_budget, 2);
+    // 非 closing 阶段的合规 repair 保留一个问题，下一轮应暂停追问。
+    assert.strictEqual(result.nextState.previous_assistant_asked, true);
+    assert.strictEqual(result.nextState.question_budget, 0);
   });
 
 });

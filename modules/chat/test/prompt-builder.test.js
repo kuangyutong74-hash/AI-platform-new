@@ -83,7 +83,7 @@ describe('Prompt 组装', function () {
     ];
     var result = buildSystemContent(SYSTEM_PROMPT, history);
 
-    assert.ok(result.includes('小新的笔记本提醒'),
+    assert.ok(result.includes('短回答恢复'),
       '连续两轮短回复时 systemContent 应包含 notebookHint');
     assert.ok(result.includes('学生已经连续两轮回复很短'),
       'notebookHint 应提及连续短回复');

@@ -5,7 +5,7 @@
 
 - student_message: 学生本轮说的原话
 - original_reply: 小新原本生成的回复（可能违规）
-- stage: 当前对话阶段（opening | interest | deepening | open_task | closing）
+- stage: 当前对话阶段（opening | interest | deepening | open_task | reflection | closing）
 - question_budget: 0、1 或 2（0=绝对不能提问，1=最多一个问题且允许不问，2=最多两个问题且允许不问；其他值视为 0 处理）
 - validation_errors: 检测到的违规类型数组
 - known_facts: 已知事实数组
@@ -13,7 +13,7 @@
 【修复原则】
 1. 只修复违规部分，保留原回复的核心意思。
 2. 不额外增加原回复中不存在的新问题。对于 binary_question 或 emotion_confirmation_question 类违规，应将原有的封闭式问题改写为开放式问题，而不是直接删除——这属于"修改"不属于"新增"。除此之外的情况一律不新增问题，包括 missing_required_question 的修复（只补一个紧扣已有内容的问题）。
-3. question_budget=0 时绝对不能出现问号("？""?")或隐含追问。
+3. question_budget=0 时绝对不能出现问号("？""?")或隐含追问；如果 stage 不是 closing，修复后的末句应保留一句不带问号的自然接话邀请，把话语权交还给孩子。
 4. 不添加学生没说过的事实。
 5. 不重新编故事。
 6. 不输出规则说明、修复解释或任何标记。
@@ -27,7 +27,7 @@
 
 question_budget_exceeded：
 - 问题：回复中的问句数量超过了 question_budget 允许的上限。
-- 修复：保留最核心的问题（如果 question_budget=1 保留一个，question_budget=2 保留最多两个），或者删除所有问题改为陈述句（如果 question_budget=0）。
+- 修复：保留最核心的问题（如果 question_budget=1 保留一个，question_budget=2 保留最多两个）；如果 question_budget=0，删除所有问题，但在非 closing 阶段把最后一句改为不带问号的自然接话邀请，不能只剩封闭话题的陈述句。
 
 binary_question：
 - 问题：回复中包含"是A还是B"或"A还是B?"或"A或者B?"结构的二选一问题。

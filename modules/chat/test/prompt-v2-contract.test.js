@@ -145,8 +145,11 @@ describe('xiaoxin-v2.md 契约', function () {
   });
 
   it('应明确 closing 阶段不得提问', function () {
-    // 定位五、closing 段落（而非 stage 枚举列表中的 "closing"）
-    var closingHeader = xiaoxinV2.indexOf('五、closing');
+    // 定位独立 closing 段落（阶段增加后序号可能变化）
+    var closingHeader = xiaoxinV2.indexOf('六、closing');
+    if (closingHeader < 0) {
+      closingHeader = xiaoxinV2.indexOf('五、closing');
+    }
     if (closingHeader < 0) {
       closingHeader = xiaoxinV2.indexOf('closing 阶段');
     }
@@ -188,6 +191,21 @@ describe('xiaoxin-v2.md 契约', function () {
       xiaoxinV2.includes('只输出') || xiaoxinV2.includes('最终输出'),
       '应声明输出规则'
     );
+  });
+
+  it('question_budget=0 时仍应以自然邀请把话题交还给孩子', function () {
+    assert.ok(xiaoxinV2.includes('不带问号的自然接话邀请'), '应要求无连续提问时保留接话邀请');
+    assert.ok(xiaoxinV2.includes('不能用纯陈述把话题说死'), '应避免回应停在封闭陈述');
+    assert.ok(repair.includes('把话语权交还给孩子'), '修复流程也应保留继续表达的入口');
+  });
+
+  it('应把三轮小卡线索自然改写为话题，而不是逐项复述', function () {
+    assert.ok(xiaoxinV2.includes('三轮小卡引导'), '应识别聊天前的三轮小卡材料');
+    assert.ok(xiaoxinV2.includes('自然接住孩子显露的兴趣'), '应先自然概括孩子的兴趣方向');
+    assert.ok(xiaoxinV2.includes('抓住其中一个细节'), '应选取一个细节继续聊天');
+    assert.ok(xiaoxinV2.includes('禁止逐项复述'), '应禁止逐项照抄孩子的选择');
+    assert.ok(xiaoxinV2.includes('必须写成2至3句'), '三轮小卡后的开场应有足够展开空间');
+    assert.ok(xiaoxinV2.includes('画面感、悬念或值得继续想的地方'), '开场应提供继续聊天的引子');
   });
 
 });

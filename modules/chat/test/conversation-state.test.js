@@ -438,7 +438,7 @@ describe('advanceConversationState — 阶段转换', function () {
     assert.notStrictEqual(next.stage, 'open_task');
   });
 
-  it('open_task_completed=true 后进入 closing', function () {
+  it('open_task_completed=true 后先进入 reflection，再回到原话题继续聊天', function () {
     var s = makeState({
       turn_index: 8, stage: 'open_task', engagement: 'high',
       active_topic: '篮球', open_task_used: true,
@@ -448,7 +448,13 @@ describe('advanceConversationState — 阶段转换', function () {
       engagement: 'high',
       openTaskCompleted: true,
     });
-    assert.strictEqual(next.stage, 'closing');
+    assert.strictEqual(next.stage, 'reflection');
+    assert.strictEqual(next.question_budget, 1);
+    var continued = advanceConversationState(next, {
+      studentAddedNewInfo: true,
+      isShortReply: false,
+    });
+    assert.strictEqual(continued.stage, 'deepening');
     assert.strictEqual(next.open_task_completed, true);
   });
 
