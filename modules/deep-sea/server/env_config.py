@@ -21,9 +21,17 @@ def _read_env_file() -> dict[str, str]:
     return values
 
 
+def _first(values: dict[str, str], *keys: str, default: str = "") -> str:
+    for key in keys:
+        value = os.getenv(key) or values.get(key)
+        if value:
+            return value
+    return default
+
+
 def load_deepseek_config() -> tuple[str, str, str]:
     values = _read_env_file()
-    api_key = os.getenv("DEEPSEEK_API_KEY", values.get("DEEPSEEK_API_KEY", ""))
-    base_url = os.getenv("DEEPSEEK_BASE_URL", values.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"))
-    model = os.getenv("DEEPSEEK_MODEL", values.get("DEEPSEEK_MODEL", "deepseek-chat"))
+    api_key = _first(values, "AI_API_KEY", "ZHIPUAI_API_KEY", "ZHIPU_API_KEY", "DEEPSEEK_API_KEY")
+    base_url = _first(values, "AI_BASE_URL", "AI_API_BASE", "ZHIPUAI_BASE_URL", "ZHIPU_BASE_URL", "DEEPSEEK_BASE_URL", default="https://api.deepseek.com/v1")
+    model = _first(values, "AI_MODEL", "ZHIPUAI_MODEL", "ZHIPU_MODEL", "DEEPSEEK_MODEL", default="deepseek-chat")
     return api_key.strip(), base_url.strip(), model.strip()

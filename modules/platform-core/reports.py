@@ -14,6 +14,7 @@ DIMENSIONS = {
 MODULE_NAMES = {"chat": "聊天观察", "story": "故事共创", "deep_sea": "深海基地重建", "career": "职业模拟器"}
 SYNONYMS = {"logical_mathematical": "logical"}
 RULE = "只复述已采集的行为线索，不换算能力分数、等级或排名。"
+ANALYSIS_VERSION = "dimension-observation-v3"
 CAREER_NAMES = {"doctor":"社区医生","firefighter":"消防员","teacher":"小学教师","chef":"餐厅厨师","journalist":"报社记者","animal_caretaker":"动物保护员"}
 CAREER_STAGE_TITLES = {
     "doctor":["开诊台准备","病人分诊","问诊检查"], "firefighter":["装备柜点检","接警出动","现场救援路径规划"],
@@ -216,6 +217,25 @@ def _explain_event(item: dict[str, Any]) -> dict[str, Any]:
     return {"evidence_ref": item.get("id"), "title": title, "summary": summary, "details": details or ["本次活动已留下可回溯的过程记录。"]}
 
 
+def _adult_observation(key: str, items: list[dict[str, Any]]) -> str:
+    if not items:
+        return "暂无可观测数据。完成相关探索后，这里会结合孩子的真实行为生成观察提示。"
+    latest = items[-1]
+    raw = latest.get("raw_evidence", {}) if isinstance(latest.get("raw_evidence"), dict) else {}
+    context = latest.get("context", {}) if isinstance(latest.get("context"), dict) else {}
+    summary = context.get("sessionSummary", {}) if isinstance(context.get("sessionSummary"), dict) else {}
+    title = str(summary.get("storyTitle") or raw.get("storyTitle") or summary.get("careerName") or "这次任务").strip()
+    observations = {
+        "linguistic": [f"请孩子把《{title}》讲给没听过的人，观察他怎样交代人物、起因和结果", "邀请孩子为同一情节换一种开头或结尾，留意前后是否连贯", "问问孩子为什么选这句对白或这个词，记录他怎样说明表达意图", "一至两周后给出三个新关键词，请孩子再编一段并比较叙述变化"],
+        "logical": ["换一个规则不同的小任务，观察孩子会先比较条件还是直接尝试", "请孩子先预测结果再验证，留意预测与检查是否对应", "结果不理想时观察孩子先检查哪一步、会怎样改变条件", "一至两周后再做相似问题，请孩子重新说出判断依据"],
+        "spatial": ["换一套拼搭材料，观察孩子如何处理位置、方向和连接关系", "请孩子先画出摆放方案再搭建，对照计划与成品的变化", "旋转或挪动一个部件，观察孩子能否发现并修正连接", "一至两周后请孩子凭记忆重建布局，留意使用了哪些空间线索"],
+        "interpersonal": ["谈到不同角色时，请孩子分别说说每个人想要什么", "出现分歧时请孩子先复述对方的话，再表达自己的回应", "邀请孩子提出两种兼顾双方的办法，并比较各自影响", "一至两周后在新合作中观察孩子是否会主动询问、轮流或调整分工"],
+        "intrapersonal": ["任务前请孩子说说最想做和最担心的部分，留意偏好与感受表达", "卡住时让孩子选择要提示、休息还是再试，观察他如何辨认状态", "完成后请孩子选出最满意和最想修改的一步，并说明原因", "一至两周后遇到相似困难时，观察孩子是否会主动采用自己的调节办法"],
+        "naturalistic": ["把活动中的分类线索换成身边物品或常见生物，观察孩子依据哪些特征归类", "请孩子解释两个对象为何放在一起，再找一个反例说明区别", "新信息与原判断不一致时，观察孩子会如何修改分类标准", "一至两周后到户外或看图鉴时，观察孩子是否主动比较特征与关系"],
+    }
+    return "；".join(observations[key]) + "。"
+
+
 def generate_internal_report(child_name: str, events: list[dict[str, Any]]) -> dict[str, Any]:
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for event in events:
@@ -232,7 +252,7 @@ def generate_internal_report(child_name: str, events: list[dict[str, Any]]) -> d
         if items:
             examples = "；".join(_dimension_event_summary(item, key) for item in items[:4])
             analysis = f"本阶段在{modules}中收集到 {len(items)} 条可回溯行为记录，其中 {strong} 条为较完整记录。观察到：{examples}。这些记录反映的是孩子在当前情境中的做法，后续仍应在不同任务中继续观察其是否会主动重复、解释并调整这些方法。"
-            adult = f"可以继续留意孩子在新任务里是否会再次出现“{str(items[0].get('behavior_summary', '')).rstrip('。')}”这样的做法，并邀请他说明原因。"
+            adult = _adult_observation(key, items)
             child = _cumulative_child_story(items)
         else:
             analysis = "本阶段暂未收集到可回溯行为线索，因此不作判断。完成相关探索后，这里会结合真实行为生成观察提示。"
@@ -242,7 +262,7 @@ def generate_internal_report(child_name: str, events: list[dict[str, Any]]) -> d
     refs = [str(event["id"]) for event in events if event.get("id")]
     active = "、".join(MODULE_NAMES.get(module, module) for module in Counter(str(event.get("module")) for event in events)) or "活动模块"
     return {
-        "generated_at": datetime.now(timezone.utc).isoformat(), "rule": RULE, "dimensions": dimensions,
+        "generated_at": datetime.now(timezone.utc).isoformat(), "rule": RULE, "analysis_version": ANALYSIS_VERSION, "dimensions": dimensions,
         "cross_insights": [{"text": f"{child_name}在{active}中留下了可回溯记录。建议在不同情境中继续观察，不依据单次行为下结论。", "evidence_refs": refs[:3]}],
         "evidence_explanations": [_explain_event(event) for event in events],
         "recommendations": {"family": ["请孩子讲讲自己先做了什么、后来为什么改变。", "把体验变成低压力小游戏，允许先试再改。"], "teacher": ["记录孩子的第一种方案、反馈后的调整和最终结果。", "隔一至两周在新情境中复现相似任务。"]},

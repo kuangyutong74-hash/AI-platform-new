@@ -37,7 +37,10 @@ test("server renders AI伯乐探索星球", async () => {
   assert.match(page, /ADULT_DEMO/);
   assert.match(page, /自动账号共 9 位/);
   assert.match(page, /少写一个前导 0/);
-  assert.match(page, /http:\/\/localhost:8020/);
+  assert.match(page, /CORE_API_URL/);
+  const moduleConfig = await readFile(new URL("../app/config/modules.ts", import.meta.url), "utf8");
+  assert.match(moduleConfig, /NEXT_PUBLIC_CORE_API_URL/);
+  assert.match(moduleConfig, /http:\/\/localhost:8020/);
   assert.doesNotMatch(html, /codex-preview|SkeletonPreview|react-loading-skeleton/);
 });
 
@@ -53,6 +56,7 @@ test("keeps four modules equal and preserves personal exploration nodes", async 
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   const moduleConfig = await readFile(new URL("../app/config/modules.ts", import.meta.url), "utf8");
   const planet = await readFile(new URL("../app/components/PlanetHome.tsx", import.meta.url), "utf8");
+  const globe = await readFile(new URL("../app/components/ThreeGlobe.tsx", import.meta.url), "utf8");
   for (const name of ["聊天观察", "故事共创", "深海基地重建", "职业模拟器"]) {
     assert.match(moduleConfig, new RegExp(name));
   }
@@ -68,10 +72,13 @@ test("keeps four modules equal and preserves personal exploration nodes", async 
   assert.match(planet, /className="personal-landmarks"/);
   assert.match(planet, /personal-landmark-\$\{index===0\?"left":"right"\}/);
   assert.doesNotMatch(planet, /handleOrbitPointerDown|handleWheel|requestAnimationFrame\(revolve\)/);
-  assert.match(planet, /const launchModule = async/);
-  assert.match(planet, /\/api\/v1\/assessment-sessions/);
-  assert.match(planet, /ai-bole\.launch-context\.v1/);
-  assert.match(planet, /window\.location\.href = item\.url/);
+  assert.match(planet, /launchPlatformModule/);
+  assert.match(moduleConfig, /\/api\/v1\/assessment-sessions/);
+  assert.match(moduleConfig, /ai-bole\.launch-context\.v1/);
+  assert.match(moduleConfig, /window\.location\.assign\(item\.url\)/);
+  assert.match(planet, /<ThreeGlobe modules=\{catalog\} onLaunch=\{launchModule\}/);
+  assert.doesNotMatch(globe, /PLATFORM_MODULES/);
+  assert.match(globe, /onLaunch\(globeModules\[pixel\]\)/);
   assert.match(planet, /onClick=\{\(\)=>void launchModule\(item\)\}/);
   assert.match(page, /http:\/\/localhost:5175/);
   assert.match(page, /天赋报告/);

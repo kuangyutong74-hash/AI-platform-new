@@ -41,14 +41,13 @@ export function useTTS() {
     const utterance = new SpeechSynthesisUtterance(text);
     utteranceRef.current = utterance;
     const voices = synth.getVoices();
-    const voice = voices.find((item) =>
-      item.lang.startsWith('zh') || item.name.includes('Chinese') ||
-      item.name.includes('TingTing') || item.name.includes('Yaoyao'),
-    );
+    const preferredVoice = /Natural|Xiaoxiao|Xiaoyi|Yunxi|晓晓|晓伊|云希/i;
+    const voice = voices.find((item) => /^zh/i.test(item.lang) && preferredVoice.test(item.name))
+      || voices.find((item) => /^zh/i.test(item.lang) || /Chinese|TingTing|Yaoyao/i.test(item.name));
     if (voice) utterance.voice = voice;
     utterance.lang = voice?.lang || 'zh-CN';
-    utterance.rate = 0.9;
-    utterance.pitch = 1.1;
+    utterance.rate = 0.94;
+    utterance.pitch = 1.02;
     utterance.onstart = () => { setSpeaking(true); setPaused(false); };
     utterance.onend = () => { setSpeaking(false); setPaused(false); };
     utterance.onerror = () => { setSpeaking(false); setPaused(false); };

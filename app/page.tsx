@@ -3,6 +3,7 @@
 import {FormEvent, lazy, Suspense, useEffect, useState} from "react";
 import PlanetHome from "./components/PlanetHome";
 import {getViewFromUrl, urlForView} from "./lib/view-state.mjs";
+import {CORE_API_URL} from "./config/modules";
 
 const WorksPage=lazy(()=>import("./components/WorksPage"));
 const GrowthTrailPage=lazy(()=>import("./components/GrowthTrailPage"));
@@ -12,8 +13,8 @@ type View="planet"|"works"|"treasure"|"report"|"showcase"|"timeline";
 type Account={id:string;username:string;display_name:string;age:number;created_at?:string;role:Role};
 type Session={account:Account;students:Account[];selected_student:Account|null};
 type AuthMode="login"|"register"|"reset";
+const CORE_URL=CORE_API_URL;
 
-const CORE_URL="http://localhost:8020";
 const REPORT_URL="http://localhost:5175";
 const DEMO_PASSWORD="demo1234";
 

@@ -63,7 +63,8 @@ export default function StoryInput({
 
     try {
       const transcript = await startListening();
-      setText((prev) => prev + transcript);
+      setText((prev) => `${prev}${prev && !prev.endsWith(' ') ? ' ' : ''}${transcript}`);
+      requestAnimationFrame(handleInput);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '语音识别失败，请再试一次~';
       setVoiceError(msg);
@@ -83,6 +84,8 @@ export default function StoryInput({
           onClick={handleVoiceInput}
           disabled={disabled}
           title={listening ? '点击停止' : '语音输入'}
+          aria-label={listening ? '停止语音输入' : '开始语音输入'}
+          aria-pressed={listening}
         >
           {listening ? <span aria-label="正在录音">⏺</span> : <PngIcon name="action-microphone" size={30} />}
         </button>
@@ -107,7 +110,9 @@ export default function StoryInput({
           <PngIcon name="theme-space" size={30} />
         </button>
       </div>
-      <p className="story-input-hint">按 Enter 发送，Shift+Enter 换行 · 支持语音输入</p>
+      <p className="story-input-hint" aria-live="polite">
+        {listening ? (interim ? `正在识别：${interim}` : '正在听你说话……') : '按 Enter 发送，Shift+Enter 换行 · 支持语音输入'}
+      </p>
     </div>
   );
 }

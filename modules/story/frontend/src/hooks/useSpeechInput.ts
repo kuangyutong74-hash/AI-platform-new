@@ -31,10 +31,35 @@ export function useSpeechInput() {
 
       let finalTranscript = '';
       let resolved = false;
+      let startTimer: ReturnType<typeof setTimeout> | null = null;
+      let sessionTimer: ReturnType<typeof setTimeout> | null = null;
+
+      const clearTimers = () => {
+        if (startTimer) clearTimeout(startTimer);
+        if (sessionTimer) clearTimeout(sessionTimer);
+        startTimer = null;
+        sessionTimer = null;
+      };
+
+      const finish = (error?: Error) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimers();
+        recognitionRef.current = null;
+        setListening(false);
+        setInterim('');
+        if (error) reject(error);
+        else resolve(finalTranscript.trim());
+      };
 
       recognition.onstart = () => {
+        if (startTimer) clearTimeout(startTimer);
+        startTimer = null;
         setListening(true);
         setInterim('');
+        sessionTimer = setTimeout(() => {
+          try { recognition.stop(); } catch {}
+        }, 15_000);
       };
 
       recognition.onresult = (e: any) => {
@@ -51,45 +76,38 @@ export function useSpeechInput() {
 
         // If continuous=false, the first final result means we're done
         if (finalTranscript && !resolved) {
-          resolved = true;
-          resolve(finalTranscript);
+          finish();
         }
       };
 
       recognition.onend = () => {
-        setListening(false);
-        setInterim('');
-        // If no result was captured, treat as no-speech
-        if (!resolved) {
-          resolved = true;
-          if (finalTranscript) {
-            resolve(finalTranscript);
-          } else {
-            reject(new Error('没有听到声音，请再试一次~'));
-          }
-        }
+        if (finalTranscript.trim()) finish();
+        else finish(new Error('没有听到声音，请靠近麦克风后再试一次~'));
       };
 
       recognition.onerror = (e: any) => {
-        setListening(false);
-        setInterim('');
-        if (!resolved) {
-          resolved = true;
-          if (e.error === 'not-allowed') {
-            reject(new Error('需要麦克风权限~请在浏览器弹窗中点「允许」'));
-          } else if (e.error === 'aborted') {
-            reject(new Error('已取消'));
-          } else if (e.error === 'no-speech') {
-            reject(new Error('没有听到声音，请再试一次~'));
-          } else if (e.error === 'network') {
-            reject(new Error('语音识别需要联网，请检查网络~'));
-          } else {
-            reject(new Error('语音识别出错，请再试一次~'));
-          }
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          finish(new Error('麦克风权限未开启，请在地址栏左侧允许后重试~'));
+        } else if (e.error === 'aborted') {
+          finish(new Error('已停止语音输入'));
+        } else if (e.error === 'no-speech') {
+          finish(new Error('没有听到声音，请靠近麦克风后再试一次~'));
+        } else if (e.error === 'network') {
+          finish(new Error('语音识别服务连接失败，请检查网络或直接打字~'));
+        } else {
+          finish(new Error('语音识别出错，请再试一次~'));
         }
       };
 
-      recognition.start();
+      try {
+        recognition.start();
+        startTimer = setTimeout(() => {
+          try { recognition.abort(); } catch {}
+          finish(new Error('麦克风启动超时，请检查浏览器麦克风权限~'));
+        }, 5_000);
+      } catch {
+        finish(new Error('麦克风启动失败，请刷新页面后重试~'));
+      }
     });
   }, []);
 

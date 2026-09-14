@@ -268,17 +268,17 @@
    ═══════════════════════════════════════════ */
 .story-play-page {
   position: relative; z-index: 2;
-  width: min(780px, calc(100% - 32px));
-  max-width: 780px;
+  width: 100%;
+  max-width: none;
   height: 100dvh;
   min-height: 680px;
-  margin: 0 auto;
+  margin: 0;
   overflow: hidden;
-  border: 1px solid rgba(180,165,220,.18);
+  border: 0;
   border-radius: 0;
-  background: rgba(255,255,255,.48);
-  box-shadow: 0 0 34px rgba(91,73,145,.06);
-  backdrop-filter: blur(10px);
+  background: rgba(20,15,54,.16);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 /* ── Corner sparkle decorations ── */
 .story-play-page::before {
@@ -341,11 +341,9 @@
 
 /* Chat area */
 .story-chat-area {
-  padding: 25px clamp(16px,4vw,42px);
+  padding: 25px clamp(18px,3vw,54px);
   background:
-    linear-gradient(rgba(255,255,255,.26), rgba(255,255,255,.26)),
-    radial-gradient(circle at 10% 20%, rgba(255,225,238,.16), transparent 38%),
-    radial-gradient(circle at 90% 80%, rgba(223,245,255,.16), transparent 38%);
+    linear-gradient(90deg,rgba(21,16,55,.06),rgba(255,255,255,.13) 20%,rgba(255,255,255,.13) 80%,rgba(21,16,55,.06));
 }
 .story-start-hint, .story-ended-card, .end-modal {
   border: var(--border-soft);
@@ -427,19 +425,25 @@
 .ending-badge { display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 999px; background: linear-gradient(135deg, #ffe066, #ffd43b); color: #7a6500; font-size: 11px; font-weight: 800; }
 
 /* ═══ STORY INPUT ═══ */
-.story-play-bottom { border-top: 1px solid rgba(200,190,230,.16); background: rgba(255,255,255,.52); backdrop-filter: blur(8px); }
-.story-input-wrapper { padding: 14px clamp(12px,3vw,28px) 12px; }
+.story-play-bottom {
+  width:100%;
+  border-top:0;
+  background:linear-gradient(180deg,rgba(20,15,52,0),rgba(20,15,52,.58) 30%,rgba(16,12,43,.82));
+  box-shadow:0 -18px 42px rgba(13,9,37,.12);
+  backdrop-filter:none;
+}
+.story-input-wrapper { padding: 24px clamp(16px,3vw,36px) 14px; }
 .story-input-row {
   gap: 10px; padding: 7px;
-  border: 2px solid #e9e3fa;
-  border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 9px 24px rgba(81,65,142,.09);
+  border: 1px solid rgba(255,224,154,.7);
+  border-radius: 18px;
+  background:rgba(255,249,235,.94);
+  box-shadow:0 12px 34px rgba(7,4,27,.28);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 .story-input-row:focus-within {
-  border-color: var(--page-primary, #9B8FD4);
-  box-shadow: 0 0 0 5px rgba(155,143,212,.06), 0 9px 24px rgba(81,65,142,.12);
+  border-color:#f4cf75;
+  box-shadow:0 0 0 4px rgba(255,222,143,.18),0 14px 38px rgba(7,4,27,.34);
 }
 .story-input-field {
   min-height: 46px; padding: 10px 8px;
@@ -450,6 +454,7 @@
   line-height: 1.55;
 }
 .story-input-field:focus { box-shadow: none; outline: none; }
+.story-input-hint{color:rgba(255,247,220,.76)}
 .story-input-send {
   border-radius: 18px;
   color: #fff;

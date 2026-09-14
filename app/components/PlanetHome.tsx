@@ -1,6 +1,6 @@
 "use client";
-import { lazy, Suspense, useEffect, useState } from "react";
-import { CORE_API_URL, PLATFORM_MODULES as modules } from "../config/modules";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { loadPlatformModules, launchPlatformModule, PLATFORM_MODULES as modules, type PlatformModule } from "../config/modules";
 const ThreeGlobe = lazy(() => import("./ThreeGlobe"));
 type PlatformView = "planet" | "works" | "treasure";
 
@@ -23,31 +23,21 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
   const [catalog, setCatalog] = useState(modules);
   useEffect(() => {
     let active = true;
-    fetch(`${CORE_API_URL}/api/v1/modules`)
-      .then(response => response.ok ? response.json() : Promise.reject())
-      .then(data => {
-        if (!active || !Array.isArray(data.modules)) return;
-        setCatalog(data.modules.map((manifest: {id:string;name:string;description?:string;entryUrl:string;healthUrl?:string}, index:number) => {
-          const existing = modules.find(item => (item.id === "build" ? "deep_sea" : item.id) === manifest.id);
-          return existing ? {...existing, name: manifest.name, desc: manifest.description || existing.desc, url: manifest.entryUrl, healthUrl: manifest.healthUrl || existing.healthUrl} : {id: manifest.id, name: manifest.name, module: manifest.name, icon: "✦", iconAsset: "", angle: (index * 73) % 360, latitude: index % 2 ? -22 : 22, url: manifest.entryUrl, healthUrl: manifest.healthUrl || "", color: "mint" as const, desc: manifest.description || "新的探索体验"};
-        }));
-      })
+    const controller = new AbortController();
+    loadPlatformModules(controller.signal)
+      .then(data => { if (active) setCatalog(data); })
       .catch(() => undefined);
-    return () => { active = false; };
+    return () => { active = false; controller.abort(); };
   }, []);
-  const launchModule = async (item:(typeof catalog)[number]) => {
-    const moduleId = item.id === "build" ? "deep_sea" : item.id;
+  const launchModule = useCallback(async (item:PlatformModule) => {
     try {
-      const response = await fetch(`${CORE_API_URL}/api/v1/assessment-sessions`, {method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({module_id:moduleId})});
-      if (!response.ok) throw new Error("session unavailable");
-      const context = await response.json();
-      window.name = JSON.stringify({namespace:"ai-bole.launch-context.v1",context});
+      await launchPlatformModule(item);
     } catch (_) {
       // Core 不可用时仍可直接体验模块，但不会写入孩子档案。
       window.name = "";
+      window.location.assign(item.url);
     }
-    window.location.href = item.url;
-  };
+  }, []);
   return <section className="planet-page three-scene-page">
     <div className="nebula-background" aria-hidden="true"/>
     <div className="nebula-drift" aria-hidden="true"/>
@@ -61,7 +51,7 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     <nav className="personal-landmarks" aria-label="个人探索功能">
       {cosmicNodes.map((node,index)=><button key={node.view} className={`personal-landmark personal-landmark-${index===0?"left":"right"}`} data-node-index={index} onClick={()=>onNavigate(node.view)}><i aria-hidden="true"/><span>{node.label}</span></button>)}
     </nav>
-    <div className="three-stage"><Suspense fallback={<div className="globe-loading">正在点亮探索星球…</div>}><ThreeGlobe/></Suspense><div className="drag-tip"><span>✥</span> 上下左右拖动 · 360° 探索 · 点击大陆进入</div></div>
+    <div className="three-stage"><Suspense fallback={<div className="globe-loading">正在点亮探索星球…</div>}><ThreeGlobe modules={catalog} onLaunch={launchModule}/></Suspense><div className="drag-tip"><span>✥</span> 上下左右拖动 · 360° 探索 · 点击大陆进入</div></div>
     <nav className="module-dock" aria-label="四座探索大陆">
       {catalog.map(item=><button key={item.id} data-module={item.id} onClick={()=>void launchModule(item)} aria-label={`进入${item.module}，${item.name}`}>
         <i className={`module-icon ${item.color}`} aria-hidden="true">{moduleNavArt[item.id] && <img className="module-art" src={moduleNavArt[item.id]} alt="" draggable={false}/>}</i>

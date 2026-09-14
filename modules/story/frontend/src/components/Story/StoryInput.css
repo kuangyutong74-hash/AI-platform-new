@@ -2,22 +2,23 @@
    StoryInput — Creative input area
    ═══════════════════════════════════════════ */
 .story-input-wrapper {
-  padding: 16px 20px;
-  background: var(--color-white);
-  border-top: 2px solid #F0E8DC;
+  padding: 14px clamp(14px,3vw,28px) 12px;
+  background:transparent;
+  border-top:0;
 }
 
 .story-input-row {
   display: flex; align-items: flex-end; gap: 12px;
+  width:min(1120px,100%);margin:0 auto;
 }
 
 .story-input-field {
   flex: 1; resize: none;
   font-size: var(--font-size-body);
   padding: 14px 18px;
-  border: 2px solid #E0D5C7;
+  border: 2px solid #d8c8ea;
   border-radius: var(--radius-card);
-  background: #FAF8F4;
+  background: rgba(255,255,255,.88);
   min-height: 52px; max-height: 120px;
   line-height: 1.5;
   font-family: var(--font-body);
@@ -36,7 +37,7 @@
   font-size: 24px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(255, 140, 66, 0.35);
+  box-shadow: 0 7px 18px rgba(108,88,188,.26);
   transition: all var(--transition-fast);
 }
 .story-input-send:hover:not(:disabled) { transform: scale(1.1) rotate(3deg); }
@@ -47,6 +48,7 @@
   color: #CCBFAD;
   text-align: center;
   margin-top: 8px;
+  color:#716985;
 }
 
 /* Voice button */

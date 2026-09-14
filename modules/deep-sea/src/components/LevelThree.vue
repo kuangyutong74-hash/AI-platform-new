@@ -253,6 +253,8 @@
             <button @mouseenter="playHover" @click="startVoiceInput"
                     :disabled="isThinking || showComplete"
                     :title="isListening ? '停止语音输入' : '开始语音输入'"
+                    :aria-label="isListening ? '停止语音输入' : '开始语音输入'"
+                    :aria-pressed="isListening"
                     class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 transition-all border-2"
                     :class="isListening ? 'bg-red-400 border-red-300 text-white animate-pulse' : (isThinking ? 'bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed' : 'bg-white/80 border-cyan-200/40 text-cyan-500 hover:border-cyan-300')">🎤</button>
             <button @mouseenter="playHover" @click="sendMessage"
@@ -526,6 +528,23 @@ function createSpeechRecognition(sessionToken) {
   sr.interimResults = true
   sr.maxAlternatives = 1
   let finalTranscript = ''
+
+  sr.onstart = () => {
+    if (sessionToken !== speechSession || speechRecognition !== sr) return
+    clearTimeout(speechTimeout)
+    voiceStatus.value = '正在听你说话，请自然地说出完整句子'
+    voiceStatusType.value = 'info'
+    // 启动成功后再开始计时，避免权限弹窗吞掉孩子的表达时间。
+    speechTimeout = setTimeout(() => {
+      if (sessionToken === speechSession && speechRecognition === sr && isListening.value) {
+        try { sr.stop() } catch (e) { /* ignore */ }
+        voiceStatus.value = inputText.value.trim()
+          ? '录音时间结束，请检查文字后点击发送'
+          : '没有听到声音，请点击麦克风重试'
+        voiceStatusType.value = inputText.value.trim() ? 'success' : 'error'
+      }
+    }, 12000)
+  }
 
   sr.onresult = (e) => {
     if (sessionToken !== speechSession || speechRecognition !== sr) return
@@ -901,21 +920,21 @@ function startVoiceInput() {
   speechRecognition = instance
   inputText.value = ''
   isListening.value = true
-  voiceStatus.value = '正在听你说话，请自然地说出完整句子'
+  voiceStatus.value = '正在启动麦克风……'
   voiceStatusType.value = 'info'
 
   try {
     instance.start()
-    // 给儿童更充足的表达时间，12秒后自动结束并保留已识别文字。
+    // 如果浏览器没有弹出权限框或底层服务未响应，不让按钮永久卡在录音态。
     speechTimeout = setTimeout(() => {
       if (currentSession === speechSession && speechRecognition === instance && isListening.value) {
-        try { instance.stop() } catch (e) { /* ignore */ }
-        voiceStatus.value = inputText.value.trim()
-          ? '录音时间结束，请检查文字后点击发送'
-          : '没有听到声音，请点击麦克风重试'
-        voiceStatusType.value = inputText.value.trim() ? 'success' : 'error'
+        try { instance.abort() } catch (e) { /* ignore */ }
+        isListening.value = false
+        speechRecognition = null
+        voiceStatus.value = '麦克风启动超时，请在地址栏左侧允许麦克风后重试'
+        voiceStatusType.value = 'error'
       }
-    }, 12000)
+    }, 5000)
   } catch (e) {
     isListening.value = false
     speechRecognition = null

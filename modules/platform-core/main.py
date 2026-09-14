@@ -254,6 +254,18 @@ def initialize_database() -> None:
               section_key TEXT NOT NULL,
               PRIMARY KEY (report_id, evidence_record_id, section_key)
             );
+            CREATE TABLE IF NOT EXISTS parent_feedback (
+              id TEXT PRIMARY KEY,
+              report_id TEXT NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+              child_profile_id TEXT NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
+              author_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+              dimension_key TEXT NOT NULL,
+              questions_json TEXT NOT NULL,
+              answers_json TEXT NOT NULL,
+              suggestion_json TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              UNIQUE(report_id, author_account_id, dimension_key)
+            );
             CREATE TABLE IF NOT EXISTS adult_student_links (
               adult_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
               student_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -283,6 +295,7 @@ def initialize_database() -> None:
             CREATE INDEX IF NOT EXISTS idx_assessment_profile_time ON assessment_sessions(child_profile_id, created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_source_event_session_time ON source_events(session_id, occurred_at DESC);
             CREATE INDEX IF NOT EXISTS idx_snapshot_session ON snapshot_assets(session_id);
+            CREATE INDEX IF NOT EXISTS idx_parent_feedback_child ON parent_feedback(child_profile_id, created_at DESC);
             """
         )
         account_columns = {
@@ -732,6 +745,12 @@ class EvidenceBatchIn(BaseModel):
     events: list[EvidenceEnvelopeIn] = Field(min_length=1, max_length=100)
 
 
+class ParentFeedbackIn(BaseModel):
+    dimension_key: str = Field(min_length=2, max_length=64)
+    questions: list[dict] = Field(default_factory=list, max_length=8)
+    answers: list[dict] = Field(default_factory=list, max_length=8)
+
+
 class SessionStatusIn(BaseModel):
     status: Literal["completed", "interrupted", "abandoned", "active"]
     state_version: int | None = Field(default=None, alias="stateVersion", ge=1)
@@ -843,8 +862,59 @@ def career_mentor_reflections(db: sqlite3.Connection, profile_id: str, career_id
         return []
 
 
+def sync_collected_story_evidence(db: sqlite3.Connection, profile_id: str) -> None:
+    """Turn stories collected from the co-creation module into reportable evidence.
+
+    The gallery's “add to my works” path predates the module SDK, so those stories
+    were visible in My Works but had no evidence row for the magic book.
+    """
+    works = db.execute(
+        """SELECT mw.* FROM manual_works mw
+           JOIN child_profiles cp ON cp.account_id=mw.student_account_id
+           WHERE cp.id=? AND mw.module='story' AND mw.source_id LIKE 'story:%'""",
+        (profile_id,),
+    ).fetchall()
+    if not works:
+        return
+    manifest = module_manifest("story")
+    policy = policy_for_event("story.contribution-completed.v1")
+    for work in works:
+        session_id = f"collected-story:{work['id']}"
+        event_id = f"collected-story-event:{work['id']}"
+        evidence_id = f"collected-story-evidence:{work['id']}"
+        summary = {
+            "storyTitle": work["title"],
+            "storySynopsis": str(work["description"] or "")[:260],
+            "collectedFromStoryModule": True,
+            "manualWorkId": work["id"],
+        }
+        db.execute(
+            """INSERT INTO assessment_sessions
+               (id,child_profile_id,module_id,module_version,status,created_at,started_at,ended_at,active_seconds,state_version,summary_json)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)
+               ON CONFLICT(id) DO UPDATE SET summary_json=excluded.summary_json,ended_at=excluded.ended_at""",
+            (session_id, profile_id, "story", manifest["version"], "completed", work["created_at"], work["created_at"], work["created_at"], 0, 1, json.dumps(summary, ensure_ascii=False)),
+        )
+        event_payload = {"contributionCount": 1, "completionSeconds": 0, "storyTitle": work["title"]}
+        db.execute(
+            """INSERT INTO source_events
+               (id,session_id,idempotency_key,event_type,schema_version,payload_json,sequence_no,occurred_at,created_at)
+               VALUES (?,?,?,?,?,?,?,?,?)
+               ON CONFLICT(id) DO UPDATE SET payload_json=excluded.payload_json,occurred_at=excluded.occurred_at""",
+            (event_id, session_id, f"collected-story:{work['id']}", "story.contribution-completed.v1", "1.0", json.dumps(event_payload, ensure_ascii=False), 1, work["created_at"], work["created_at"]),
+        )
+        db.execute(
+            """INSERT INTO evidence_records
+               (id,source_event_id,evidence_level,constructs_json,behavior_summary,policy_version,construct_registry_version,derived_at)
+               VALUES (?,?,?,?,?,?,?,?)
+               ON CONFLICT(id) DO UPDATE SET behavior_summary=excluded.behavior_summary,derived_at=excluded.derived_at""",
+            (evidence_id, event_id, policy["evidenceLevel"], json.dumps(policy["constructs"], ensure_ascii=False), f"完成故事《{work['title']}》的共创表达", policy["policyVersion"], policy["constructRegistryVersion"], now_iso()),
+        )
+
+
 def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple[list[dict], list[str]]:
     """将 V1 事件和派生证据投影为报告输入，引用始终使用 evidence record ID。"""
+    sync_collected_story_evidence(db, profile_id)
     rows = db.execute(
         """SELECT se.*, er.id AS evidence_id, er.evidence_level, er.constructs_json, er.behavior_summary,
                   s.module_id, s.summary_json
@@ -917,18 +987,72 @@ def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple
     return events, [row["evidence_id"] for row in rows]
 
 
-def generate_report_snapshot(child_name: str, events: list[dict]) -> tuple[dict, dict]:
+REPORT_MODULE_QUESTION_BANK = {
+    "story": {"lead":"聊聊这次故事","question":"孩子平时讲故事时，通常怎样展开想法？","options":["先想人物","先想情节","边讲边想","很少讲故事"],"placeholder":"比如最近讲过的一个故事"},
+    "chat": {"lead":"聊聊日常表达","question":"孩子遇到在意的事，通常会怎样告诉您？","options":["主动说出来","问了才会说","边做边说","暂时不想说"],"placeholder":"可以写下当时的一句话"},
+    "deep_sea": {"lead":"聊聊动手尝试","question":"碰到需要反复尝试的任务时，孩子通常怎么做？","options":["自己换办法","请人给提示","先停一会儿","容易放弃"],"placeholder":"比如拼搭、解题或做手工"},
+    "career": {"lead":"聊聊面对任务","question":"面对一个没做过的新任务，孩子通常怎样开始？","options":["先观察再做","马上动手试","先问清步骤","需要陪着做"],"placeholder":"可以写下最近的一次尝试"},
+}
+REPORT_QUESTION_VERSION = "module-bank-v1"
+REPORT_ANALYSIS_VERSION = "dimension-observation-v3"
+
+
+def fallback_report_questions(child_name: str, report: dict, events: list[dict]) -> dict:
+    """Build usable parent questions even when the optional report model is slow."""
+    event_by_id = {str(event.get("id")): event for event in events if event.get("id")}
+    explanation_by_id = {
+        str(item.get("evidence_ref")): item
+        for item in report.get("evidence_explanations", [])
+        if isinstance(item, dict) and item.get("evidence_ref")
+    }
+    question_candidates = []
+    seen_modules = set()
+    for dimension in report.get("dimensions", []):
+        refs = dimension.get("evidence_refs", []) if isinstance(dimension, dict) else []
+        for evidence_ref in reversed([str(value) for value in refs]):
+            event = event_by_id.get(evidence_ref, {})
+            module = event.get("module")
+            if module not in REPORT_MODULE_QUESTION_BANK or module in seen_modules:
+                continue
+            explanation = explanation_by_id.get(evidence_ref, {})
+            brief = str(explanation.get("summary") or dimension.get("analysis") or "报告中已经留下了一次真实观察")[:72]
+            question_candidates.append((list(REPORT_MODULE_QUESTION_BANK).index(module), dimension, evidence_ref, module, brief))
+            seen_modules.add(module)
+    question_candidates.sort(key=lambda item: item[0])
+    dimension_questions = []
+    for _, dimension, evidence_ref, module, brief in question_candidates:
+        preset = REPORT_MODULE_QUESTION_BANK[module]
+        dimension_questions.append({"id":f"d{len(dimension_questions)+1}","key":dimension.get("key"),"evidence_ref":evidence_ref,"module":module,"evidence_brief":brief,**preset,"allow_text":True})
+    name = child_name or "孩子"
+    return {
+        "question_version": REPORT_QUESTION_VERSION,
+        "lead_note": f"也想听听您眼中的{name}。这些日常片段会和游戏记录一起写进建议。"[:40],
+        "global_questions": [
+            {"id":"g1","category":"家庭陪伴","lead":"关于陪伴——","question":f"平时谁陪{name}探索得更多？"[:30],"options":["爸爸妈妈","祖辈家人","大家轮流","其他陪伴"],"allow_text":True,"placeholder":"最常一起做什么？"},
+            {"id":"g2","category":"期待","lead":"关于期待——","question":f"最希望{name}在哪方面多尝试？"[:30],"options":["表达想法","动手解决","理解伙伴","认识自己"],"allow_text":True,"placeholder":"写下一件期待的小事"},
+            {"id":"g3","category":"在意","lead":"最近在意——","question":f"最近最想多了解{name}什么？"[:30],"options":["兴趣变化","遇难反应","合作方式","还没想好"],"allow_text":True,"placeholder":"可以写下最近的观察"},
+        ],
+        "dimension_questions": dimension_questions,
+    }
+
+
+def generate_report_snapshot(child_name: str, events: list[dict], child_age: int = 0) -> tuple[dict, dict]:
     """默认走 Core 内置规则；配置 REPORT_AGENT_URL 时可保留独立服务作回归对照。"""
     url = os.environ.get("REPORT_AGENT_URL", "http://127.0.0.1:8030/api/report/generate").strip()
     if not url:
-        return generate_internal_report(child_name, events), {"generatorVersion": "core-rule-analyzer-v1", "rulesetVersion": "core-rules-v1", "promptVersion": None, "modelId": None}
-    request = urlrequest.Request(url, data=json.dumps({"child_name": child_name, "events": events}, ensure_ascii=False).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+        report = generate_internal_report(child_name, events)
+        report["questions"] = fallback_report_questions(child_name, report, events)
+        return report, {"generatorVersion": "core-rule-analyzer-v1", "rulesetVersion": "core-rules-v1", "promptVersion": None, "modelId": None}
+    request = urlrequest.Request(url, data=json.dumps({"child_name": child_name, "child_age": child_age, "events": events}, ensure_ascii=False).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
     try:
         with urlrequest.urlopen(request, timeout=50) as response:
             report = json.loads(response.read().decode("utf-8"))
             return report, {"generatorVersion": "report-agent-http-v1", "rulesetVersion": "rule-or-llm-v1", "promptVersion": None, "modelId": os.environ.get("REPORT_LLM_MODEL") or None}
-    except (urlerror.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        raise HTTPException(503, "报告生成服务暂不可用") from exc
+    except (urlerror.URLError, TimeoutError, json.JSONDecodeError):
+        logger.exception("报告智能体暂不可用，改用 Core 安全报告")
+        report = generate_internal_report(child_name, events)
+        report["questions"] = fallback_report_questions(child_name, report, events)
+        return report, {"generatorVersion": "core-rule-analyzer-v1", "rulesetVersion": "core-rules-v1", "promptVersion": None, "modelId": None}
 
 
 @app.get("/api/health")
@@ -1226,7 +1350,7 @@ def create_talent_stories_v1(ai_bole_session: str | None = Cookie(default=None))
         dimensions = treasure_dimensions_for_event(event)
         if dimensions:
             star_events.append({**event, "intelligence_candidates": sorted(dimensions)})
-    report, generator = generate_report_snapshot(profile["display_name"], star_events)
+    report, generator = generate_report_snapshot(profile["display_name"], star_events, int(profile["age"] or 0))
     level_one_events = [event for event in star_events if event["module"] == "deep_sea"
                         and event["event_type"] == "deep-sea.spatial-task-completed.v1"
                         and int(event["raw_evidence"].get("level", 0)) == 1]
@@ -1291,6 +1415,26 @@ def read_assessment_session(session_id: str, ai_bole_session: str | None = Cooki
     return {"id": row["id"], "moduleId": row["module_id"], "moduleVersion": row["module_version"], "status": row["status"], "createdAt": row["created_at"], "startedAt": row["started_at"], "endedAt": row["ended_at"], "activeSeconds": row["active_seconds"], "stateVersion": row["state_version"], "summary": json.loads(row["summary_json"] or "{}"), "reason": row["interruption_reason"]}
 
 
+def report_has_current_reflection(report: dict) -> bool:
+    dimensions = report.get("dimensions", [])
+    questions = report.get("questions", {})
+    if len(dimensions) != 6 or not isinstance(questions, dict):
+        return False
+    if questions.get("question_version") != REPORT_QUESTION_VERSION:
+        return False
+    if report.get("analysis_version") != REPORT_ANALYSIS_VERSION:
+        return False
+    dimension_questions = questions.get("dimension_questions")
+    global_questions = questions.get("global_questions")
+    if not isinstance(dimension_questions, list) or not isinstance(global_questions, list) or len(global_questions) != 3:
+        return False
+    has_dimension_evidence = any(
+        isinstance(item, dict) and bool(item.get("evidence_refs"))
+        for item in dimensions
+    )
+    return not has_dimension_evidence or bool(dimension_questions)
+
+
 @app.post("/api/v1/reports")
 def create_report_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     """报告生成实现仍可独立部署，但证据读取和快照保存只经过 Core。"""
@@ -1299,11 +1443,21 @@ def create_report_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict
     with connect() as db:
         profile = profile_for_account(db, account["id"])
         events, evidence_ids = standard_events_for_report(db, profile["id"])
-    report, generator = generate_report_snapshot(profile["display_name"], events)
+        evidence_hash = hashlib.sha256(json.dumps(events, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+        cached = db.execute(
+            "SELECT id,status,report_json FROM reports WHERE child_profile_id=? AND evidence_set_hash=? AND status='published' ORDER BY published_at DESC LIMIT 1",
+            (profile["id"], evidence_hash),
+        ).fetchone()
+    if cached:
+        cached_report = json.loads(cached["report_json"])
+        if report_has_current_reflection(cached_report):
+            cached_report["report_id"] = cached["id"]
+            return {"id": cached["id"], "status": cached["status"], "report": cached_report, "cached": True}
+    report, generator = generate_report_snapshot(profile["display_name"], events, int(profile["age"] or 0))
     timestamp = now_iso()
-    evidence_hash = hashlib.sha256(json.dumps(events, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
     with connect() as db:
         report_id = str(uuid.uuid4())
+        report["report_id"] = report_id
         db.execute(
             """INSERT INTO reports
                (id,child_profile_id,generator_version,ruleset_version,prompt_version,model_id,evidence_set_hash,status,report_json,generated_at,published_at)
@@ -1323,7 +1477,81 @@ def latest_published_report_v1(ai_bole_session: str | None = Cookie(default=None
         row = db.execute("SELECT * FROM reports WHERE child_profile_id=? AND status='published' ORDER BY published_at DESC LIMIT 1", (profile["id"],)).fetchone()
     if not row:
         raise HTTPException(404, "还没有已发布的报告")
-    return {"id": row["id"], "status": row["status"], "generatedAt": row["generated_at"], "report": json.loads(row["report_json"])}
+    report = json.loads(row["report_json"])
+    report["report_id"] = row["id"]
+    return {"id": row["id"], "status": row["status"], "generatedAt": row["generated_at"], "report": report}
+
+
+@app.post("/api/v1/reports/{report_id}/parent-feedback")
+def save_parent_feedback_v1(report_id: str, payload: ParentFeedbackIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    viewer = require_account(ai_bole_session)
+    if (viewer["role"] or "student") != "adult":
+        raise HTTPException(403, "只有老师/家长可以补充家庭观察")
+    student = resolve_subject(viewer, ai_bole_session)
+    with connect() as db:
+        profile = profile_for_account(db, student["id"])
+        row = db.execute("SELECT * FROM reports WHERE id=? AND child_profile_id=?", (report_id, profile["id"])).fetchone()
+    if not row:
+        raise HTTPException(404, "没有找到这份报告")
+    report = json.loads(row["report_json"])
+    dimension = next((item for item in report.get("dimensions", []) if item.get("key") == payload.dimension_key), None)
+    if not dimension:
+        raise HTTPException(400, "报告中没有这个观察维度")
+    report_questions = report.get("questions", {})
+    dimension_questions = [item for item in report_questions.get("dimension_questions", []) if item.get("key") == payload.dimension_key]
+    trusted_questions = [*dimension_questions, *report_questions.get("global_questions", [])]
+    # 兼容旧报告：旧快照可能尚未保存 questions。此时接受前端根据该报告
+    # 维度生成的有限兜底问题，使家长的真实回答仍能进入专属建议流程。
+    if not dimension_questions:
+        supplied_questions = [
+            {
+                "id": str(item.get("id", ""))[:32],
+                "key": str(item.get("key", ""))[:64] or None,
+                "category": str(item.get("category", ""))[:32] or None,
+                "lead": str(item.get("lead", ""))[:20],
+                "question": str(item.get("question", ""))[:120],
+                "options": [str(option)[:40] for option in (item.get("options") if isinstance(item.get("options"), list) else [])[:4]],
+                "allow_text": True,
+                "placeholder": str(item.get("placeholder", ""))[:60],
+            }
+            for item in payload.questions[:8]
+            if isinstance(item, dict)
+            and str(item.get("id", "")).strip()
+            and (not item.get("key") or item.get("key") == payload.dimension_key)
+        ]
+        trusted_questions = [*supplied_questions, *report_questions.get("global_questions", [])]
+    trusted_ids = {str(item.get("id", "")) for item in trusted_questions}
+    trusted_answers = []
+    for answer in payload.answers:
+        question_id = str(answer.get("question_id") or answer.get("id") or "")
+        if question_id in trusted_ids:
+            trusted_answers.append({"question_id": question_id, "selected": str(answer.get("selected", ""))[:120], "text": str(answer.get("text", ""))[:500]})
+    agent_url = os.environ.get("REPORT_AGENT_URL", "http://127.0.0.1:8030/api/report/generate").strip()
+    suggestion_url = agent_url.rsplit("/", 1)[0] + "/suggestions"
+    request_body = {"dimension":{"key":dimension["key"],"name":dimension.get("name", dimension["key"])},"child":{"childName":profile["display_name"],"age":profile["age"]},"evidence":{"analysis":dimension.get("analysis", ""),"evidence_brief":dimension_questions},"questions":trusted_questions,"answers":trusted_answers}
+    request = urlrequest.Request(suggestion_url, data=json.dumps(request_body, ensure_ascii=False).encode("utf-8"), headers={"Content-Type":"application/json"}, method="POST")
+    try:
+        with urlrequest.urlopen(request, timeout=50) as response:
+            suggestion = json.loads(response.read().decode("utf-8"))
+    except (urlerror.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        raise HTTPException(503, "专属建议暂时没有写好，请稍后再试") from exc
+    personalized = report.setdefault("personalized_recommendations", {})
+    personalized[payload.dimension_key] = suggestion
+    report["feedback_completed"] = True
+    family = [item for value in personalized.values() for item in value.get("family_suggestions", [])]
+    teacher = [item for value in personalized.values() for item in value.get("teacher_suggestions", [])]
+    if family:
+        report["recommendations"]["family"] = family[:6]
+    if teacher:
+        report["recommendations"]["teacher"] = teacher[:5]
+    timestamp = now_iso()
+    with connect() as db:
+        db.execute("""INSERT INTO parent_feedback (id,report_id,child_profile_id,author_account_id,dimension_key,questions_json,answers_json,suggestion_json,created_at)
+                      VALUES (?,?,?,?,?,?,?,?,?)
+                      ON CONFLICT(report_id,author_account_id,dimension_key) DO UPDATE SET questions_json=excluded.questions_json,answers_json=excluded.answers_json,suggestion_json=excluded.suggestion_json,created_at=excluded.created_at""",
+                   (str(uuid.uuid4()), report_id, profile["id"], viewer["id"], payload.dimension_key, json.dumps(trusted_questions,ensure_ascii=False), json.dumps(trusted_answers,ensure_ascii=False), json.dumps(suggestion,ensure_ascii=False), timestamp))
+        db.execute("UPDATE reports SET report_json=? WHERE id=?", (json.dumps(report,ensure_ascii=False), report_id))
+    return {"ok":True,"type":"parent_feedback","suggestion":suggestion,"report":report}
 
 
 @app.get("/_deprecated/bridge-removed.js", response_class=PlainTextResponse, include_in_schema=False)

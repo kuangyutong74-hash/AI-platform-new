@@ -16,10 +16,10 @@ STATIC_DIR = BASE_DIR / "static"
 TEMPLATES_DIR = BASE_DIR / "templates"
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{BASE_DIR / 'career_sim.db'}")
 
-# DeepSeek API (OpenAI-compatible)
-AI_API_KEY = os.getenv("DEEPSEEK_API_KEY", os.getenv("AI_API_KEY", ""))
-AI_API_BASE = os.getenv("DEEPSEEK_BASE_URL", os.getenv("AI_API_BASE", "https://api.deepseek.com/v1"))
-AI_MODEL = os.getenv("DEEPSEEK_MODEL", os.getenv("AI_MODEL", "deepseek-chat"))
+# OpenAI-compatible API. Generic/Zhipu names take priority; legacy DeepSeek names remain supported.
+AI_API_KEY = os.getenv("AI_API_KEY") or os.getenv("ZHIPUAI_API_KEY") or os.getenv("ZHIPU_API_KEY") or os.getenv("DEEPSEEK_API_KEY", "")
+AI_API_BASE = os.getenv("AI_BASE_URL") or os.getenv("AI_API_BASE") or os.getenv("ZHIPUAI_BASE_URL") or os.getenv("ZHIPU_BASE_URL") or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
+AI_MODEL = os.getenv("AI_MODEL") or os.getenv("ZHIPUAI_MODEL") or os.getenv("ZHIPU_MODEL") or os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
 AI_MAX_TOKENS = int(os.getenv("AI_MAX_TOKENS", "500"))
 AI_TEMPERATURE = float(os.getenv("AI_TEMPERATURE", "0.7"))
 AI_TIMEOUT = int(os.getenv("AI_TIMEOUT", "30"))

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>魔法书 · 星章的提问信（建议页之前）</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style/LXGWWenKai-Regular.woff2">
+<style>
+@font-face{font-family:"LXGW WenKai";src:url("https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style/LXGWWenKai-Regular.woff2") format("woff2");font-display:swap}
+:root{--book-desk:#FDF3E3;--book-paper:#FFFDF6;--book-gold:#E8B64C;--book-title:#7A4E2D;--book-text:#6B5B4F;--book-muted:#9C8B7A;--book-pink:#F2A6B3;--book-blue:#8FCBE8;--book-mint:#A8E0C9;--book-yellow:#F7D97E;--book-lavender:#C4B2E3;--book-font:"LXGW WenKai","Yuanti SC","幼圆","KaiTi",cursive;--body-font:"LXGW WenKai","PingFang SC","Microsoft YaHei",sans-serif;--talent:#d98f6a}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:26px 14px;background:linear-gradient(150deg,#FDF3E3,#f9ecdc 55%,#f6e3dd);font-family:var(--body-font);color:var(--book-text);font-size:13px}
+.position-note{position:fixed;top:14px;left:50%;transform:translateX(-50%);padding:6px 18px;border-radius:999px;background:rgba(255,253,246,.85);border:1px dashed rgba(122,78,45,.3);color:var(--book-muted);font-size:11px;letter-spacing:.06em;z-index:9}
+.open-book-shell{position:relative;width:min(1180px,96vw);height:min(700px,88vh);display:grid;grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr);filter:drop-shadow(0 22px 24px rgba(109,70,45,.22))}
+.open-book-shell:before,.open-book-shell:after{content:"";position:absolute;z-index:-2;right:10px;bottom:-8px;left:10px;height:100%;border-radius:25px;background:#eee0c6;box-shadow:0 18px 28px rgba(78,50,35,.2);transform:rotate(.35deg)}
+.open-book-shell:after{z-index:-1;right:5px;bottom:-4px;left:5px;background:#f8ecd5;transform:rotate(-.2deg)}
+.book-spine{background:linear-gradient(90deg,rgba(87,54,34,.23),rgba(255,255,255,.94) 46%,rgba(87,54,34,.25));box-shadow:0 0 18px rgba(67,40,23,.2);z-index:3}
+.book-sheet{position:relative;min-width:0;overflow:hidden;background-color:#fffdf7;background-image:linear-gradient(90deg,rgba(236,207,151,.08),transparent 12%,transparent 88%,rgba(226,190,129,.08)),radial-gradient(circle at 15% 20%,rgba(247,217,126,.13),transparent 30%),radial-gradient(circle at 86% 76%,rgba(242,166,179,.1),transparent 32%),radial-gradient(rgba(122,78,45,.075) .55px,transparent .7px);background-size:auto,auto,auto,17px 19px;box-shadow:inset 0 0 35px rgba(122,78,45,.08);font-size:14px;line-height:1.62}
+.book-sheet--left{border-radius:24px 5px 5px 21px;box-shadow:inset -18px 0 24px rgba(122,78,45,.08),inset 0 0 0 1px rgba(122,78,45,.1)}
+.book-sheet--right{border-radius:5px 24px 21px 5px;box-shadow:inset 18px 0 24px rgba(122,78,45,.08),inset 0 0 0 1px rgba(122,78,45,.1)}
+.sheet-scroll{position:absolute;inset:0;overflow:auto;padding:clamp(23px,4vh,42px) clamp(24px,3.4vw,46px) 38px;scrollbar-width:thin;scrollbar-color:rgba(217,184,120,.55) transparent;z-index:1}
+.sheet-scroll::-webkit-scrollbar{width:5px}
+.sheet-scroll::-webkit-scrollbar-thumb{background:rgba(217,184,120,.55);border-radius:10px}
+.sheet-number{position:absolute;bottom:12px;color:var(--book-muted);font-size:10px;z-index:1}
+.book-sheet--left .sheet-number{left:26px}
+.book-sheet--right .sheet-number{right:26px}
+.page-kicker{margin:0 0 7px;color:#bb7b70;font-size:10px;letter-spacing:.18em}
+.book-sheet h2{margin:0 0 clamp(12px,2vh,20px);color:var(--book-title);font-family:var(--book-font);font-size:clamp(23px,2.2vw,34px);font-weight:600;line-height:1.25;letter-spacing:.04em;position:relative;padding-bottom:9px}
+.book-sheet h2:after{content:"";position:absolute;left:0;bottom:0;width:72px;height:2px;background:linear-gradient(90deg,#d89aa0,#e5bb67,transparent)}
+.lead-note{padding:14px 16px;border-radius:8px 18px 8px 18px;background:linear-gradient(135deg,rgba(247,217,126,.32),rgba(247,184,126,.16));box-shadow:inset 0 0 0 1px rgba(217,184,120,.32);font-size:15px;line-height:1.7}
+.star-seal{display:inline-flex;align-items:center;gap:9px;margin:0 0 14px;padding:7px 15px 7px 9px;border-radius:999px 12px 999px 12px;background:linear-gradient(135deg,rgba(242,166,179,.24),rgba(255,253,246,.6));box-shadow:inset 0 0 0 1px rgba(210,138,148,.35);color:#a5655f;font-size:12px;transform:rotate(-.4deg)}
+.star-seal i{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 35% 28%,#f6cf7a,#e8b64c 70%,#c89227);color:#fff6dd;font-style:normal;font-size:13px;box-shadow:0 3px 0 #c89227,0 5px 9px rgba(144,98,28,.25)}
+.q-card{position:relative;display:block;min-width:0;padding:13px 15px 13px 48px;border:1px solid rgba(122,78,45,.12);border-radius:5px 17px 8px 14px;background:linear-gradient(135deg,#fffdf6,#fff6dc);box-shadow:0 7px 17px rgba(104,71,45,.085);margin-top:12px;transition:transform .2s ease}
+.q-card:hover{transform:rotate(-.25deg)}
+.q-card>i{position:absolute;left:12px;top:13px;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:color-mix(in srgb,var(--book-pink) 70%,white);color:#7a4e2d;font-style:normal;font-weight:700;font-size:13px}
+.q-card h3{margin:0 0 4px;color:var(--book-title);font-family:var(--book-font);font-size:16px;font-weight:600;line-height:1.4}
+.evidence-chip{display:inline-flex;align-items:center;gap:6px;margin:0 0 8px;padding:3px 11px 3px 4px;border-radius:999px;background:rgba(255,247,229,.9);box-shadow:inset 0 0 0 1px rgba(217,184,120,.4);color:#8a6a44;font-size:11px}
+.evidence-chip b{width:18px;height:18px;display:grid;place-items:center;border-radius:50%;background:#7aa8c9;color:#fff;font-size:10px;font-weight:700}
+.q-card[data-module="chat"] .evidence-chip b{background:#d98f6a}
+.q-card[data-module="deep"] .evidence-chip b{background:#8fbf9f}
+.q-card[data-module="career"] .evidence-chip b{background:#c9a3c9}
+.options{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0}
+.option{border:1px solid rgba(122,78,45,.18);padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.72);color:var(--book-text);font-family:var(--body-font);font-size:12.5px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,background .15s ease}
+.option:hover{transform:translateY(-2px)}
+.option.selected{background:color-mix(in srgb,var(--talent) 14%,#fffdf6);border-color:color-mix(in srgb,var(--talent) 55%,#fffdf6);color:#6d4535;font-weight:700;box-shadow:0 0 0 3px rgba(232,182,76,.35),0 5px 10px rgba(104,71,45,.08)}
+.q-extra{width:100%;margin:10px 0 0;padding:8px 12px;border:1px dashed rgba(122,78,45,.25);border-radius:12px;background:rgba(255,255,255,.52);color:var(--book-text);font-family:var(--body-font);font-size:12.5px;resize:none}
+.q-extra:focus{outline:2px solid rgba(232,182,76,.5);outline-offset:2px}
+.page-tip{margin:14px 0 0;padding-top:9px;border-top:1px dashed rgba(122,78,45,.2);color:var(--book-muted);font-size:11px;line-height:1.7}
+.sheet-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:16px}
+.paper-button{border:1px solid rgba(122,78,45,.2);padding:9px 16px;border-radius:16px 8px 16px 8px;background:#fffaf0;color:var(--book-title);font-family:var(--body-font);font-size:12.5px;box-shadow:0 4px 12px rgba(122,78,45,.09);cursor:pointer;transition:transform .2s ease}
+.envelope-button{border:1px solid #d8b870;border-radius:4px 13px 4px 13px;padding:10px 18px;background:linear-gradient(155deg,#fff9e8,#f8e3b6);color:#775331;font-family:var(--body-font);font-size:13px;font-weight:700;box-shadow:0 4px 0 #d3ae60,0 8px 14px rgba(144,98,28,.14);cursor:pointer;transition:transform .2s ease}
+.paper-button:hover,.envelope-button:hover{transform:translateY(-2px)}
+.envelope-button:active{transform:translateY(2px);box-shadow:0 2px 0 #d3ae60}
+.result-note{display:none;margin-top:14px;padding:13px 16px;border-radius:50% 12px;background:rgba(247,217,126,.2);color:#8a5b39;font-family:var(--book-font);text-align:center;line-height:1.7}
+.result-note.show{display:block;animation:fadeUp .5s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(max-width:900px){.open-book-shell{grid-template-columns:1fr;height:auto}.book-spine{display:none}.book-sheet{min-height:420px}.book-sheet--left{border-radius:18px 18px 5px 5px}.book-sheet--right{border-radius:5px 5px 18px 18px}.sheet-scroll{position:relative}}
+</style>
+</head>
+<body>
+<p class="position-note">页序示意：六个维度页（02–07）之后 · 建议页 GROWING TOGETHER（09）之前</p>
+<div class="open-book-shell">
+  <section class="book-sheet book-sheet--left">
+    <div class="sheet-scroll">
+      <p class="page-kicker">STAR LETTER · 08</p>
+      <h2>星章的提问信</h2>
+      <div class="star-seal"><i>★</i>智能体 · 观察星章 想先问问您</div>
+      <p class="lead-note">在翻开建议之前，星章想多了解一点依依在家里的样子。您的回答会和魔法书记录的观察放在一起，变成只属于依依的建议。</p>
+      <article class="q-card" data-module="story">
+        <i>1</i>
+        <h3>先从语言表达说起——</h3>
+        <span class="evidence-chip"><b>事</b>依依在故事共创里创编了 4 个完整故事</span>
+        <p style="margin:0">在家里，他会主动讲自己编的故事吗？</p>
+        <div class="options" data-q="1">
+          <button class="option">几乎每天都会讲</button>
+          <button class="option">有时会说</button>
+          <button class="option">很少主动讲</button>
+          <button class="option">没注意过</button>
+        </div>
+      </article>
+      <article class="q-card" data-module="career">
+        <i>2</i>
+        <h3>和小伙伴在一起时——</h3>
+        <span class="evidence-chip"><b>职</b>动物保护员任务里主动安抚了着急的伙伴</span>
+        <p style="margin:0">平时在家里或楼下，他和别的小朋友玩得怎么样？</p>
+        <div class="options" data-q="2">
+          <button class="option">很容易玩到一起</button>
+          <button class="option">熟了才放得开</button>
+          <button class="option">更爱自己玩</button>
+          <button class="option">没注意过</button>
+        </div>
+      </article>
+      <p class="page-tip">每道题都来自依依的真实探索记录 · 全部可以跳过，跳过的部分会使用通用建议</p>
+      <span class="sheet-number">16</span>
+    </div>
+  </section>
+  <div class="book-spine"></div>
+  <section class="book-sheet book-sheet--right">
+    <div class="sheet-scroll">
+      <p class="page-kicker">STAR LETTER · 08</p>
+      <h2>再问三个小问题</h2>
+      <article class="q-card">
+        <i>3</i>
+        <h3>关于陪伴——</h3>
+        <p style="margin:0">平时陪依依探索、讲故事的时间，多和谁在一起？</p>
+        <div class="options" data-q="3">
+          <button class="option">大多数是妈妈</button>
+          <button class="option">大多数是爸爸</button>
+          <button class="option">祖辈陪得多</button>
+          <button class="option">家里人轮流陪</button>
+        </div>
+      </article>
+      <article class="q-card">
+        <i>4</i>
+        <h3>关于期待——</h3>
+        <p style="margin:0">您最希望依依的表达能力，往哪个方向长？</p>
+        <div class="options" data-q="4">
+          <button class="option">敢说敢表达</button>
+          <button class="option">说得有条理</button>
+          <button class="option">享受表达本身</button>
+        </div>
+        <textarea class="q-extra" rows="2" placeholder="可以补充一句：他现在最爱讲的是什么？"></textarea>
+      </article>
+      <article class="q-card">
+        <i>5</i>
+        <h3>关于在意——</h3>
+        <p style="margin:0">这段时间，您最留意依依的哪一面？</p>
+        <div class="options" data-q="5">
+          <button class="option">愿不愿意开口</button>
+          <button class="option">遇到困难的态度</button>
+          <button class="option">和别人的相处</button>
+          <button class="option">没有特别担心</button>
+        </div>
+      </article>
+      <div class="sheet-actions">
+        <button class="paper-button" id="skipBtn">跳过，先看通用建议</button>
+        <button class="envelope-button" id="genBtn">生成专属建议</button>
+      </div>
+      <p class="result-note" id="resultNote"></p>
+      <p class="page-tip">回答会被记进证据中心，成为依依成长记录的一部分 · 首次作答后，下次阅读不再重复提问</p>
+      <span class="sheet-number">17</span>
+    </div>
+  </section>
+</div>
+<script>
+document.querySelectorAll(".options").forEach(group=>{
+  group.querySelectorAll(".option").forEach(btn=>{
+    btn.addEventListener("click",()=>{group.querySelectorAll(".option").forEach(b=>b.classList.remove("selected"));btn.classList.add("selected")});
+  });
+});
+const note=document.getElementById("resultNote"),gen=document.getElementById("genBtn");
+document.getElementById("skipBtn").addEventListener("click",()=>{note.textContent="好的，这次先看通用建议。星章把依依的探索记录都收好了，随时回来补充。";note.classList.add("show")});
+gen.addEventListener("click",()=>{
+  gen.textContent="星章正在整理…";gen.disabled=true;
+  setTimeout(()=>{note.textContent="专属建议已生成：结合依依在故事共创里的 4 个创编与您的回答，建议页会先从「睡前留 10 分钟，请他讲今天编的故事」开始。";note.classList.add("show");gen.textContent="重新生成";gen.disabled=false},900);
+});
+</script>
+</body>
+</html>

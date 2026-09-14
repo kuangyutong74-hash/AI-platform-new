@@ -182,13 +182,39 @@ class ReportAnalyzerTests(unittest.TestCase):
         self.assertIn("精彩的一句", story)
 
     def test_normalizer_removes_fabricated_references(self):
-        candidate = {"dimensions": [{"key": "logical", "analysis": "留意解题过程", "evidence_refs": ["fake", "ev-1"]}], "cross_insights": [{"text": "会反复尝试", "evidence_refs": ["fake", "ev-1"]}], "recommendations": {"family": "一起复盘", "teacher": "提供多种材料"}}
+        candidate = {"dimensions": [{"key": "logical", "analysis": "留意解题过程", "adult_observation": "六个维度都一样的通用观察", "evidence_refs": ["fake", "ev-1"]}], "cross_insights": [{"text": "会反复尝试", "evidence_refs": ["fake", "ev-1"]}], "recommendations": {"family": "一起复盘", "teacher": "提供多种材料"}}
         result = normalize_report(candidate, [event("ev-1", "logical")])
         logical = next(item for item in result["dimensions"] if item["key"] == "logical")
         self.assertEqual(logical["evidence_refs"], ["ev-1"])
         self.assertEqual(result["cross_insights"][0]["evidence_refs"], ["ev-1"])
         self.assertNotIn("fake", str(result))
         self.assertNotIn("ev-1", result["recommendations"]["family"])
+        self.assertNotIn("六个维度都一样", logical["adult_observation"])
+        self.assertIn("预测", logical["adult_observation"])
+
+    def test_each_dimension_has_distinct_adult_observations(self):
+        dimensions = ["linguistic", "logical", "spatial", "interpersonal", "intrapersonal", "naturalistic"]
+        events = [event(f"ev-{key}", key) for key in dimensions]
+
+        report = RuleAnalyzer().analyze(events)
+        observations = {item["key"]: item["adult_observation"] for item in report["dimensions"]}
+
+        self.assertEqual(len(set(observations.values())), 6)
+        self.assertIn("人物、起因和结果", observations["linguistic"])
+        self.assertIn("位置、方向和连接", observations["spatial"])
+        self.assertIn("每个人想要什么", observations["interpersonal"])
+
+    def test_missing_deep_sea_level_never_renders_none(self):
+        incomplete = EvidenceEvent(
+            id="deep-missing-level", module="deep_sea", event_type="deep-sea.session-completed.v1",
+            occurred_at="2026-09-14T08:00:00Z", behavior_summary="完成深海基地任务",
+            intelligence_candidates=["logical"], raw_evidence={}, context={"sessionSummary": {}},
+        )
+
+        logical = next(item for item in RuleAnalyzer().analyze([incomplete])["dimensions"] if item["key"] == "logical")
+
+        self.assertNotIn("None", logical["adult_observation"])
+        self.assertIn("这次深海任务", logical["adult_observation"])
 
 
 if __name__ == "__main__":

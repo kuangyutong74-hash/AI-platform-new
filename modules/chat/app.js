@@ -19,11 +19,11 @@ const PORT = envConfig.PORT;
 //   ANALYZE = 推理模型，准确率优先（学生潜能分析、报告生成等后台任务）
 //   REPLY   = 快模型，低延迟优先（聊天回复、话题建议、回复修正等用户面路径）
 // 未配置时均回退到 DEEPSEEK_MODEL，保证向后兼容。
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-v4-pro';
+const DEEPSEEK_API_KEY = process.env.AI_API_KEY || process.env.ZHIPUAI_API_KEY || process.env.ZHIPU_API_KEY || process.env.DEEPSEEK_API_KEY;
+const DEEPSEEK_MODEL = process.env.AI_MODEL || process.env.ZHIPUAI_MODEL || process.env.ZHIPU_MODEL || process.env.DEEPSEEK_MODEL || 'deepseek-v4-pro';
 const DEEPSEEK_MODEL_ANALYZE = process.env.DEEPSEEK_MODEL_ANALYZE || DEEPSEEK_MODEL;
 const DEEPSEEK_MODEL_REPLY = process.env.DEEPSEEK_MODEL_REPLY || DEEPSEEK_MODEL;
-const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
+const DEEPSEEK_BASE_URL = process.env.AI_BASE_URL || process.env.AI_API_BASE || process.env.ZHIPUAI_BASE_URL || process.env.ZHIPU_BASE_URL || process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
 
 
 // 数据目录（可通过环境变量覆盖，供测试使用临时目录）

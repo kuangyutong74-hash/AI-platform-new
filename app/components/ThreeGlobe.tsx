@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { CSS2DObject, CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { PLATFORM_MODULES as modules } from "../config/modules";
+import type { PlatformModule } from "../config/modules";
 
 const TEXTURE_WIDTH = 2048;
 const TEXTURE_HEIGHT = 1024;
@@ -32,7 +32,7 @@ function organicIslandPath(center: typeof islandCenters[number], seed: number) {
   return path;
 }
 
-function createPlanetTextures() {
+function createPlanetTextures(modules: PlatformModule[]) {
   const surface = document.createElement("canvas"), ids = document.createElement("canvas"), clouds = document.createElement("canvas"), hover = document.createElement("canvas"), landMask = document.createElement("canvas"), relief = document.createElement("canvas"), height = document.createElement("canvas");
   for (const canvas of [surface, ids, clouds, hover, landMask, relief, height]) { canvas.width = TEXTURE_WIDTH; canvas.height = TEXTURE_HEIGHT; }
   const ctx = surface.getContext("2d")!, idCtx = ids.getContext("2d", { willReadFrequently: true })!, cloudCtx = clouds.getContext("2d")!, hoverCtx = hover.getContext("2d")!;
@@ -55,14 +55,15 @@ function createPlanetTextures() {
   return { surface: new THREE.CanvasTexture(surface), clouds: new THREE.CanvasTexture(clouds), hover: new THREE.CanvasTexture(hover), reliefTexture: new THREE.CanvasTexture(relief), heightTexture: new THREE.CanvasTexture(height), heightCtx, hoverCtx, landMask, reliefCanvas: relief, islandPaths, idCtx };
 }
 
-export default function ThreeGlobe() {
+export default function ThreeGlobe({modules, onLaunch}:{modules:PlatformModule[];onLaunch:(item:PlatformModule)=>void}) {
   const hostRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const host = hostRef.current!; const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(34,1,.1,100); camera.position.set(0,.12,7.4);
     const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, powerPreference:"high-performance" }); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.075; host.appendChild(renderer.domElement);
     const labelRenderer=new CSS2DRenderer();labelRenderer.domElement.className="globe-label-layer";host.appendChild(labelRenderer.domElement);
     const labelElement=document.createElement("div");labelElement.className="surface-label";const labelInner=document.createElement("div");labelInner.className="surface-label-inner";const diamond=document.createElement("span");diamond.textContent="◇";const copy=document.createElement("div");const title=document.createElement("b"),subtitle=document.createElement("small");copy.append(title,subtitle);const arrow=document.createElement("em");arrow.textContent="→";const guide=document.createElement("i");labelInner.append(diamond,copy,arrow,guide);labelElement.append(labelInner);const labelObject=new CSS2DObject(labelElement);labelObject.visible=false;scene.add(labelObject);
-    const textures=createPlanetTextures(); textures.surface.colorSpace=THREE.SRGBColorSpace; textures.clouds.colorSpace=THREE.SRGBColorSpace;
+    const globeModules=modules.slice(0,islandCenters.length);
+    const textures=createPlanetTextures(globeModules); textures.surface.colorSpace=THREE.SRGBColorSpace; textures.clouds.colorSpace=THREE.SRGBColorSpace;
     const loader=new THREE.TextureLoader();
     let interactionReady=false;
     // 四座大陆采用与首页背景同源的低饱和水彩贴图；交互热区独立绘制，
@@ -81,7 +82,7 @@ export default function ThreeGlobe() {
       textures.heightCtx.clearRect(0,0,TEXTURE_WIDTH,TEXTURE_HEIGHT);
       textures.heightCtx.fillStyle="#000";
       textures.heightCtx.fillRect(0,0,TEXTURE_WIDTH,TEXTURE_HEIGHT);
-      hotspots.forEach(hotspot=>{
+      hotspots.slice(0,globeModules.length).forEach(hotspot=>{
         textures.idCtx.fillStyle=`rgb(${hotspot.index+1},0,0)`;
         textures.idCtx.beginPath();
         textures.idCtx.ellipse(hotspot.x*TEXTURE_WIDTH,hotspot.y*TEXTURE_HEIGHT,hotspot.rx*TEXTURE_WIDTH,hotspot.ry*TEXTURE_HEIGHT,0,0,Math.PI*2);
@@ -114,11 +115,11 @@ export default function ThreeGlobe() {
     const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2(),labelNormal=new THREE.Vector3(0,0,1),projectedLabel=new THREE.Vector3(),projectedCenter=new THREE.Vector3();let down={x:0,y:0},hovered=-1,pending=-1,active=-1,reveal=0,revealTarget=0,pointerDown=false,hoverTimer:ReturnType<typeof setTimeout>|null=null;
     const setHover=(index:number)=>{if(index===hovered)return;hovered=index;textures.hoverCtx.clearRect(0,0,TEXTURE_WIDTH,TEXTURE_HEIGHT);if(index>=0&&interactionReady){const quadrants=[{x:TEXTURE_WIDTH/2,y:0},{x:0,y:0},{x:0,y:TEXTURE_HEIGHT/2},{x:TEXTURE_WIDTH/2,y:TEXTURE_HEIGHT/2}],q=quadrants[index];textures.hoverCtx.save();textures.hoverCtx.beginPath();textures.hoverCtx.rect(q.x,q.y,TEXTURE_WIDTH/2,TEXTURE_HEIGHT/2);textures.hoverCtx.clip();textures.hoverCtx.shadowColor="rgba(154,215,255,.9)";textures.hoverCtx.shadowBlur=34;textures.hoverCtx.drawImage(textures.landMask,0,0);textures.hoverCtx.globalCompositeOperation="source-in";textures.hoverCtx.fillStyle="rgba(255,255,255,.28)";textures.hoverCtx.fillRect(q.x,q.y,TEXTURE_WIDTH/2,TEXTURE_HEIGHT/2);textures.hoverCtx.restore();}textures.hover.needsUpdate=true;};
     const hideLabel=()=>{if(hoverTimer)clearTimeout(hoverTimer);hoverTimer=null;pending=-1;revealTarget=0;setHover(-1);};
-    const requestLabel=(index:number,point:THREE.Vector3)=>{labelNormal.copy(point).normalize();if(index===active){revealTarget=1;return;}if(index===pending)return;if(hoverTimer)clearTimeout(hoverTimer);pending=index;hoverTimer=setTimeout(()=>{active=index;pending=-1;title.textContent=modules[index].name;subtitle.textContent=modules[index].module;labelInner.className=`surface-label-inner ${modules[index].color}`;setHover(index);revealTarget=1;labelObject.visible=true;},150);};
-    const pick=(event:PointerEvent,navigate:boolean)=>{if(!interactionReady)return;const rect=renderer.domElement.getBoundingClientRect();mouse.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(mouse,camera);const hit=raycaster.intersectObject(globe)[0];if(!hit?.uv){renderer.domElement.style.cursor="grab";hideLabel();return;}const pixel=textures.idCtx.getImageData(Math.floor(hit.uv.x*TEXTURE_WIDTH),Math.floor((1-hit.uv.y)*TEXTURE_HEIGHT),1,1).data[0]-1;const valid=pixel>=0&&pixel<modules.length;renderer.domElement.style.cursor=valid?"pointer":"grab";if(valid)requestLabel(pixel,hit.point);else hideLabel();if(navigate&&valid)window.location.href=modules[pixel].url;};
+    const requestLabel=(index:number,point:THREE.Vector3)=>{labelNormal.copy(point).normalize();if(index===active){revealTarget=1;return;}if(index===pending)return;if(hoverTimer)clearTimeout(hoverTimer);pending=index;hoverTimer=setTimeout(()=>{active=index;pending=-1;title.textContent=globeModules[index].name;subtitle.textContent=globeModules[index].module;labelInner.className=`surface-label-inner ${globeModules[index].color}`;setHover(index);revealTarget=1;labelObject.visible=true;},150);};
+    const pick=(event:PointerEvent,navigate:boolean)=>{if(!interactionReady)return;const rect=renderer.domElement.getBoundingClientRect();mouse.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(mouse,camera);const hit=raycaster.intersectObject(globe)[0];if(!hit?.uv){renderer.domElement.style.cursor="grab";hideLabel();return;}const pixel=textures.idCtx.getImageData(Math.floor(hit.uv.x*TEXTURE_WIDTH),Math.floor((1-hit.uv.y)*TEXTURE_HEIGHT),1,1).data[0]-1;const valid=pixel>=0&&pixel<globeModules.length;renderer.domElement.style.cursor=valid?"pointer":"grab";if(valid)requestLabel(pixel,hit.point);else hideLabel();if(navigate&&valid)onLaunch(globeModules[pixel]);};
     const onDown=(e:PointerEvent)=>{down={x:e.clientX,y:e.clientY};pointerDown=true;};const onUp=(e:PointerEvent)=>{pointerDown=false;if(Math.hypot(e.clientX-down.x,e.clientY-down.y)<6)pick(e,true);};const onMove=(e:PointerEvent)=>{if(!pointerDown)pick(e,false);};const onLeave=()=>{pointerDown=false;hideLabel();};renderer.domElement.addEventListener("pointerdown",onDown);renderer.domElement.addEventListener("pointerup",onUp);renderer.domElement.addEventListener("pointermove",onMove);renderer.domElement.addEventListener("pointerleave",onLeave);
     const resize=()=>{const width=host.clientWidth,height=host.clientHeight;renderer.setSize(width,height,false);labelRenderer.setSize(width,height);camera.aspect=width/height;camera.updateProjectionMatrix();};const observer=new ResizeObserver(resize);observer.observe(host);resize();let frame=0,last=performance.now();const animate=(now:number)=>{frame=requestAnimationFrame(animate);const delta=Math.min((now-last)/1000,.05);last=now;cloudLayer.rotation.y+=delta*.012;controls.update();reveal+= (revealTarget-reveal)*Math.min(1,delta*9);const surfacePoint=labelNormal.clone().multiplyScalar(2),towardCamera=camera.position.clone().sub(surfacePoint).normalize(),frontFacing=labelNormal.dot(towardCamera)>.035;if(!frontFacing&&active>=0){labelObject.visible=false;revealTarget=0;setHover(-1);}else labelObject.visible=reveal>.012;labelObject.position.copy(labelNormal).multiplyScalar(1.94+reveal*.29);projectedLabel.copy(labelObject.position).project(camera);projectedCenter.set(0,0,0).project(camera);const tilt=THREE.MathUtils.clamp((projectedLabel.x-projectedCenter.x)*13,-8,8);labelInner.style.opacity=String(reveal);labelInner.style.transform=`translateY(${(1-reveal)*13}px) scale(${.9+reveal*.1}) rotate(${tilt}deg)`;renderer.render(scene,camera);labelRenderer.render(scene,camera);};animate(last);
     return()=>{if(hoverTimer)clearTimeout(hoverTimer);cancelAnimationFrame(frame);observer.disconnect();controls.dispose();renderer.dispose();textures.surface.dispose();textures.clouds.dispose();textures.hover.dispose();textures.reliefTexture.dispose();textures.heightTexture.dispose();themedSurface.dispose();sphereGeometry.dispose();starGeometry.dispose();host.replaceChildren();};
-  },[]);
+  },[modules,onLaunch]);
   return <div className="three-globe-host" ref={hostRef} aria-label="Three.js 三维探索星球"/>;
 }

@@ -43,6 +43,9 @@ async def synthesize(text: str) -> bytes:
         rate=settings.edge_tts_rate,
         volume="+0%",
         pitch=settings.edge_tts_pitch,
+        proxy=settings.edge_tts_proxy or None,
+        connect_timeout=12,
+        receive_timeout=45,
     )
     audio_parts: list[bytes] = []
     try:

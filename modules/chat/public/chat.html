@@ -72,10 +72,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 
 /* ---- Typing ---- */
 .typing-dots{display:flex;gap:5px;padding:4px 2px}
-.typing-dots span{width:7px;height:7px;background:#c09080;border-radius:50%;animation:dotBounce 1.3s infinite ease-in-out}
+.typing-dots span{width:7px;height:7px;background:#c09080;border-radius:50%;animation:dotBreathe 1.3s infinite cubic-bezier(.16,1,.3,1)}
 .typing-dots span:nth-child(2){animation-delay:.18s}
 .typing-dots span:nth-child(3){animation-delay:.36s}
-@keyframes dotBounce{0%,80%,100%{transform:scale(0.5);opacity:.35}40%{transform:scale(1);opacity:1}}
+@keyframes dotBreathe{0%,80%,100%{transform:scale(.72);opacity:.45}40%{transform:scale(1);opacity:1}}
 
 /* ---- Speak button — 放在气泡外面 ---- */
 .speak-btn{width:30px;height:30px;flex:0 0 auto;display:none;align-items:center;justify-content:center;border:none;border-radius:50%;background:rgba(255,248,240,.85);color:#a07060;cursor:pointer;transition:all .2s;padding:0}
@@ -181,6 +181,64 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
     }
     .platform-return:hover { transform: translateY(-1px); background: #fff; }
   </style>
+  <style id="treehouse-theme">
+    :root{--night:#14233f;--night2:#263c5d;--honey:#f5b85b;--honey2:#dd8b37;--parchment:#fff8e8;--glass:rgba(19,31,54,.72);--glass-line:rgba(255,237,191,.32)}
+    body{color:#fff5df;background:#101d36}
+    .app-shell{padding:0;background:#101d36 url("assets/backgrounds/chat-treehouse-bg-v1.png") center/cover no-repeat}
+    .app-shell::before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(8,19,38,.38),rgba(8,19,38,.04) 48%,rgba(8,19,38,.2)),linear-gradient(0deg,rgba(7,16,31,.52),transparent 42%)}
+    .app-frame{position:relative;border:0;border-radius:0;background:transparent;box-shadow:none;backdrop-filter:none}
+    .topbar{height:74px;grid-template-columns:260px minmax(0,1fr) auto;margin:12px 18px 0;border:1px solid var(--glass-line);border-radius:22px;background:linear-gradient(135deg,rgba(22,36,62,.82),rgba(30,48,75,.62));box-shadow:0 18px 50px rgba(5,12,26,.28);backdrop-filter:blur(18px) saturate(1.2)}
+    .brand,.page-title{color:#fff3d0;text-shadow:0 2px 12px rgba(0,0,0,.28)}
+    .brand-logo{background:rgba(255,247,223,.92);box-shadow:0 5px 18px rgba(5,12,26,.3)}
+    .top-button{border-color:rgba(255,235,187,.24);color:#fff0cc;background:rgba(13,26,49,.48);box-shadow:none}
+    .top-button:hover{border-color:rgba(255,220,145,.55);background:rgba(63,78,104,.72);box-shadow:0 9px 22px rgba(4,11,23,.23)}
+    .top-button.danger{color:#ffd6bd;border-color:rgba(255,171,123,.42)}
+    .workspace{height:calc(100% - 86px);grid-template-columns:minmax(500px,1fr) 132px;background:transparent}
+    .chat-section::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 38%,transparent 0 24%,rgba(8,18,35,.09) 72%)}
+    .chat-bg{display:none}
+    .messages{z-index:2;padding:26px 42px 205px;scrollbar-color:rgba(255,220,161,.45) transparent}
+    .message-row{gap:11px;margin-bottom:14px}
+    .message-avatar{border:2px solid rgba(255,236,190,.62);background:rgba(255,248,223,.94);box-shadow:0 9px 24px rgba(4,11,24,.28)}
+    .message-avatar.student{background:rgba(225,243,255,.94)}
+    .message-bubble{max-width:min(520px,62%);padding:14px 17px 12px;border:1px solid rgba(255,235,187,.36);border-radius:22px 22px 22px 8px;color:#fff7e8;background:linear-gradient(135deg,rgba(27,43,70,.9),rgba(43,57,79,.82));box-shadow:0 12px 30px rgba(4,11,24,.25);backdrop-filter:blur(15px)}
+    .message-row.user .message-bubble{border-color:rgba(142,211,228,.42);border-radius:22px 22px 8px 22px;color:#18334a;background:linear-gradient(135deg,rgba(223,247,248,.96),rgba(184,222,231,.94))}
+    .message-bubble time{color:rgba(255,241,215,.62)}.message-row.user .message-bubble time{color:#5f7e8c}
+    .speak-btn{color:#f4d69d;background:rgba(17,31,54,.74)}.speak-btn:hover,.speak-btn.playing{color:#fff1c4;background:rgba(181,118,52,.8)}
+    .composer-wrap{padding:0 42px 24px;background:linear-gradient(180deg,transparent,rgba(7,17,33,.28) 45%,rgba(7,17,33,.6))}
+    .quick-replies{justify-content:flex-start;gap:10px;padding:14px 2px 12px}
+    .quick-replies button{min-height:38px;border-color:rgba(255,231,177,.34);color:#fff0ce;background:rgba(19,33,57,.75);box-shadow:0 7px 18px rgba(4,11,24,.16);backdrop-filter:blur(12px)}
+    .quick-replies button:hover{border-color:rgba(255,211,126,.7);background:rgba(81,68,68,.78)}
+    .composer{min-height:68px;border:1px solid rgba(255,231,177,.5);border-radius:24px;background:linear-gradient(135deg,rgba(255,250,235,.97),rgba(243,234,211,.94));box-shadow:0 18px 44px rgba(4,11,24,.36),inset 0 1px 0 #fff}
+    .composer:focus-within{border-color:#f5bd68;box-shadow:0 20px 48px rgba(4,11,24,.4),0 0 0 3px rgba(245,184,91,.16)}
+    .composer textarea{color:#3f342d}.composer textarea::placeholder{color:#887d70}.character-count{color:#8d8072}
+    .send-button{border-radius:18px;background:linear-gradient(145deg,#ffd27e,#df8f36);box-shadow:0 8px 20px rgba(98,53,20,.24)}
+    .send-button img{filter:saturate(.8)}
+    .roadmap-panel{margin:16px 16px 18px 0;border:1px solid var(--glass-line);border-radius:26px;background:linear-gradient(180deg,rgba(20,35,61,.72),rgba(13,27,50,.58));box-shadow:0 18px 46px rgba(4,11,24,.22);backdrop-filter:blur(18px)}
+    .roadmap-panel h2{color:#ffe6b3}.roadmap-step{color:#b9c8da}.roadmap-step strong{font-size:11px}.roadmap-icon{border:1px solid rgba(255,235,188,.18);background:rgba(255,255,255,.09)}
+    .roadmap-step:not(:last-child)::after{width:2px;background:linear-gradient(#f5c36c,#9cc6da);box-shadow:0 0 9px rgba(245,195,108,.6)}
+    .roadmap-step.lit{color:#ffe1a1}.roadmap-step.lit .roadmap-icon{background:rgba(245,184,91,.2);box-shadow:0 0 22px rgba(245,184,91,.16)}
+    .modal-backdrop{align-items:end;padding:28px;background:rgba(5,12,24,.58);backdrop-filter:blur(12px)}
+    .modal-card{width:min(880px,100%);max-height:calc(100vh - 56px);overflow:auto;padding:34px 40px 32px;border:1px solid rgba(255,234,184,.5);border-radius:34px;text-align:left;color:#fff5df;background:linear-gradient(145deg,rgba(27,43,70,.97),rgba(18,32,55,.96));box-shadow:0 30px 90px rgba(2,7,17,.52),inset 0 1px 0 rgba(255,255,255,.12)}
+    .modal-close{border-color:rgba(255,235,188,.25);color:#ffe2aa;background:rgba(255,255,255,.08)}
+    .modal-sticker{text-align:center}.modal-card h2{text-align:center;color:#fff0ca}.modal-card>p{text-align:center;color:#c8d3df}
+    .mood-grid{grid-template-columns:repeat(7,1fr);gap:10px;margin-top:30px}
+    .mood-grid button{min-height:105px;padding:14px 8px;border:1px solid rgba(255,235,188,.22);border-radius:50px 50px 24px 24px;color:#fff1d1;background:radial-gradient(circle at 50% 30%,rgba(255,205,109,.18),transparent 35%),rgba(255,255,255,.065);font-size:14px;transition:transform .18s,border-color .18s,background .18s}
+    .mood-grid button:hover{transform:translateY(-5px);border-color:rgba(255,216,139,.62);background:rgba(245,184,91,.14)}
+    .mood-grid button.selected{border-color:#f6c873;background:rgba(245,184,91,.2);box-shadow:0 0 0 3px rgba(245,184,91,.12),0 12px 28px rgba(4,11,24,.24)}
+    .entry-card,.storybook-task{background:linear-gradient(145deg,rgba(27,43,70,.98),rgba(18,32,55,.97))}
+    .entry-option,.task-option,.sequence-card,.task-canvas{border-color:rgba(255,235,188,.22);color:#fff0d0;background:rgba(255,255,255,.075);box-shadow:none}
+    .entry-option:hover,.task-option:hover{border-color:rgba(255,211,126,.6);background:rgba(245,184,91,.12)}
+    .entry-option span,.entry-card>p,.storybook-task>p{color:#c8d3df}.entry-option svg{color:#f5c16c;background:rgba(245,184,91,.14)}
+    .entry-play-hint{color:#d5dfeb;background:rgba(255,255,255,.08)}.entry-skip,.task-later{color:#d6deea}
+    .task-canvas{background:rgba(6,16,32,.22)}.task-option[aria-pressed="true"]{border-color:#f5bd68;background:rgba(245,184,91,.17);outline-color:rgba(245,184,91,.22)}
+    .completion-lead{color:#f5e6c9}.completion-box textarea{border-color:rgba(255,235,188,.28);color:#fff;background:rgba(6,16,32,.36)}
+    .task-submit{color:#342517;background:linear-gradient(135deg,#ffd482,#e99b43)}.task-later{border-color:rgba(255,235,188,.3);background:rgba(255,255,255,.06)}
+    .platform-return{top:auto;left:22px;bottom:108px;border-color:rgba(255,232,177,.34);color:#fff0cd;background:rgba(15,29,52,.78);box-shadow:0 10px 28px rgba(4,11,24,.3)}
+    @media(max-width:1180px){.mood-grid{grid-template-columns:repeat(4,1fr)}.workspace{grid-template-columns:minmax(380px,1fr) 100px}.messages,.composer-wrap{padding-inline:24px}}
+    @media(max-width:900px){.topbar{margin:0;border-width:0 0 1px;border-radius:0;background:rgba(14,28,51,.84)}.workspace{min-height:calc(100vh - 68px)}.main-panel{min-height:calc(100vh - 68px)}.messages{padding:24px 16px 192px}.composer-wrap{padding:0 14px 14px}.modal-backdrop{padding:12px}.modal-card{max-height:calc(100vh - 24px);padding:32px 20px 24px;border-radius:28px}.mood-grid{grid-template-columns:repeat(2,1fr)}.mood-grid button{min-height:70px;border-radius:22px}.platform-return{display:none}}
+    @media(max-width:560px){.topbar{padding:8px 10px}.top-actions{padding:0}.message-bubble{max-width:calc(100% - 56px)}.composer{border-radius:22px}.entry-grid,.task-options{grid-template-columns:1fr}.modal-card h2{font-size:24px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.27.0/dist/index.js"></script>
   <script src="/js/global-pinyin.js"></script>
   <script src="/assets/avatars/avatar-config.js"></script>
@@ -194,7 +252,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 	    <!-- Topbar -->
 	    <header class="topbar">
 	      <a class="brand" href="/home.html">
-	        <span class="brand-logo"><img id="brandLogoImg" src="" alt="小新"></span>
+                <span class="brand-logo"><img id="brandLogoImg" src="assets/characters/xiaoxin-logo.png" alt="小新"></span>
 	        <strong>小新</strong>
 	      </a>
 	      <div class="page-title">
@@ -631,13 +689,16 @@ function showQuickReplies(topicList){
   // 过滤掉可能的空字符串/undefined
   picked=picked.filter(function(v){return v&&String(v).trim()});
   if(!quickReplies)return;
-  quickReplies.innerHTML=picked.map(function(v){return'<button type="button">'+v+'</button>'}).join('');
+  quickReplies.innerHTML=picked.map(function(v){return'<button type="button" title="点击后可以继续补充">'+escapeHTML(String(v))+'</button>'}).join('');
   quickReplies.querySelectorAll('button').forEach(function(ch,idx){
     var topicText=picked[idx];
     ch.addEventListener('click',function(){
       if(!topicText)return;
       msgInput.value=topicText;
-      sendMessage();
+      updateCharCount();
+      autoResizeTextarea();
+      msgInput.focus();
+      msgInput.setSelectionRange(msgInput.value.length,msgInput.value.length);
     });
   });
 }
@@ -743,6 +804,16 @@ async function refreshQuickTopics(){
   var recognizing=false,gotFinal=false,lastPartial='';
   var audioCtx=null,mediaStream=null,procNode=null,recognizer=null,silenceTimer=null;
   var statusBar=null,statusTimer=null;
+  var MIC_START_TIMEOUT_MS=12000;
+  var MODEL_LOAD_TIMEOUT_MS=60000;
+
+  function withTimeout(promise,ms,code){
+    return new Promise(function(resolve,reject){
+      var settled=false;
+      var timer=setTimeout(function(){if(settled)return;settled=true;var error=new Error(code);error.name=code;reject(error)},ms);
+      promise.then(function(value){if(settled)return;settled=true;clearTimeout(timer);resolve(value)},function(error){if(settled)return;settled=true;clearTimeout(timer);reject(error)});
+    });
+  }
 
   function voiceToast(msg){
     var t=document.createElement('div');t.textContent=msg;
@@ -881,7 +952,7 @@ async function refreshQuickTopics(){
         return;
       }
       // 用最宽松的音频参数申请（设备兼容性最好）；采样率由 AudioContext 统一转成 16k
-      micPromise=navigator.mediaDevices.getUserMedia({audio:true})
+      micPromise=withTimeout(navigator.mediaDevices.getUserMedia({audio:true}),MIC_START_TIMEOUT_MS,'MicStartTimeout')
         .then(function(s){grantedStream=s;return s});
     }catch(_){
       cleanupRecognition();
@@ -889,7 +960,7 @@ async function refreshQuickTopics(){
       return;
     }
     if(!voskModelPromise)showStatus('正在准备语音包…（首次约 5 秒，之后很快）');
-    var modelPromise=loadVoskModel().then(function(m){return m},function(e){
+    var modelPromise=withTimeout(loadVoskModel(),MODEL_LOAD_TIMEOUT_MS,'ModelLoadTimeout').then(function(m){return m},function(e){
       e=e||new Error('model load fail');
       e.isModelLoad=true;e.noVosk=(e.message==='NO_VOSK');
       throw e;
@@ -935,6 +1006,10 @@ async function refreshQuickTopics(){
       if(!wasRecognizing)return; // 加载期间用户已取消，静默
       if(e&&(e.name==='NotAllowedError'||e.name==='PermissionDeniedError')){
         showMicPermModal('blocked'); // 浏览器层拒绝 → 弹窗给出修复指引
+      }else if(e&&e.name==='MicStartTimeout'){
+        showStatus('麦克风启动超时。请在地址栏左侧允许麦克风，然后再点一次。');
+      }else if(e&&e.name==='ModelLoadTimeout'){
+        showStatus('语音包加载超时。请刷新页面后重试，首次使用需要加载约 44MB 离线语音包。');
       }else if(e&&e.name==='SecurityError'){
         showStatus('当前访问地址无法使用麦克风：请用 http://localhost:3000 打开本页面');
       }else if(e&&e.isModelLoad&&e.noVosk){

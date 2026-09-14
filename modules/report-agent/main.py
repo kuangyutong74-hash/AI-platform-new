@@ -13,6 +13,7 @@ from urllib import error, request as urlrequest
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from reflection import QUESTION_SYSTEM_PROMPT, SUGGESTION_SYSTEM_PROMPT, evidence_briefs, fallback_questions, normalize_questions, normalize_suggestions
 
 CANONICAL = {"linguistic", "logical", "spatial", "interpersonal", "intrapersonal", "naturalistic"}
 SYNONYMS = {"logical_mathematical": "logical"}
@@ -50,8 +51,18 @@ CAREER_STAGE_TITLES = {
     "animal_caretaker": ["晨间巡护打卡", "动物救助优先级", "动物健康检查"],
 }
 REPORT_RULE = "只统计行为频次、类型和原始上下文，不换算能力分数，不输出排名。"
+REPORT_ANALYSIS_VERSION = "dimension-observation-v3"
 PLATFORM_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
 logger = logging.getLogger("report-agent")
+
+
+def model_timeout() -> float:
+    """Keep the complete three-stage report request within Core's deadline."""
+    raw = os.getenv("REPORT_LLM_TIMEOUT") or platform_env().get("REPORT_LLM_TIMEOUT", "10")
+    try:
+        return min(8.0, max(3.0, float(raw)))
+    except ValueError:
+        return 8.0
 
 
 def platform_env() -> dict[str, str]:
@@ -82,7 +93,16 @@ class EvidenceEvent(BaseModel):
 
 class ReportRequest(BaseModel):
     child_name: str = "小朋友"
+    child_age: int = 0
     events: list[EvidenceEvent] = Field(default_factory=list)
+
+
+class SuggestionRequest(BaseModel):
+    dimension: dict[str, Any]
+    child: dict[str, Any]
+    evidence: dict[str, Any]
+    questions: list[dict[str, Any]] = Field(default_factory=list)
+    answers: list[dict[str, Any]] = Field(default_factory=list)
 
 
 def canonical_key(key: str) -> str | None:
@@ -377,6 +397,65 @@ def child_story_for_events(events: list[EvidenceEvent]) -> str:
     return f"你已经完成了 {len(events)} 次相关探索。最近的真实记录包括：{examples}。这颗星也保留着之前的全部互动。"
 
 
+def adult_observation_for_dimension(key: str, items: list[EvidenceEvent]) -> str:
+    """Create dimension-specific transfer observations anchored in real evidence."""
+    if not items:
+        return "暂无可观测数据。完成相关探索后，这里会结合孩子的真实行为生成观察提示。"
+    latest = items[-1]
+    summary = latest.context.get("sessionSummary", {}) if isinstance(latest.context, dict) else {}
+    raw = latest.raw_evidence
+    story_title = str(summary.get("storyTitle") or raw.get("storyTitle") or "这次故事").strip()
+    words = str(summary.get("childWords", "")).strip()
+    level = int(raw.get("level", 0) or 0)
+    task_anchor = story_title if latest.module == "story" else (({1:"珊瑚公寓",2:"洋流电网",3:"海洋议事厅"}.get(level) or "这次深海任务") if latest.module == "deep_sea" else str(summary.get("careerName") or "这次任务"))
+    if key == "linguistic":
+        anchor = f"《{story_title}》" if latest.module == "story" else (f"孩子说过的“{words[:24]}”" if words else task_anchor)
+        observations = [
+            f"请孩子把{anchor}讲给没听过的人，观察他会怎样交代人物、起因和结果",
+            "邀请孩子为同一段情节换一种开头或结尾，留意他如何保持前后连贯",
+            "听孩子解释为什么选这个词或这句对白，记录他能否说出表达意图",
+            "一至两周后给出三个关键词，请孩子再编一段，比较叙述是否更完整具体",
+        ]
+    elif key == "logical":
+        observations = [
+            f"换一个与“{task_anchor}”规则不同的小任务，观察孩子会先比较条件还是直接尝试",
+            "请孩子预测一种做法可能得到什么结果，再实际验证，留意预测与检查是否对应",
+            "结果不符合预期时，观察孩子会检查哪一步，以及能否只改变一个条件再试",
+            "一至两周后再给相似问题，请孩子说出判断依据，比较推理步骤是否更清楚",
+        ]
+    elif key == "spatial":
+        observations = [
+            f"参照“{task_anchor}”换一套拼搭材料，观察孩子如何处理位置、方向和连接关系",
+            "请孩子先口头描述或画出摆放方案，再动手搭建，对照计划与成品的变化",
+            "把一个部件旋转或挪位，观察孩子能否发现变化并说明哪里需要重新连接",
+            "一至两周后请孩子凭记忆重建简单布局，留意他使用了哪些空间线索",
+        ]
+    elif key == "interpersonal":
+        people = [name for name in ("同学","朋友","老师","爸爸","妈妈","家人","伙伴") if name in words]
+        relation = "、".join(people) or "不同角色"
+        observations = [
+            f"在谈到{relation}时，先请孩子分别说说每个人想要什么，观察他是否区分不同需要",
+            "出现小分歧时，请孩子先复述对方的话再回应，留意他是否抓住对方真正关心的事",
+            "邀请孩子提出两种兼顾双方的办法，并说说每种办法可能让谁满意或为难",
+            "一至两周后在新的合作活动中观察，孩子是否会主动询问、轮流或调整分工",
+        ]
+    elif key == "intrapersonal":
+        observations = [
+            "任务开始前请孩子说说最想做和最担心的部分，留意他能否描述自己的偏好与感受",
+            "遇到卡住时，用“你现在需要提示、休息还是再试一次”帮助他辨认自己的状态",
+            "完成后请孩子选出最满意和最想修改的一步，并说明判断来自结果还是个人感受",
+            "一至两周后遇到相似困难时，观察孩子是否会主动采用自己选过的调节办法",
+        ]
+    else:
+        observations = [
+            f"把“{task_anchor}”中的分类线索换成身边物品或常见生物，观察孩子会依据哪些特征归类",
+            "请孩子解释两个对象为什么放在一起，再找一个不适合的例子说明区别",
+            "发现新信息与原判断不一致时，观察孩子会保留、修改还是重新建立分类标准",
+            "一至两周后到户外或看图鉴时，再观察孩子是否会主动比较特征与关系",
+        ]
+    return "；".join(observations) + "。"
+
+
 class RuleAnalyzer:
     """只复述已经出现的行为线索，不推断未采集内容。"""
 
@@ -400,19 +479,13 @@ class RuleAnalyzer:
                 "这些内容只说明孩子在当时任务里采用了哪些做法，不等同于固定能力结论。"
                 if items else "本阶段暂未收集到该维度的可回溯行为线索，因此不作判断。"
             )
-            observation = (
-                "换一个相似但不完全相同的任务，观察孩子是否会主动沿用这次的方法；"
-                "请孩子讲一讲为什么这样选择，留意他能否说清判断依据；"
-                "遇到结果不理想时，观察孩子会先检查哪里、怎样调整，以及是否愿意再次尝试；"
-                "隔一至两周在家庭或课堂的新情境中再次观察，比较这种做法是否会自然出现。"
-                if items else "暂无可观测数据。完成相关探索后，这里会结合孩子的真实行为生成观察提示。"
-            )
+            observation = adult_observation_for_dimension(key, items)
             child_story = child_story_for_events(items)
             dimensions.append({"key": key, "name": name, "status": status, "evidence_refs": refs, "analysis": analysis, "adult_observation": observation, "child_story": child_story})
         active = [MODULE_NAMES.get(name, name) for name, count in Counter(event.module for event in events).items() if count]
         refs = event_refs(events)
         return {
-            "generated_at": datetime.now(timezone.utc).isoformat(), "rule": REPORT_RULE,
+            "generated_at": datetime.now(timezone.utc).isoformat(), "rule": REPORT_RULE, "analysis_version": REPORT_ANALYSIS_VERSION,
             "dimensions": dimensions,
             "cross_insights": [{
                 "text": f"本阶段在{'、'.join(active) or '活动模块'}中留下了可回溯记录。建议结合不同情境继续观察，不依据单次行为下结论。",
@@ -507,9 +580,9 @@ class LLMAnalyzer:
     @classmethod
     def from_environment(cls) -> "LLMAnalyzer | None":
         local = platform_env()
-        base_url = os.getenv("REPORT_LLM_BASE_URL") or os.getenv("DEEPSEEK_BASE_URL") or local.get("REPORT_LLM_BASE_URL") or local.get("DEEPSEEK_BASE_URL", "")
-        api_key = os.getenv("REPORT_LLM_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or local.get("REPORT_LLM_API_KEY") or local.get("DEEPSEEK_API_KEY", "")
-        model = os.getenv("REPORT_LLM_MODEL") or os.getenv("DEEPSEEK_MODEL") or local.get("REPORT_LLM_MODEL") or local.get("DEEPSEEK_MODEL", "")
+        base_url = os.getenv("REPORT_LLM_BASE_URL") or os.getenv("AI_BASE_URL") or os.getenv("AI_API_BASE") or os.getenv("ZHIPUAI_BASE_URL") or os.getenv("ZHIPU_BASE_URL") or os.getenv("DEEPSEEK_BASE_URL") or local.get("REPORT_LLM_BASE_URL") or local.get("AI_BASE_URL") or local.get("AI_API_BASE") or local.get("ZHIPUAI_BASE_URL") or local.get("ZHIPU_BASE_URL") or local.get("DEEPSEEK_BASE_URL", "")
+        api_key = os.getenv("REPORT_LLM_API_KEY") or os.getenv("AI_API_KEY") or os.getenv("ZHIPUAI_API_KEY") or os.getenv("ZHIPU_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or local.get("REPORT_LLM_API_KEY") or local.get("AI_API_KEY") or local.get("ZHIPUAI_API_KEY") or local.get("ZHIPU_API_KEY") or local.get("DEEPSEEK_API_KEY", "")
+        model = os.getenv("REPORT_LLM_MODEL") or os.getenv("AI_MODEL") or os.getenv("ZHIPUAI_MODEL") or os.getenv("ZHIPU_MODEL") or os.getenv("DEEPSEEK_MODEL") or local.get("REPORT_LLM_MODEL") or local.get("AI_MODEL") or local.get("ZHIPUAI_MODEL") or local.get("ZHIPU_MODEL") or local.get("DEEPSEEK_MODEL", "")
         values = [str(value).strip() for value in (base_url, api_key, model)]
         return cls(*values) if all(values) else None
 
@@ -524,7 +597,7 @@ class LLMAnalyzer:
         }
         http_request = urlrequest.Request(endpoint, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"), headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}, method="POST")
         try:
-            with urlrequest.urlopen(http_request, timeout=45) as response:
+            with urlrequest.urlopen(http_request, timeout=model_timeout()) as response:
                 result = json.loads(response.read().decode("utf-8"))
         except (error.URLError, TimeoutError, json.JSONDecodeError) as exc:
             raise RuntimeError("报告模型请求失败") from exc
@@ -532,6 +605,20 @@ class LLMAnalyzer:
         if isinstance(content, list):
             content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
         return json.loads(str(content).strip().removeprefix("```json").removesuffix("```").strip())
+
+    def ask_json(self, system_prompt: str, data: dict[str, Any], temperature: float = 0.2) -> dict[str, Any]:
+        endpoint = self.base_url if self.base_url.endswith("/chat/completions") else f"{self.base_url}/chat/completions"
+        payload = {"model":self.model,"temperature":temperature,"response_format":{"type":"json_object"},"messages":[{"role":"system","content":system_prompt},{"role":"user","content":json.dumps(data,ensure_ascii=False)}]}
+        request = urlrequest.Request(endpoint,data=json.dumps(payload,ensure_ascii=False).encode("utf-8"),headers={"Authorization":f"Bearer {self.api_key}","Content-Type":"application/json"},method="POST")
+        try:
+            with urlrequest.urlopen(request, timeout=model_timeout()) as response:
+                result = json.loads(response.read().decode("utf-8"))
+            content = result["choices"][0]["message"]["content"]
+            if isinstance(content, list):
+                content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
+            return json.loads(str(content).strip().removeprefix("```json").removesuffix("```").strip())
+        except (error.URLError, TimeoutError, json.JSONDecodeError, KeyError, IndexError, TypeError) as exc:
+            raise RuntimeError("报告模型请求失败") from exc
 
     def expand_dimensions(self, events: list[EvidenceEvent], report: dict[str, Any]) -> dict[str, Any]:
         """第二阶段只负责把六个维度写深，避免完整报告任务挤压维度内容。"""
@@ -553,7 +640,7 @@ interpersonal 只写理解/回应他人、合作、关系互动；intrapersonal 
         }
         http_request = urlrequest.Request(endpoint, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"), headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}, method="POST")
         try:
-            with urlrequest.urlopen(http_request, timeout=45) as response:
+            with urlrequest.urlopen(http_request, timeout=model_timeout()) as response:
                 result = json.loads(response.read().decode("utf-8"))
             content = result["choices"][0]["message"]["content"]
             if isinstance(content, list):
@@ -605,7 +692,9 @@ def normalize_report(candidate: dict[str, Any], events: list[EvidenceEvent]) -> 
             # 同一事件跨维度时必须使用维度专属的确定性解释，避免模型把
             # 人际、内省、逻辑等页面复写成同一段话。
             "analysis": fallback_item["analysis"],
-            "adult_observation": str(item.get("adult_observation", "")).strip() if refs else fallback_item["adult_observation"],
+            # 延伸观察必须由本维度的真实事件确定性生成。模型输出可能把六个
+            # 维度写成同一套通用模板，因此不能在最终合并时覆盖专属观察。
+            "adult_observation": fallback_item["adult_observation"],
             # 星星反馈必须稳定覆盖全部历史事件，不允许模型退化成只复述一条。
             "child_story": fallback_item["child_story"],
         })
@@ -635,7 +724,7 @@ def normalize_report(candidate: dict[str, Any], events: list[EvidenceEvent]) -> 
     family = advice_list(supplied.get("family"), fallback["recommendations"]["family"])
     teacher = advice_list(supplied.get("teacher"), fallback["recommendations"]["teacher"])
     if teacher == family: teacher = fallback["recommendations"]["teacher"]
-    return {"generated_at": datetime.now(timezone.utc).isoformat(), "rule": REPORT_RULE, "dimensions": dimensions, "cross_insights": cross_insights, "evidence_explanations": evidence_explanations, "recommendations": {"family": family, "teacher": teacher}}
+    return {"generated_at": datetime.now(timezone.utc).isoformat(), "rule": REPORT_RULE, "analysis_version": REPORT_ANALYSIS_VERSION, "dimensions": dimensions, "cross_insights": cross_insights, "evidence_explanations": evidence_explanations, "recommendations": {"family": family, "teacher": teacher}}
 
 
 app = FastAPI(title="AI伯乐报告生成智能体", version="1.0.0")
@@ -653,15 +742,32 @@ def generate_report(report_request: ReportRequest) -> dict[str, Any]:
     if analyzer:
         try:
             report = normalize_report(analyzer.analyze(report_request.events), report_request.events)
-        except (RuntimeError, KeyError, IndexError, TypeError, ValueError):
+        except Exception:
             logger.exception("第一阶段报告生成失败，改用规则报告")
-            return RuleAnalyzer().analyze(report_request.events)
-        try:
-            return apply_dimension_expansion(report, analyzer.expand_dimensions(report_request.events, report), report_request.events)
-        except (RuntimeError, KeyError, IndexError, TypeError, ValueError):
-            logger.exception("第二阶段维度深描失败，暂时返回第一阶段报告")
-            return report
-    return RuleAnalyzer().analyze(report_request.events)
+            report = RuleAnalyzer().analyze(report_request.events)
+        dimensions = evidence_briefs(report, report_request.events)
+        # 报告页是同步打开链路，不能再串行等待两个额外模型请求。
+        # 维度追问使用同一批真实证据确定性生成，确保页面稳定出现且不虚构事实。
+        report["questions"] = fallback_questions(report_request.child_name, dimensions)
+        return report
+    report = RuleAnalyzer().analyze(report_request.events)
+    dimensions = evidence_briefs(report, report_request.events)
+    report["questions"] = fallback_questions(report_request.child_name, dimensions)
+    return report
+
+
+@app.post("/api/report/suggestions")
+def generate_suggestions(request: SuggestionRequest) -> dict[str, Any]:
+    child_name = str(request.child.get("childName") or "孩子")
+    analyzer = LLMAnalyzer.from_environment()
+    if not analyzer:
+        return normalize_suggestions({}, child_name)
+    try:
+        result = analyzer.ask_json(SUGGESTION_SYSTEM_PROMPT, request.model_dump())
+        return normalize_suggestions(result, child_name)
+    except Exception:
+        logger.exception("专属建议生成失败，使用安全回退建议")
+        return normalize_suggestions({}, child_name)
 
 
 if __name__ == "__main__":
