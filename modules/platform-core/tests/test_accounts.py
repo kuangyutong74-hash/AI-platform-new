@@ -22,6 +22,33 @@ def session_cookie(response: Response) -> str:
 
 
 class AccountTests(unittest.TestCase):
+    def test_highlight_reasons_are_specific_to_each_module_evidence(self):
+        chat_reason = main.artifact_highlight_reason(
+            "chat", "聊天记录",
+            {"turnCount": 5, "totalChildChars": 86, "longTurnCount": 2},
+            [{"turnCount": 5, "childTurns": [{"turn": 1, "text": "我想从今天遇到的小麻烦开始讲。"}]}],
+            ["分享了一次观察或想法"],
+        )
+        story_reason = main.artifact_highlight_reason(
+            "story", "小海龟的旅行",
+            {"endingLength": 48, "childIdeas": ["小海龟顺着月光找到了回家的路。"]},
+            [{"contributionCount": 6}],
+            ["完成故事共创表达"],
+        )
+        deep_sea_reason = main.artifact_highlight_reason(
+            "deep_sea", "深海基地完整重建", {},
+            [{"completedLevels": 3, "totalLevels": 3, "adjustmentCount": 4}],
+            ["完成深海基地三关完整重建"],
+        )
+
+        self.assertIn("5 轮", chat_reason)
+        self.assertIn("86 个字", chat_reason)
+        self.assertIn("今天遇到的小麻烦", chat_reason)
+        self.assertIn("6 个故事片段", story_reason)
+        self.assertIn("48 字的结尾", story_reason)
+        self.assertIn("生态配对、能源线路和角色协商", deep_sea_reason)
+        self.assertIn("4 次调整", deep_sea_reason)
+
     @classmethod
     def tearDownClass(cls):
         # sqlite3.Connection 的上下文管理器只提交事务，不负责关闭连接；
@@ -340,15 +367,26 @@ class AccountTests(unittest.TestCase):
         self.addCleanup(lambda: (main.SNAPSHOT_DIR / f"{snapshot['id']}.jpg").unlink(missing_ok=True))
         artifact = main.ArtifactIn(schemaVersion="1.0", artifactId="career-artifact", type="other", title="小医生的一天", summary="完成职业体验", previewResourceId=snapshot["id"], sourceResourceId="career:demo", createdAt=main.now_iso())
         main.create_artifact_v1(artifact, header)
-        changed = main.change_assessment_session(context["sessionId"], main.SessionStatusIn(status="completed", summary={"stages": 3}), header)
+        changed = main.change_assessment_session(context["sessionId"], main.SessionStatusIn(
+            status="completed",
+            summary={"careerName": "小医生", "completedStages": 3, "stageCount": 3},
+        ), header)
         self.assertFalse(changed["duplicate"])
-        self.assertEqual(main.list_artifacts_v1(cookie)["artifacts"][0]["id"], "career-artifact")
+        saved_artifact = main.list_artifacts_v1(cookie)["artifacts"][0]
+        self.assertEqual(saved_artifact["id"], "career-artifact")
+        self.assertNotEqual(saved_artifact["highlightReason"], saved_artifact["detail"])
+        self.assertIn("小医生", saved_artifact["highlightReason"])
+        self.assertIn("3/3 个阶段", saved_artifact["highlightReason"])
+        self.assertIn("调整了 1 次", saved_artifact["highlightReason"])
         timeline = main.timeline_v1(cookie)
         self.assertEqual(timeline["sessions"][0]["evidenceCount"], 1)
         self.assertEqual(timeline["moduleSummaries"][0]["completedCount"], 1)
         self.assertTrue(timeline["moduleSummaries"][0]["firstUsedAt"])
         self.assertEqual(timeline["moduleSummaries"][0]["lastUsedAt"], main.read_assessment_session(context["sessionId"], cookie)["endedAt"])
-        self.assertEqual(main.read_assessment_session(context["sessionId"], cookie)["summary"], {"stages": 3})
+        self.assertEqual(
+            main.read_assessment_session(context["sessionId"], cookie)["summary"],
+            {"careerName": "小医生", "completedStages": 3, "stageCount": 3},
+        )
         self.assertEqual(main.read_snapshot(snapshot["id"], cookie).media_type, "image/jpeg")
 
     def test_v1_batch_is_atomic_and_interrupted_session_can_still_complete(self):

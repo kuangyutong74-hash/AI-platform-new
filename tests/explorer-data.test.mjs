@@ -39,6 +39,8 @@ test("normalizes account-owned works and milestones without replacing them with 
         module: "story",
         title: "会发光的雨伞",
         summary: "我给怕黑的小龙做了一把伞。",
+        detail: "故事讲的是小龙撑着发光的雨伞走过黑夜。",
+        highlight_reason: "连续参与了 6 轮共创，并主动为故事补写了结尾。",
         occurred_at: "2026-08-20T08:00:00+00:00",
         quote: "这样它就不怕黑啦。",
         kind: "highlight",
@@ -67,6 +69,9 @@ test("normalizes account-owned works and milestones without replacing them with 
   assert.equal(result.isDemo, false);
   assert.equal(result.works.length, 1);
   assert.equal(result.works[0].module, "story");
+  assert.equal(result.works[0].detail, "故事讲的是小龙撑着发光的雨伞走过黑夜。");
+  assert.equal(result.works[0].highlightReason, "连续参与了 6 轮共创，并主动为故事补写了结尾。");
+  assert.notEqual(result.works[0].highlightReason, result.works[0].detail);
   assert.equal(result.works[0].quote, "这样它就不怕黑啦。");
   assert.equal(result.works[0].metricValue, "386 字");
   assert.equal(result.works[0].isHighlight, true);
