@@ -163,6 +163,18 @@ export function explorerModuleName(value) {
   return key ? MODULE_META[key].name : "探索模块";
 }
 
+function fallbackHighlightReason(item, moduleKey) {
+  const title = cleanText(item?.title, `${MODULE_META[moduleKey].island}的作品`);
+  const metric = cleanText(item?.metric_value ?? item?.metricValue);
+  const reasons = {
+    story: `《${title}》记录了从想法到完成作品的创作过程${metric ? `，并留下了“${metric}”的完成记录` : ""}，因此被收藏为本次故事高光。`,
+    deep_sea: `这件作品记录了《${title}》中完成任务和调整方案的过程${metric ? `，对应“${metric}”` : ""}，因此被收藏为本次重建高光。`,
+    career: `《${title}》保留了完整参与职业任务的过程${metric ? `，对应“${metric}”` : ""}，因此被收藏为本次体验高光。`,
+    chat: `《${title}》留下了连续、可回看的真实表达${metric ? `，对应“${metric}”` : ""}，因此被收藏为本次聊天高光。`,
+  };
+  return reasons[moduleKey] ?? "这条记录保留了可回看的探索过程。";
+}
+
 function normalizeItem(item, index, kind) {
   const moduleKey = canonicalExplorerModule(item?.module, {allowRegistration: true}) ?? "registration";
   const meta = MODULE_META[moduleKey];
@@ -175,6 +187,7 @@ function normalizeItem(item, index, kind) {
     title: cleanText(item?.title, `${meta.island}的新发现`),
     summary,
     detail: cleanText(item?.detail, summary),
+    highlightReason: cleanText(item?.highlight_reason ?? item?.highlightReason, fallbackHighlightReason(item, moduleKey)),
     quote: cleanText(item?.quote),
     occurredAt: cleanText(item?.occurred_at ?? item?.occurredAt, new Date(0).toISOString()),
     status: cleanText(item?.status, itemKind === "highlight" ? "高光已收藏" : "模块已点亮"),
@@ -248,8 +261,8 @@ export function normalizeCollectionResponse(payload) {
   const works = worksAreDemo ? demo.works : realWorks;
   const milestones = timelineIsDemo ? demo.milestones : realMilestones;
   const worksNotice = worksAreDemo
-    ? "还没有作品，这里先展示四座大陆的示例。你可以完成探索，也可以自己添加第一件作品。"
-    : "这里收着探索完成的作品，也收着你自己添加的创作。";
+    ? "还没有作品，这里先展示四座大陆的示例。你可以自行探索，也可以自己添加第一件作品。"
+    : "这里展示着探索星球时留下的作品，也珍藏着学生自己添加的创作。";
   const timelineNotice = timelineIsDemo
     ? "还没有收到账号使用历程，这里先展示清楚标注的示例。"
     : "这条星路从注册日开始，记录四个模块的首次完成、最近完成和累计次数。";

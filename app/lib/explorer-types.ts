@@ -7,6 +7,7 @@ export type ExplorerItem={
   title:string;
   summary:string;
   detail:string;
+  highlightReason:string;
   quote:string;
   occurredAt:string;
   status:string;

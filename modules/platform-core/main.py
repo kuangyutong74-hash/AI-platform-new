@@ -1245,15 +1245,149 @@ def create_artifact_v1(payload: ArtifactIn, authorization: str | None = Header(d
     return {"id": payload.artifact_id, "created": existing is None, "updated": existing is not None}
 
 
+def _nonnegative_int(*values: object) -> int:
+    for value in values:
+        try:
+            return max(0, int(value))
+        except (TypeError, ValueError):
+            continue
+    return 0
+
+
+def _short_highlight_quote(value: object, limit: int = 42) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip(" \t\r\n。！？!?，,")
+    if not text:
+        return ""
+    return text if len(text) <= limit else f"{text[:limit - 1].rstrip()}…"
+
+
+def artifact_highlight_reason(
+    module_id: str,
+    title: str,
+    session_summary: dict,
+    event_payloads: list[dict],
+    behavior_summaries: list[str],
+) -> str:
+    """根据作品所属会话的真实过程数据解释其入选原因，不复述作品摘要。"""
+    if module_id == "chat":
+        turns = _nonnegative_int(
+            session_summary.get("turnCount"),
+            *(payload.get("turnCount") for payload in event_payloads),
+        )
+        chars = _nonnegative_int(session_summary.get("totalChildChars"))
+        long_turns = _nonnegative_int(session_summary.get("longTurnCount"))
+        child_turns = [
+            item.get("text", "")
+            for payload in event_payloads
+            for item in payload.get("childTurns", [])
+            if isinstance(item, dict)
+        ]
+        quote = _short_highlight_quote(max(child_turns, key=lambda value: len(str(value)), default=""))
+        details = []
+        if turns:
+            details.append(f"连续表达了 {turns} 轮")
+        if chars:
+            details.append(f"一共说出 {chars} 个字")
+        if long_turns:
+            details.append(f"其中有 {long_turns} 次较完整的长表达")
+        reason = "，".join(details)
+        if quote:
+            reason += ("；" if reason else "") + f"还具体说到“{quote}”"
+        if reason:
+            return f"这次聊天中，孩子{reason}。这些清楚、可回看的表达过程让它成为本次聊天高光。"
+
+    if module_id == "story":
+        contributions = max(
+            [_nonnegative_int(payload.get("contributionCount")) for payload in event_payloads] or [0]
+        )
+        ending_length = _nonnegative_int(session_summary.get("endingLength"))
+        ideas = session_summary.get("childIdeas", [])
+        quote = _short_highlight_quote(
+            max(ideas, key=lambda value: len(str(value)), default="") if isinstance(ideas, list) else ""
+        )
+        details = []
+        if contributions:
+            details.append(f"连续贡献了 {contributions} 个故事片段")
+        if ending_length:
+            details.append(f"并自己完成了 {ending_length} 字的结尾")
+        if quote:
+            details.append(f"还主动补充了“{quote}”这样的具体情节")
+        if details:
+            return f"在《{title}》的创作中，孩子{'，'.join(details)}，因此被收藏为这次故事共创的高光。"
+
+    if module_id == "deep_sea":
+        completion_payload = next(
+            (payload for payload in event_payloads if payload.get("totalLevels") == 3), {}
+        )
+        completed = _nonnegative_int(
+            completion_payload.get("completedLevels"), session_summary.get("completedLevels")
+        )
+        total = _nonnegative_int(completion_payload.get("totalLevels"), session_summary.get("totalLevels")) or 3
+        adjustments = _nonnegative_int(
+            completion_payload.get("adjustmentCount"), session_summary.get("meaningfulAdjustments")
+        )
+        pair_count = max(
+            [_nonnegative_int(payload.get("successfulPairs")) for payload in event_payloads] or [0]
+        )
+        details = []
+        if completed:
+            task_names = "生态配对、能源线路和角色协商" if completed == total == 3 else f"{completed}/{total} 项基地任务"
+            details.append(f"完成了{task_names}")
+        if pair_count:
+            details.append(f"成功完成 {pair_count} 组生态配对")
+        if adjustments:
+            details.append(f"还根据结果进行了 {adjustments} 次调整")
+        if details:
+            return f"这次重建中，孩子{'，'.join(details)}。作品保留了完整的解决过程，因此成为深海高光。"
+
+    if module_id == "career":
+        payload = event_payloads[-1] if event_payloads else {}
+        career_name = _short_highlight_quote(session_summary.get("careerName"), 24)
+        completed = _nonnegative_int(session_summary.get("completedStages"), session_summary.get("stages"))
+        total = _nonnegative_int(session_summary.get("stageCount"))
+        attempts = _nonnegative_int(payload.get("attemptCount"))
+        adjustments = _nonnegative_int(payload.get("adjustmentCount"))
+        details = []
+        if completed:
+            details.append(f"完成了 {completed}/{total} 个阶段" if total else f"完成了 {completed} 个职业阶段")
+        if attempts:
+            details.append(f"主动尝试了 {attempts} 次")
+        if adjustments:
+            details.append(f"并根据反馈调整了 {adjustments} 次")
+        if details:
+            subject = f"在“{career_name}”体验中" if career_name else f"在《{title}》中"
+            return f"{subject}，孩子{'，'.join(details)}。这份完整的参与记录让它成为职业体验高光。"
+
+    distinct_evidence = next(
+        (text.strip() for text in behavior_summaries if text and text.strip()), ""
+    )
+    if distinct_evidence:
+        return f"《{title}》同时留下了“{distinct_evidence}”的过程证据，因此被收藏为值得回看的高光作品。"
+    fallback = {
+        "chat": "这次对话留下了连续、可回看的真实表达，因此被收藏为本次聊天高光。",
+        "story": f"《{title}》记录了从想法到完成作品的创作过程，因此被收藏为本次故事高光。",
+        "deep_sea": "这件作品记录了任务完成和解决问题的过程，因此被收藏为本次重建高光。",
+        "career": f"《{title}》记录了完整参与职业任务的过程，因此被收藏为本次体验高光。",
+    }
+    return fallback.get(module_id, f"《{title}》留下了可回看的完成过程，因此被收藏为高光作品。")
+
+
 @app.get("/api/v1/artifacts")
 def list_artifacts_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     viewer = require_account(ai_bole_session)
     account = resolve_subject(viewer, ai_bole_session)
     with connect() as db:
         profile = profile_for_account(db, account["id"])
-        rows = db.execute("""SELECT a.*, s.module_id, s.module_version FROM artifacts a
+        rows = db.execute("""SELECT a.*, s.module_id, s.module_version, s.summary_json FROM artifacts a
                            JOIN assessment_sessions s ON s.id=a.session_id
                            WHERE s.child_profile_id=? ORDER BY a.created_at DESC""", (profile["id"],)).fetchall()
+        evidence_rows = db.execute(
+            """SELECT se.session_id,se.payload_json,er.behavior_summary
+               FROM source_events se JOIN evidence_records er ON er.source_event_id=se.id
+               JOIN assessment_sessions s ON s.id=se.session_id
+               WHERE s.child_profile_id=? ORDER BY se.occurred_at""",
+            (profile["id"],),
+        ).fetchall()
         manual_rows = db.execute(
             "SELECT * FROM manual_works WHERE student_account_id=? ORDER BY created_at DESC",
             (account["id"],),
@@ -1274,10 +1408,23 @@ def list_artifacts_v1(ai_bole_session: str | None = Cookie(default=None)) -> dic
         (row["module"], row["source_id"])
         for row in manual_rows if row["source_id"]
     }
+    session_evidence: dict[str, dict[str, list]] = {}
+    for row in evidence_rows:
+        context = session_evidence.setdefault(row["session_id"], {"payloads": [], "summaries": []})
+        try:
+            context["payloads"].append(json.loads(row["payload_json"] or "{}"))
+        except json.JSONDecodeError:
+            logger.warning("作品高光原因跳过了无效事件 payload：%s", row["session_id"])
+        context["summaries"].append(row["behavior_summary"] or "")
     artifacts = [{
         "id": row["id"], "sessionId": row["session_id"], "moduleId": row["module_id"],
         "moduleVersion": row["module_version"], "type": row["type"], "kind": "highlight",
         "title": row["title"], "summary": row["summary"], "detail": row["summary"],
+        "highlightReason": artifact_highlight_reason(
+            row["module_id"], row["title"], json.loads(row["summary_json"] or "{}"),
+            session_evidence.get(row["session_id"], {}).get("payloads", []),
+            session_evidence.get(row["session_id"], {}).get("summaries", []),
+        ),
         "previewResourceId": row["preview_resource_id"], "sourceResourceId": row["source_resource_id"],
         "createdAt": row["created_at"], "comments": comments.get(row["id"], []),
     } for row in rows if (row["module_id"], row["source_resource_id"]) not in manually_collected_sources]
