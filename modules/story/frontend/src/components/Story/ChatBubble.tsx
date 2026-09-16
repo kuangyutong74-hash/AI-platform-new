@@ -40,6 +40,13 @@ function FairyStar() {
   );
 }
 
+function childAvatarUrl(): string | null {
+  try {
+    const identity = JSON.parse(sessionStorage.getItem('ai-bole.story.identity') || 'null') as { avatarId?: string } | null;
+    return identity?.avatarId ? `http://localhost:3000/assets/avatars/student/${identity.avatarId}.png` : null;
+  } catch { return null; }
+}
+
 export default function ChatBubble({
   role,
   content,
@@ -58,6 +65,7 @@ export default function ChatBubble({
     fontSize ? `chat-fs-${fontSize}` : '',
   ].filter(Boolean).join(' ');
   const displayContent = sanitizeContent(content);
+  const childAvatar = role === 'child' ? childAvatarUrl() : null;
 
   const handleTextSelect = useCallback(() => {
     const selection = window.getSelection();
@@ -79,7 +87,9 @@ export default function ChatBubble({
           ? <FairyStar />
           : role === 'ai'
             ? <PngIcon name="story-director" size={44} />
-            : <PngIcon name="child-explorer" size={44} />
+            : childAvatar
+              ? <img className="story-child-avatar" src={childAvatar} alt="" />
+              : <PngIcon name="child-explorer" size={44} />
         }
       </div>
       <div className="chat-body">

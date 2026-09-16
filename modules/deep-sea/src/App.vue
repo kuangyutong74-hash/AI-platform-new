@@ -10,7 +10,7 @@
     </div>
 
     <!-- 主游戏面板：全透明玻璃容器，让海底 Canvas 完全透出 -->
-    <div class="game-shell relative z-10 w-full max-w-[1600px] h-full mx-auto
+    <div class="game-shell relative z-10 w-full min-w-0 max-w-[1600px] h-full mx-auto
                 rounded-2xl flex flex-col overflow-hidden"
          :class="{ 'pinyin-text': showPinyin }">
 
@@ -34,6 +34,10 @@
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
+          <div v-if="studentIdentity" class="student-identity" :title="studentIdentity.displayName">
+            <img :src="studentIdentity.avatarUrl" alt="" />
+            <b>{{ studentIdentity.displayName }}</b>
+          </div>
           <!-- 拼音开关按钮 -->
           <button @click="togglePinyin"
                   class="pinyin-toggle-btn px-2.5 py-1 text-xs rounded-full border transition-all font-bold select-none cursor-pointer"
@@ -122,6 +126,15 @@ import MomoDolphin from './components/characters/MomoDolphin.vue'
 const showDebug = ref(false)
 const currentState = ref('START')
 const showPinyin = usePinyinState()
+const studentIdentity = ref(readStudentIdentity())
+
+function readStudentIdentity() {
+  try {
+    const launch = JSON.parse(window.name || '')
+    const student = launch?.namespace === 'ai-bole.launch-context.v1' ? launch.context?.student : null
+    return student?.displayName ? student : null
+  } catch (_) { return null }
+}
 
 // 向所有子组件提供拼音状态和切换方法
 provide('showPinyin', showPinyin)
@@ -658,12 +671,20 @@ function handleBackStart() {
   .bottom-nav-index { display: none; }
   .bottom-nav-icon-shell { width: 27px; height: 27px; border-radius: 8px; }
 }
+@media (max-width: 640px) {
+  .game-hud { gap: .5rem; padding: .45rem .55rem !important; }
+  .game-hud > div:first-child > div { display: none; }
+  .hud-avatar { width: 40px !important; height: 40px !important; border-radius: 12px !important; }
+  .hud-message { display: none !important; }
+  .game-hud .pinyin-toggle-btn { padding: .35rem .55rem; }
+}
 .hud-avatar {
   width: 48px; height: 48px; display: grid; place-items: center; border-radius: 15px;
   background: radial-gradient(circle at 35% 20%, white, rgba(207,250,254,.88) 58%, rgba(103,232,249,.42));
   border: 1px solid rgba(8,145,178,.22);
   box-shadow: 0 6px 18px rgba(8,145,178,.14), inset 0 1px white;
 }
+.student-identity{display:flex;align-items:center;gap:7px;max-width:150px;color:#164e63}.student-identity img{width:38px;height:38px;object-fit:contain;object-position:center bottom;border-radius:12px;background:rgba(255,255,255,.76)}.student-identity b{max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.78rem}@media(max-width:760px){.student-identity b{display:none}.student-identity{max-width:40px}}
 .hud-message {
   border-radius: 14px;
   color: #155e75 !important;

@@ -196,8 +196,8 @@ export default function TalentPage({ parentView = false }: { parentView?: boolea
 
   return (
     <div className="page talent-page">
-      <Button variant="ghost" size="sm" onClick={() => navigate(parentView ? '/story-create/parent' : '/story-create/gallery')} style={{ alignSelf: 'flex-start' }}>
-        {parentView ? '返回家长故事书架' : '返回我的故事书架'}
+      <Button variant="ghost" size="sm" onClick={() => navigate('/story-create/gallery')} style={{ alignSelf: 'flex-start' }}>
+        返回我的故事书架
       </Button>
 
       <header className="talent-hero">

@@ -761,13 +761,13 @@ def generate_suggestions(request: SuggestionRequest) -> dict[str, Any]:
     child_name = str(request.child.get("childName") or "孩子")
     analyzer = LLMAnalyzer.from_environment()
     if not analyzer:
-        return normalize_suggestions({}, child_name)
+        return normalize_suggestions({}, child_name, request.answers, request.questions, request.dimension)
     try:
         result = analyzer.ask_json(SUGGESTION_SYSTEM_PROMPT, request.model_dump())
-        return normalize_suggestions(result, child_name)
+        return normalize_suggestions(result, child_name, request.answers, request.questions, request.dimension)
     except Exception:
         logger.exception("专属建议生成失败，使用安全回退建议")
-        return normalize_suggestions({}, child_name)
+        return normalize_suggestions({}, child_name, request.answers, request.questions, request.dimension)
 
 
 if __name__ == "__main__":

@@ -60,7 +60,7 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
       return;
     }
     if (!ageGroup) {
-      setError('请先选择 4-7 岁或 8-12 岁创作通道');
+      setError('暂时没有可用的年龄设置，请刷新后再试');
       return;
     }
     if (isCustomAvatar && !customAvatarType.trim()) {
@@ -90,7 +90,7 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
     return (
       <form className="character-creator" onSubmit={handleSubmit}>
         <h3 className="creator-title">创建一个新角色</h3>
-        <p className="creator-error">请先选择 4-7 岁或 8-12 岁创作通道</p>
+        <p className="creator-error">暂时没有可用的年龄设置，请刷新后再试</p>
       </form>
     );
   }
@@ -101,7 +101,7 @@ export default function CharacterCreator({ onCreate }: CharacterCreatorProps) {
 
       <div className="creator-channel-note">
         <PngIcon name="child-explorer" size={24} />
-        <span>当前通道：{AGE_GROUP_LABELS[ageGroup]}</span>
+        <span>适合年龄：{AGE_GROUP_LABELS[ageGroup]}</span>
       </div>
 
       {/* 起名灵感（纯文字标签，只填名字和人设，形象自由搭配） */}

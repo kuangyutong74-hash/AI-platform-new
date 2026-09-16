@@ -1,6 +1,6 @@
 import unittest
 
-from reflection import fallback_questions, normalize_questions
+from reflection import fallback_questions, normalize_questions, normalize_suggestions
 
 
 class ReflectionQuestionTests(unittest.TestCase):
@@ -62,6 +62,47 @@ class ReflectionQuestionTests(unittest.TestCase):
         questions = fallback_questions("小新", dimensions)
 
         self.assertEqual(questions["dimension_questions"], [])
+
+    def test_suggestion_sources_only_keep_real_answer_ids(self) -> None:
+        result = normalize_suggestions({
+            "family_suggestions": ["周末一起画一张故事地图。"],
+            "family_suggestion_sources": [["g1", "missing", "g2"]],
+        }, "小新", [
+            {"question_id": "g1", "selected": "爸爸妈妈", "text": "周末一起读书"},
+            {"question_id": "g2", "selected": "没注意过", "text": ""},
+        ])
+
+        self.assertEqual(result["family_suggestion_sources"], [["g1"]])
+
+    def test_answer_based_fallback_keeps_attributions_without_model(self) -> None:
+        result = normalize_suggestions({}, "小新", [
+            {"question_id": "g1", "selected": "爸爸妈妈", "text": "周末一起读书"},
+            {"question_id": "g2", "selected": "动手解决", "text": ""},
+            {"question_id": "g3", "selected": "遇难反应", "text": ""},
+        ])
+
+        self.assertEqual(len(result["family_suggestions"]), 2)
+        self.assertEqual(result["teacher_suggestions"], [])
+        self.assertIn("爸爸妈妈", result["family_suggestions"][0])
+        self.assertIn("拼搭", result["family_suggestions"][1])
+        self.assertEqual(result["family_suggestion_sources"], [["g1"], ["g2"]])
+
+    def test_grandparents_answer_becomes_a_natural_dimension_activity(self) -> None:
+        result = normalize_suggestions({}, "小新", [
+            {"question_id": "g1", "selected": "祖辈家人", "text": ""},
+        ], [{"id": "g1", "category": "家庭陪伴"}], {"key": "logical"})
+
+        self.assertIn("爷爷奶奶", result["family_suggestions"][0])
+        self.assertIn("做饭", result["family_suggestions"][0])
+        self.assertEqual(result["family_suggestion_sources"], [["g1"]])
+
+    def test_parent_concern_changes_the_observation_focus(self) -> None:
+        result = normalize_suggestions({}, "小新", [
+            {"question_id": "g3", "selected": "遇难反应", "text": ""},
+        ], [{"id": "g3", "category": "在意"}], {"key": "spatial"})
+
+        self.assertIn("任务卡住时", result["family_suggestions"][0])
+        self.assertIn("换办法、求助还是暂停", result["family_suggestions"][0])
 
 
 if __name__ == "__main__":

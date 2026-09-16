@@ -6,6 +6,7 @@ defineProps<{talents:Talent[];insights:string[];family:string[];teacher:string[]
 const emit=defineEmits<{open:[evidence:Evidence]}>();
 const dimensionAnalysis=(talent:Talent,liveReport?:GeneratedReport)=>liveReport?.dimensions.find(item=>item.key===talent.key);
 const observationItems=(talent:Talent,liveReport?:GeneratedReport)=>(dimensionAnalysis(talent,liveReport)?.adult_observation||"").split(/[；\n]+/).map(item=>item.trim()).filter(Boolean);
+const parentRefs=(report:GeneratedReport|undefined,kind:"family"|"teacher",index:number)=>report?.recommendation_attributions?.[kind]?.[index]||[];
 </script>
 
 <template>
@@ -30,7 +31,7 @@ const observationItems=(talent:Talent,liveReport?:GeneratedReport)=>(dimensionAn
           <div class="formal-evidence"><h4>行为证据</h4><p v-if="!talent.evidence.length" class="formal-empty">当前还没有足够的可回溯记录，建议继续在不同情境中观察。</p><button v-for="evidence in talent.evidence" :key="evidence.id" type="button" @click="emit('open',evidence)"><span class="formal-evidence-meta"><b>{{ evidence.source }}</b><time>{{ evidence.time }}</time><em>{{ evidence.level==='strong'?'较完整记录':'参考线索' }}</em></span><span>{{ evidence.behavior }}</span><small>查看完整过程记录</small></button></div>
         </section>
       </section>
-      <section id="formal-advice" class="formal-section formal-advice"><h2>下一阶段支持建议</h2><div><section><h3>家庭支持</h3><ol><li v-for="item in family" :key="item">{{ item }}</li></ol></section><section><h3>学校支持</h3><ol><li v-for="item in teacher" :key="item">{{ item }}</li></ol></section></div></section>
+      <section id="formal-advice" class="formal-section formal-advice"><h2>下一阶段支持建议</h2><div><section><h3>家庭支持</h3><ol><li v-for="(item,index) in family" :key="item">{{ item }}<div v-if="parentRefs(liveReport,'family',index).length" class="formal-parent-source"><strong>参考了您的回答</strong><p v-for="source in parentRefs(liveReport,'family',index)" :key="`${source.question}-${source.answer}`">{{source.question}}：{{source.answer}}</p></div></li></ol></section><section><h3>学校支持</h3><ol><li v-for="(item,index) in teacher" :key="item">{{ item }}<div v-if="parentRefs(liveReport,'teacher',index).length" class="formal-parent-source"><strong>参考了您的回答</strong><p v-for="source in parentRefs(liveReport,'teacher',index)" :key="`${source.question}-${source.answer}`">{{source.question}}：{{source.answer}}</p></div></li></ol></section></div></section>
       <footer class="formal-disclaimer"><strong>报告说明</strong><p>天赋不是固定标签。本报告只描述当前记录中出现的行为特点，建议结合孩子在家庭、学校和长期活动中的真实表现持续观察。</p></footer>
     </article>
   </main>

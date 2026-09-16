@@ -1,69 +1,52 @@
 <template>
-  <div class="start-screen h-full relative overflow-hidden px-5 py-5 md:px-10 md:py-8">
+  <div class="start-screen">
+    <!--
+      THESIS: 一张正在发生的动画电影海报，让孩子进入救援故事，而不是阅读控制台。
+      OWN-WORLD: 深海蓝、珊瑚橙与珍珠白；电影光束、圆润角色、发光基地和海水景深。
+      STORY: 风暴后的基地等待修复，沫沫带队出发，孩子一键加入三段重建旅程。
+      FIRST VIEWPORT: 全幅场景占满画面，左侧大标题与主行动，右下任务航线顺着基地延伸。
+      FORM: 用户指定的高品质家庭动画电影封面；精准窄范围重设计，无方向种子。
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+    -->
+    <img class="cover-art" :src="coverArt" alt="风暴后的蔚蓝深海基地，沫沫带着海洋伙伴准备出发重建" />
+    <div class="cover-shade" aria-hidden="true"></div>
     <StartEffects />
 
-    <div class="relative z-10 h-full max-w-6xl mx-auto grid lg:grid-cols-[1.08fr_.92fr] gap-5 items-center">
-      <section class="start-hero-panel">
-        <div class="emergency-chip inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold tracking-wider mb-5">
-          <span class="w-2 h-2 rounded-full bg-emerald-300 shadow-[0_0_10px_#6ee7b7] animate-pulse"></span>
-          <span v-html="p('深海基地紧急呼叫')"></span>
+    <div class="cover-content">
+      <section class="cover-copy">
+        <div class="call-signal">
+          <span aria-hidden="true"></span>
+          <span v-html="p('沫沫正在呼叫小队长')"></span>
         </div>
 
-        <div class="cover-title-row flex items-center gap-4 mb-5">
-          <div class="momo-orbit"><MomoDolphin size="hero" /></div>
-          <div class="min-w-0 cover-title-copy">
-            <div class="cover-eyebrow" v-html="p('沫沫 AI 邀请你加入')"></div>
-            <h1 class="font-bold leading-none start-title">
-              <span v-html="p('蔚蓝深海基地')"></span>
-            </h1>
-            <div class="title-signal">
-              <span></span>
-              <small>BLUE OCEAN BASE · REBUILD MISSION</small>
-            </div>
-          </div>
-        </div>
+        <h1 class="start-title">
+          <span v-html="p('蔚蓝深海基地')"></span>
+          <strong v-html="p('重建计划')"></strong>
+        </h1>
 
-        <p class="hero-story max-w-2xl text-base md:text-xl font-medium leading-relaxed mb-6"
-           v-html="p('风暴摧毁了海底家园，珊瑚公寓、电力管网和海洋议事厅都在等待修复。小队长，带领伙伴们让基地重新发光吧！')"></p>
+        <p class="hero-story" v-html="p('风暴刚刚离开，珊瑚公寓、电力管网和海洋议事厅都在等你。和沫沫一起，让基地重新发光！')"></p>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <button @mouseenter="playHover" @click="startGame" class="start-cta group">
-            <span v-html="p('开始深海任务')"></span>
-            <span class="text-xl group-hover:translate-x-1 transition-transform">→</span>
+        <div class="cover-actions">
+          <button @mouseenter="playHover" @click="startGame" class="start-cta">
+            <span v-html="p('出发，开始重建')"></span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5" /></svg>
           </button>
-          <div class="hero-meta text-sm leading-relaxed">
-            <div v-html="p('适合 6–10 岁 · 约 15 分钟')"></div>
-            <div class="mt-0.5" v-html="p('观察 · 规划 · 沟通')"></div>
-          </div>
+          <p><b>约 15 分钟</b><span>观察 · 规划 · 沟通</span></p>
         </div>
       </section>
 
-      <section class="mission-console">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <div class="text-white font-bold text-xl" v-html="p('基地修复路线')"></div>
-            <div class="text-cyan-50/85 text-sm mt-1" v-html="p('完成三项任务，获得守护者勋章')"></div>
-          </div>
-          <span class="text-xs px-3 py-1 rounded-full bg-amber-300/15 text-amber-200 border border-amber-200/20">3 MISSIONS</span>
-        </div>
-        <div class="space-y-3">
-          <div v-for="(mission, i) in missions" :key="mission.title" class="mission-row">
-            <div class="mission-icon">
-              <img :src="mission.iconSrc" :alt="mission.title" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex justify-between gap-2">
-                <span class="text-white font-bold" v-html="p(mission.title)"></span>
-                <span class="text-xs font-bold text-cyan-100/75">0{{ i + 1 }}</span>
-              </div>
-              <div class="text-sm text-cyan-50/85 mt-0.5" v-html="p(mission.desc)"></div>
-            </div>
-            <span class="text-lg text-cyan-100/85">›</span>
-          </div>
-        </div>
-        <div class="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs text-cyan-100/70">
-          <span>BLUE OCEAN BASE</span><span>v1.0 · ONLINE</span>
-        </div>
+      <section class="mission-route" aria-label="三项基地重建任务">
+        <header>
+          <span v-html="p('今天的重建路线')"></span>
+          <small>完成三项任务，点亮守护者勋章</small>
+        </header>
+        <ol>
+          <li v-for="(mission, i) in missions" :key="mission.title">
+            <span class="route-number">{{ i + 1 }}</span>
+            <img :src="mission.iconSrc" alt="" />
+            <div><b v-html="p(mission.title)"></b><small v-html="p(mission.desc)"></small></div>
+          </li>
+        </ol>
       </section>
     </div>
   </div>
@@ -73,176 +56,50 @@
 import { playHover } from '../utils/sounds.js'
 import { usePinyinText } from '../utils/pinyin.js'
 import StartEffects from './effects/StartEffects.vue'
-import MomoDolphin from './characters/MomoDolphin.vue'
+import coverArt from '../assets/generated/deep-sea-cover-cinematic-v1.webp'
 import coralApartmentIcon from '../assets/generated/nav/nav-coral-apartment.png'
 import currentGridIcon from '../assets/generated/nav/nav-current-grid.png'
 import mediationIcon from '../assets/generated/nav/nav-mediation.png'
+
 const { p } = usePinyinText()
-
 const emit = defineEmits(['go-level'])
-
-function startGame() {
-  emit('go-level', 'LEVEL_1')
-}
+const startGame = () => emit('go-level', 'LEVEL_1')
 
 const missions = [
-  { iconSrc: coralApartmentIcon, title: '珊瑚公寓', desc: '观察共生关系，安顿海洋伙伴' },
-  { iconSrc: currentGridIcon, title: '洋流电网', desc: '规划管线路径，重启基地能源' },
-  { iconSrc: mediationIcon, title: '海洋议事厅', desc: '理解伙伴情绪，完成公平调解' },
+  { iconSrc: coralApartmentIcon, title: '珊瑚公寓', desc: '观察伙伴，帮大家找到新家' },
+  { iconSrc: currentGridIcon, title: '洋流电网', desc: '铺好管线，让能源重新流动' },
+  { iconSrc: mediationIcon, title: '海洋议事厅', desc: '听懂伙伴，帮助大家和好' },
 ]
 </script>
 
 <style scoped>
-.start-screen::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: radial-gradient(circle at 18% 22%, rgba(34,211,238,.16), transparent 28%),
-              radial-gradient(circle at 82% 72%, rgba(99,102,241,.18), transparent 30%);
-  pointer-events: none;
-}
-.start-hero-panel {
-  padding: clamp(18px, 2.5vw, 34px);
-  border: 1px solid rgba(255,255,255,.28);
-  border-radius: 28px;
-  background: linear-gradient(145deg, rgba(236,254,255,.34), rgba(255,255,255,.14));
-  box-shadow: 0 18px 50px rgba(8,47,73,.12), inset 0 1px rgba(255,255,255,.5);
-  backdrop-filter: blur(10px);
-}
-.emergency-chip {
-  color: #075985;
-  border: 1px solid rgba(8,145,178,.22);
-  background: rgba(236,254,255,.82);
-  box-shadow: 0 5px 16px rgba(8,47,73,.1), inset 0 1px white;
-}
-.cover-title-copy {
-  padding: 13px 17px 14px;
-  border: 1px solid rgba(255,255,255,.55);
-  border-radius: 20px;
-  background: linear-gradient(120deg, rgba(255,255,255,.83), rgba(207,250,254,.66));
-  box-shadow: 0 10px 28px rgba(8,47,73,.13), inset 0 1px white;
-  backdrop-filter: blur(12px);
-}
-.start-title {
-  display: block;
-  white-space: nowrap;
-  width: max-content;
-  max-width: none;
-  font-size: clamp(2.7rem, 4.25vw, 5.2rem);
-  letter-spacing: -.035em;
-  background: linear-gradient(105deg, #082f49 2%, #0369a1 31%, #0f766e 58%, #4338ca 86%, #312e81 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(255,255,255,.5);
-  text-shadow: 0 2px 0 rgba(255,255,255,.9), 0 9px 22px rgba(8,47,73,.22);
-  filter: drop-shadow(0 2px 1px rgba(8,47,73,.12));
-}
-.start-title :deep(ruby) { white-space: nowrap; }
-.cover-eyebrow {
-  display: inline-flex;
-  margin-bottom: 7px;
-  color: #0e7490;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .15em;
-}
-.title-signal {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-top: 11px;
-  color: rgba(14,116,144,.7);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: .12em;
-}
-.title-signal span {
-  width: 46px;
-  height: 2px;
-  border-radius: 99px;
-  background: linear-gradient(90deg, #0891b2, transparent);
-  box-shadow: 0 0 8px rgba(8,145,178,.35);
-}
-.title-signal small { font-size: 8px; white-space: nowrap; }
-.momo-orbit {
-  width: 132px; height: 158px; flex: 0 0 132px; border-radius: 44%; display: grid; place-items: center;
-  background: radial-gradient(circle at 35% 25%, rgba(255,255,255,.3), rgba(34,211,238,.08));
-  border: 1px solid rgba(165,243,252,.3); box-shadow: 0 0 34px rgba(34,211,238,.18), inset 0 0 20px rgba(255,255,255,.08);
-}
-.hero-story {
-  padding: 12px 16px;
-  color: #083f52;
-  border-left: 4px solid rgba(8,145,178,.6);
-  border-radius: 0 16px 16px 0;
-  background: rgba(255,255,255,.68);
-  box-shadow: 0 7px 22px rgba(8,47,73,.1), inset 0 1px white;
-  text-shadow: 0 1px white;
-}
-.hero-meta {
-  color: #0e5d74;
-  padding: 7px 11px;
-  border-radius: 12px;
-  background: rgba(236,254,255,.7);
-  font-weight: 700;
-}
-.start-cta {
-  display: inline-flex; align-items: center; gap: 18px; padding: 14px 26px; border-radius: 16px;
-  color: white; font-size: 18px; font-weight: 700; border: 1px solid rgba(255,255,255,.24);
-  background: linear-gradient(135deg, #fb7185, #f97316); box-shadow: 0 12px 30px rgba(249,115,22,.24);
-  transition: transform .2s, box-shadow .2s;
-}
-.start-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 38px rgba(249,115,22,.34); }
-
-.mission-console {
-  padding: 22px;
-  border-radius: 24px;
-  color: #164e63;
-  background:
-    radial-gradient(circle at 90% 0, rgba(165,243,252,.42), transparent 34%),
-    linear-gradient(145deg, rgba(255,255,255,.9), rgba(207,250,254,.76));
-  border: 1px solid rgba(255,255,255,.78);
-  box-shadow: 0 22px 60px rgba(8,47,73,.16), inset 0 1px white;
-  backdrop-filter: blur(16px) saturate(1.08);
-}
-.mission-console :is(.text-white, .text-cyan-50\/85, .text-cyan-100\/75, .text-cyan-100\/70, .text-cyan-100\/85) {
-  color: #155e75 !important;
-}
-.mission-console .text-amber-200 {
-  color: #a04708 !important;
-  background: rgba(254,243,199,.88) !important;
-  border-color: rgba(217,119,6,.25) !important;
-}
-.mission-row {
-  display: flex; align-items: center; gap: 13px; padding: 13px; border-radius: 16px;
-  background: rgba(255,255,255,.7);
-  border: 1px solid rgba(8,145,178,.13);
-  box-shadow: 0 6px 18px rgba(8,47,73,.07), inset 0 1px white;
-  transition: .2s ease;
-}
-.mission-row:hover {
-  transform: translateX(4px);
-  background: rgba(255,255,255,.92);
-  border-color: rgba(6,182,212,.34);
-  box-shadow: 0 9px 22px rgba(8,47,73,.11), inset 0 1px white;
-}
-.mission-icon {
-  width: 52px; height: 52px; display: grid; place-items: center; flex: none; overflow: hidden;
-  padding: 3px; border-radius: 15px;
-  border: 1px solid rgba(8,145,178,.18);
-  background: rgba(255,255,255,.92);
-  box-shadow: 0 7px 18px rgba(8,47,73,.12), inset 0 1px white;
-}
-.mission-icon img {
-  width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 11px;
-}
-@media (max-width: 1023px) {
-  .start-screen { overflow-y: auto; }
-  .mission-console { max-width: 680px; margin: 0 auto; }
-  .start-title { font-size: clamp(2.5rem, 8vw, 4.5rem); }
-}
-@media (max-width: 600px) {
-  .cover-title-row { gap: 8px; }
-  .momo-orbit { width: 82px; height: 112px; flex-basis: 82px; }
-  .start-title { font-size: clamp(2rem, 9vw, 3rem); }
-  .title-signal small { display: none; }
-}
+.start-screen{position:relative;height:100%;min-height:0;overflow:hidden;background:#031b39;color:#fff;isolation:isolate}
+.cover-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 54%;filter:saturate(1.06) contrast(1.03);transform:scale(1.01)}
+.cover-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(2,15,39,.94) 0%,rgba(2,20,48,.79) 29%,rgba(4,30,57,.2) 56%,rgba(4,22,44,.12) 72%),linear-gradient(0deg,rgba(1,12,31,.83) 0%,transparent 35%,rgba(1,17,42,.1) 70%);z-index:1}
+.cover-content{position:relative;z-index:12;height:100%;display:grid;grid-template-columns:minmax(0,650px);align-content:center;align-items:start;gap:26px;padding:clamp(30px,5vw,76px)}
+.cover-copy{align-self:center;max-width:650px;padding-top:2vh}
+.call-signal{display:inline-flex;align-items:center;gap:9px;margin-bottom:18px;padding:7px 13px;border-radius:999px;background:rgba(5,34,66,.72);box-shadow:0 8px 22px rgba(0,10,30,.24);color:#bff5ff;font-size:clamp(12px,1.1vw,15px);font-weight:800;letter-spacing:.06em;backdrop-filter:blur(8px)}
+.call-signal>span:first-child{width:9px;height:9px;border-radius:50%;background:#ffcc70;box-shadow:0 0 0 5px rgba(255,204,112,.15),0 0 18px rgba(255,204,112,.7);animation:signalPulse 2.2s ease-in-out infinite}
+.start-title{margin:0;color:#fff;font-family:'Microsoft YaHei UI','PingFang SC','Noto Sans CJK SC',sans-serif;font-size:clamp(3.2rem,5.35vw,5.35rem);font-weight:900;line-height:1.02;letter-spacing:-.025em;text-wrap:balance;text-shadow:0 5px 24px rgba(0,8,28,.55)}
+.start-title strong{display:block;margin-top:10px;color:#ffcf74;font:inherit;font-size:.62em;letter-spacing:.02em}
+.hero-story{max-width:590px;margin:25px 0 0;color:#e5faff;font-size:clamp(15px,1.35vw,20px);font-weight:700;line-height:1.7;text-shadow:0 2px 12px rgba(0,9,27,.65)}
+.cover-actions{display:flex;align-items:center;gap:20px;margin-top:30px}
+.start-cta{display:inline-flex;min-height:58px;align-items:center;gap:20px;padding:14px 25px 14px 28px;border:0;border-radius:999px;background:#ff765f;color:#fff;font-size:clamp(16px,1.3vw,20px);font-weight:900;box-shadow:0 14px 30px rgba(92,22,16,.35),inset 0 1px rgba(255,255,255,.38);cursor:pointer;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease,background .2s ease}
+.start-cta svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+.start-cta:hover{background:#ff876f;transform:translateY(-3px);box-shadow:0 19px 36px rgba(92,22,16,.42),inset 0 1px rgba(255,255,255,.45)}
+.start-cta:hover svg{transform:translateX(4px)}
+.start-cta:focus-visible{outline:3px solid #fff2bd;outline-offset:4px}
+.cover-actions>p{display:grid;gap:2px;margin:0;color:#d9f7ff;font-size:12px;line-height:1.45;text-shadow:0 2px 8px rgba(0,8,28,.55)}
+.cover-actions>p b{color:#fff;font-size:14px}.cover-actions>p span{opacity:.84}
+.mission-route{justify-self:start;width:min(100%,650px);padding:17px 19px 18px;border-radius:16px;background:rgba(3,27,57,.82);box-shadow:0 20px 42px rgba(0,10,28,.33);backdrop-filter:blur(12px) saturate(1.1)}
+.mission-route header{display:flex;align-items:end;justify-content:space-between;gap:16px;padding:0 2px 13px}.mission-route header>span{font-size:17px;font-weight:900}.mission-route header small{color:#b9eafa;font-size:11px}
+.mission-route ol{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0;padding:0;list-style:none}
+.mission-route li{position:relative;display:grid;grid-template-columns:46px 1fr;align-items:center;gap:9px;min-width:0;padding:10px;border-radius:13px;background:rgba(239,252,255,.12);box-shadow:inset 0 1px rgba(255,255,255,.12)}
+.mission-route li img{width:46px;height:46px;border-radius:12px;object-fit:cover}.mission-route li div{display:grid;gap:3px;min-width:0}.mission-route li b{font-size:13px}.mission-route li small{color:#c8ecf5;font-size:10px;line-height:1.45}
+.route-number{position:absolute;top:-7px;right:8px;display:grid;width:21px;height:21px;place-items:center;border-radius:50%;background:#ffcf74;color:#193451;font-size:11px;font-weight:900;box-shadow:0 5px 12px rgba(0,10,28,.3)}
+@keyframes signalPulse{0%,100%{transform:scale(.88);opacity:.76}50%{transform:scale(1);opacity:1}}
+@media(max-width:1023px){.cover-content{grid-template-columns:minmax(0,620px);align-content:end;gap:24px;padding:clamp(26px,6vw,54px)}.cover-copy{align-self:end;max-width:620px}.mission-route{justify-self:start}.cover-art{object-position:62% center}.cover-shade{background:linear-gradient(90deg,rgba(2,15,39,.91),rgba(2,20,48,.5) 62%,rgba(4,22,44,.14)),linear-gradient(0deg,rgba(1,12,31,.88),transparent 54%)}}
+@media(max-width:640px){.cover-content{gap:18px;width:100%;min-width:0;padding:24px 18px 20px}.cover-copy{width:100%;min-width:0;max-width:100%;padding:0}.call-signal{max-width:100%;margin-bottom:12px}.start-title{max-width:100%;font-size:clamp(2.2rem,10.5vw,3rem);letter-spacing:-.05em;white-space:normal;overflow-wrap:anywhere}.start-title strong{white-space:normal}.hero-story{max-width:100%;margin-top:16px;font-size:14px;line-height:1.55;white-space:normal;overflow-wrap:anywhere}.cover-actions{margin-top:20px}.start-cta{min-height:52px;padding:12px 20px;font-size:16px}.cover-actions>p{display:none}.mission-route{width:100%;min-width:0;max-width:100%;padding:14px}.mission-route header{padding-bottom:10px}.mission-route header small{display:none}.mission-route ol{grid-template-columns:minmax(0,1fr);gap:7px}.mission-route li{grid-template-columns:38px minmax(0,1fr);padding:7px 9px}.mission-route li img{width:38px;height:38px}.mission-route li small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cover-art{object-position:68% center;transform:scale(1.06)}.cover-shade{background:linear-gradient(90deg,rgba(2,15,39,.9),rgba(2,20,48,.36)),linear-gradient(0deg,rgba(1,12,31,.92),rgba(1,12,31,.22) 66%)}}
+@media(max-height:720px) and (min-width:641px){.cover-content{padding-block:24px}.start-title{font-size:clamp(3rem,5vw,4.6rem)}.hero-story{margin-top:16px}.cover-actions{margin-top:20px}.mission-route{padding:14px 16px}.mission-route header{padding-bottom:9px}}
+@media(prefers-reduced-motion:reduce){.call-signal>span:first-child,.start-cta,.start-cta svg{animation:none;transition:none}}
 </style>

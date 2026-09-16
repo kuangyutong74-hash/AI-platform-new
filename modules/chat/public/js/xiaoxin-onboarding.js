@@ -58,17 +58,10 @@
       },
       {
         target: '.feature-grid',
-        title: '探索更多功能 🧭',
-        content: '这里藏着好多宝藏：<b>历史对话</b>、<b>我的手账本</b>、<b>收藏夹</b>，<br>还能换上你喜欢的<b>新形象</b>哦！',
+        title: '回顾我们的故事 🧭',
+        content: '这里可以打开<b>历史对话</b>，也能去<b>小新的手账本</b>回看聊天里值得记住的成长片段。',
         position: 'top',
         spotlightPadding: 10,
-      },
-      {
-        target: '#daily-discoveries',
-        title: '每日小发现 🌟',
-        content: '我每天都会帮你发现有趣的新知识，<br>记得常来看看，每次都有惊喜～',
-        position: 'top',
-        spotlightPadding: 12,
       },
       {
         target: '.top-actions',

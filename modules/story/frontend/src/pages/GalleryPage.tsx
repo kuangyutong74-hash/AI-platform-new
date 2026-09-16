@@ -6,7 +6,6 @@ import {
   updateStory,
   type Story,
 } from "../api/endpoints";
-import { apiFetch } from "../api/client";
 import { addStoryToMyWorks, listCollectedStoryIds } from "../api/platformWorks";
 import StoryCard from "../components/Gallery/StoryCard";
 import StoryReader from "../components/Gallery/StoryReader";
@@ -16,7 +15,7 @@ import Loading from "../components/Shared/Loading";
 import PngIcon from "../components/Shared/PngIcon";
 import "./GalleryPage.css";
 
-export default function GalleryPage({ parentMode = false }: { parentMode?: boolean }) {
+export default function GalleryPage() {
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [readingStory, setReadingStory] = useState<Story | null>(null);
@@ -27,16 +26,12 @@ export default function GalleryPage({ parentMode = false }: { parentMode?: boole
 
   useEffect(() => {
     loadStories();
-    if (!parentMode) {
-      listCollectedStoryIds().then(setCollectedStoryIds).catch(() => undefined);
-    }
-  }, [parentMode]);
+    listCollectedStoryIds().then(setCollectedStoryIds).catch(() => undefined);
+  }, []);
 
   async function loadStories() {
     try {
-      const data = parentMode
-        ? await apiFetch<Story[]>("/stories/parent/all")
-        : await listStories();
+      const data = await listStories();
       setStories(data);
     } catch {
       // silently handle
@@ -85,23 +80,24 @@ export default function GalleryPage({ parentMode = false }: { parentMode?: boole
 
   if (loading) return <Loading text="加载故事画廊..." />;
 
-  const activeStories = parentMode ? [] : stories.filter((s) => s.status === "active");
+  const activeStories = stories.filter((s) => s.status === "active");
   const completedStories = stories.filter((s) => s.status === "completed");
-  const hasVisibleStories = parentMode ? completedStories.length > 0 : stories.length > 0;
+  const hasVisibleStories = stories.length > 0;
 
   return (
     <div className="gallery-page page">
       <div className="gallery-header">
-        <h1>{parentMode ? "家长故事书架" : "我的故事画廊"}</h1>
+        <div className="gallery-heading">
+          <h1>我的故事画廊</h1>
+          <p>每一本书，都收藏着你亲手点亮的角色、冒险和奇妙结局。</p>
+        </div>
         <div className="gallery-header-actions">
           <Button variant="ghost" onClick={() => navigate("/story-create")}>
             ← 返回故事共创首页
           </Button>
-          {!parentMode && (
-            <Button variant="primary" onClick={() => navigate("/story-create/characters")}>
-              <PngIcon name="celebration" size={26} /> 创作新故事
-            </Button>
-          )}
+          <Button variant="primary" onClick={() => navigate("/story-create/characters")}>
+            <PngIcon name="celebration" size={26} /> 创作新故事
+          </Button>
         </div>
       </div>
 
@@ -110,17 +106,11 @@ export default function GalleryPage({ parentMode = false }: { parentMode?: boole
       {!hasVisibleStories ? (
         <div className="gallery-empty">
           <PngIcon name="story-book" size={150} />
-          <h2>{parentMode ? '还没有已完成的故事' : '还没有故事'}</h2>
-          <p>{parentMode ? '孩子完成故事后，会显示在这里。' : '去创作你的第一个故事吧！'}</p>
-          {!parentMode && (
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => navigate("/story-create/characters")}
-            >
-              <PngIcon name="theme-space" size={26} /> 开始创作
-            </Button>
-          )}
+          <h2>第一本故事正在等你</h2>
+          <p>选一个角色，让星光故事馆亮起第一盏灯吧。</p>
+          <Button variant="primary" size="lg" onClick={() => navigate("/story-create/characters")}>
+            <PngIcon name="theme-space" size={26} /> 开始创作
+          </Button>
         </div>
       ) : (
         <>
@@ -129,7 +119,7 @@ export default function GalleryPage({ parentMode = false }: { parentMode?: boole
               <h2 className="gallery-section-title"> 进行中的故事</h2>
               <div className="gallery-grid">
                 {activeStories.map((story) => (
-                  <div key={story.id} className="gallery-story-wrapper">
+                  <div key={story.id} className="gallery-story-wrapper is-active">
                     <StoryCard story={story} onClick={handleContinueStory} />
                     <div className="gallery-story-actions">
                       <button
@@ -156,7 +146,7 @@ export default function GalleryPage({ parentMode = false }: { parentMode?: boole
               <h2 className="gallery-section-title"> 完成的故事</h2>
               <div className="gallery-grid">
                 {completedStories.map((story) => (
-                  <div key={story.id} className="gallery-story-wrapper">
+                  <div key={story.id} className="gallery-story-wrapper is-completed">
                     <StoryCard
                       story={story}
                       onClick={() => setReadingStory(story)}
@@ -168,8 +158,7 @@ export default function GalleryPage({ parentMode = false }: { parentMode?: boole
                       >
                         <PngIcon name="story-book" size={22} /> 阅读
                       </button>
-                      {!parentMode && (
-                        <button
+                      <button
                           className={`gallery-action-btn collect ${collectedStoryIds.has(story.id) ? "collected" : ""}`}
                           onClick={(e) => handleCollect(story, e)}
                           disabled={collectedStoryIds.has(story.id) || collectingStoryId === story.id}
@@ -178,20 +167,17 @@ export default function GalleryPage({ parentMode = false }: { parentMode?: boole
                             ? "添加中..."
                             : collectedStoryIds.has(story.id) ? "✓ 已添加到我的作品" : "+ 添加到我的作品"}
                         </button>
-                      )}
-                      {!parentMode && (
-                        <button
+                      <button
                           className="gallery-action-btn rename"
                           onClick={() => handleRename(story)}
                         >
                           <PngIcon name="action-write" size={22} /> 改名
                         </button>
-                      )}
                       <button
                         className="gallery-action-btn talent"
-                        onClick={() => navigate(parentMode ? `/story-create/parent/talent/${story.id}` : `/story-create/talent/${story.id}`)}
+                        onClick={() => navigate(`/story-create/talent/${story.id}`)}
                       >
-                        <PngIcon name="talent-brain" size={22} /> {parentMode ? '查看详细分析' : '创作回顾'}
+                        <PngIcon name="talent-brain" size={22} /> 创作回顾
                       </button>
                       <button
                         className="gallery-action-btn delete"

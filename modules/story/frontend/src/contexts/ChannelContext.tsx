@@ -5,8 +5,8 @@ export type AgeGroup = '4-7' | '8-12';
 export const AGE_GROUPS: AgeGroup[] = ['4-7', '8-12'];
 
 export const AGE_GROUP_LABELS: Record<AgeGroup, string> = {
-  '4-7': '4-7 岁 · 幼儿通道',
-  '8-12': '8-12 岁 · 学龄通道',
+  '4-7': '4-7 岁',
+  '8-12': '8-12 岁',
 };
 
 const STORAGE_KEY = 'story_create_age_group';
@@ -27,12 +27,12 @@ function readStoredAgeGroup(): AgeGroup | null {
 }
 
 export function ChannelProvider({ children }: { children: ReactNode }) {
-  const [ageGroup, setAgeGroupState] = useState<AgeGroup | null>(readStoredAgeGroup);
+  const [ageGroup, setAgeGroupState] = useState<AgeGroup>(() => readStoredAgeGroup() ?? '4-7');
 
   useEffect(() => {
     // 同步其它标签页对年龄段通道的修改
     function handleStorage(e: StorageEvent) {
-      if (e.key === STORAGE_KEY) setAgeGroupState(readStoredAgeGroup());
+      if (e.key === STORAGE_KEY) setAgeGroupState(readStoredAgeGroup() ?? '4-7');
     }
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);

@@ -306,6 +306,7 @@ def initialize_database() -> None:
             ("adult_kind", "TEXT"),
             ("recovery_hash", "TEXT"),
             ("recovery_salt", "TEXT"),
+            ("avatar_id", "TEXT NOT NULL DEFAULT ''"),
         ):
             if column not in account_columns:
                 db.execute(f"ALTER TABLE accounts ADD COLUMN {column} {definition}")
@@ -451,6 +452,7 @@ def public_account(row: sqlite3.Row) -> dict:
         "created_at": row["created_at"],
         "role": row["role"] or "student",
         "adult_kind": row["adult_kind"],
+        "avatar_id": row["avatar_id"] or None,
     }
 
 
@@ -669,6 +671,19 @@ class StudentLinkIn(BaseModel):
 
 class StudentContextIn(BaseModel):
     student_id: str = Field(min_length=1, max_length=80)
+
+
+class StudentIdentityIn(BaseModel):
+    display_name: str = Field(min_length=1, max_length=30)
+    avatar_id: Literal["student-1", "student-2", "student-3", "student-4", "student-5", "student-6"]
+
+    @field_validator("display_name")
+    @classmethod
+    def normalize_display_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("请填写昵称")
+        return value
 
 
 class WorkCommentIn(BaseModel):
@@ -1100,7 +1115,8 @@ def create_assessment_session(payload: AssessmentSessionIn, ai_bole_session: str
             (str(uuid.uuid4()), session_id, token_digest(launch_code), expires,
              json.dumps(["evidence:write", "artifact:write", "session:complete", "session:interrupt"])),
         )
-    return {"sessionId": session_id, "moduleId": manifest["id"], "moduleVersion": manifest["version"], "launchCode": launch_code, "launchCodeExpiresAt": expires, "returnUrl": "http://localhost:4173/?from=module", "contractVersion": "1.0", "student": {"id": account["id"], "displayName": account["display_name"], "age": profile["age"]}}
+    avatar_id = account["avatar_id"] or "student-1"
+    return {"sessionId": session_id, "moduleId": manifest["id"], "moduleVersion": manifest["version"], "launchCode": launch_code, "launchCodeExpiresAt": expires, "returnUrl": "http://localhost:4173/?from=module", "contractVersion": "1.0", "student": {"id": account["id"], "displayName": account["display_name"], "age": profile["age"], "avatarId": avatar_id, "avatarUrl": f"http://localhost:3000/assets/avatars/student/{avatar_id}.png"}}
 
 
 @app.post("/api/v1/module-authorizations:exchange")
@@ -1535,15 +1551,50 @@ def save_parent_feedback_v1(report_id: str, payload: ParentFeedbackIn, ai_bole_s
             suggestion = json.loads(response.read().decode("utf-8"))
     except (urlerror.URLError, TimeoutError, json.JSONDecodeError) as exc:
         raise HTTPException(503, "专属建议暂时没有写好，请稍后再试") from exc
+    question_by_id = {str(item.get("id", "")): str(item.get("question", "")).strip() for item in trusted_questions}
+    answer_by_id = {}
+    for item in trusted_answers:
+        selected, extra = str(item.get("selected", "")).strip(), str(item.get("text", "")).strip()
+        answer_by_id[str(item.get("question_id", ""))] = "；".join(value for value in (selected, extra) if value)
+    def enrich_sources(source_key: str, suggestion_key: str) -> list[list[dict[str, str]]]:
+        source_rows = suggestion.get(source_key, []) if isinstance(suggestion.get(source_key), list) else []
+        suggestions = suggestion.get(suggestion_key, []) if isinstance(suggestion.get(suggestion_key), list) else []
+        enriched = []
+        for index in range(len(suggestions)):
+            refs = source_rows[index] if index < len(source_rows) and isinstance(source_rows[index], list) else []
+            enriched.append([{"question": question_by_id[ref], "answer": answer_by_id[ref]} for ref in refs if ref in question_by_id and answer_by_id.get(ref) and answer_by_id[ref] != "没注意过"])
+        return enriched
+    suggestion["family_parent_answer_refs"] = enrich_sources("family_suggestion_sources", "family_suggestions")
+    suggestion["teacher_parent_answer_refs"] = enrich_sources("teacher_suggestion_sources", "teacher_suggestions")
+    if "base_recommendations" not in report:
+        report["base_recommendations"] = json.loads(json.dumps(report.get("recommendations", {}), ensure_ascii=False))
     personalized = report.setdefault("personalized_recommendations", {})
     personalized[payload.dimension_key] = suggestion
     report["feedback_completed"] = True
-    family = [item for value in personalized.values() for item in value.get("family_suggestions", [])]
-    teacher = [item for value in personalized.values() for item in value.get("teacher_suggestions", [])]
-    if family:
-        report["recommendations"]["family"] = family[:6]
-    if teacher:
-        report["recommendations"]["teacher"] = teacher[:5]
+    base = report.get("base_recommendations", {})
+    advice_list = lambda value: [str(item).strip() for item in (value if isinstance(value, list) else [value]) if str(item).strip()]
+    base_family, base_teacher = advice_list(base.get("family", []))[:4], advice_list(base.get("teacher", []))[:4]
+    def auxiliary(kind: str, limit: int) -> list[tuple[str, list[dict[str, str]]]]:
+        result, used_sources = [], set()
+        for value in personalized.values():
+            suggestions = value.get(f"{kind}_suggestions", [])
+            sources = value.get(f"{kind}_parent_answer_refs", [])
+            for index, text in enumerate(suggestions):
+                refs = sources[index] if index < len(sources) else []
+                source_key = tuple((ref.get("question", ""), ref.get("answer", "")) for ref in refs)
+                if refs and source_key not in used_sources and text not in base_family and text not in base_teacher and all(text != prior[0] for prior in result):
+                    result.append((text, refs))
+                    used_sources.add(source_key)
+                    if len(result) >= limit:
+                        return result
+        return result
+    family_aux, teacher_aux = auxiliary("family", 2), auxiliary("teacher", 1)
+    report["recommendations"]["family"] = base_family + [item[0] for item in family_aux]
+    report["recommendations"]["teacher"] = base_teacher + [item[0] for item in teacher_aux]
+    report["recommendation_attributions"] = {
+        "family": [[] for _ in base_family] + [item[1] for item in family_aux],
+        "teacher": [[] for _ in base_teacher] + [item[1] for item in teacher_aux],
+    }
     timestamp = now_iso()
     with connect() as db:
         db.execute("""INSERT INTO parent_feedback (id,report_id,child_profile_id,author_account_id,dimension_key,questions_json,answers_json,suggestion_json,created_at)
@@ -1854,6 +1905,18 @@ def reset_password(payload: PasswordResetIn) -> dict:
 @app.get("/api/account/me")
 def account_me(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     return account_session_payload(require_account(ai_bole_session), ai_bole_session)
+
+
+@app.patch("/api/account/profile")
+def update_student_identity(payload: StudentIdentityIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
+    viewer = require_account(ai_bole_session)
+    account = resolve_subject(viewer, ai_bole_session)
+    timestamp = now_iso()
+    with connect() as db:
+        db.execute("UPDATE accounts SET display_name=?,avatar_id=?,updated_at=? WHERE id=?", (payload.display_name, payload.avatar_id, timestamp, account["id"]))
+        db.execute("UPDATE child_profiles SET display_name=?,updated_at=? WHERE account_id=?", (payload.display_name, timestamp, account["id"]))
+        updated = db.execute("SELECT * FROM accounts WHERE id=?", (account["id"],)).fetchone()
+    return account_session_payload(viewer, ai_bole_session)
 
 
 @app.get("/api/account/students")

@@ -47,6 +47,21 @@
   window.XIAOXIN_LOGO_AVATARS = XIAOXIN_LOGO_IMAGES;
   window.STUDENT_AVATARS = STUDENT_IMAGES;
 
+  var PLATFORM_STUDENT_KEY = 'ai_bole_student_identity';
+  var platformStudent = null;
+  function _getPlatformStudent() {
+    if (platformStudent) return platformStudent;
+    try {
+      var launch = JSON.parse(window.name || '');
+      platformStudent = launch && launch.namespace === 'ai-bole.launch-context.v1' && launch.context
+        ? launch.context.student || null : null;
+      if (platformStudent) sessionStorage.setItem(PLATFORM_STUDENT_KEY, JSON.stringify(platformStudent));
+      if (!platformStudent) platformStudent = JSON.parse(sessionStorage.getItem(PLATFORM_STUDENT_KEY) || 'null');
+      return platformStudent;
+    } catch (_) { return null; }
+  }
+  _getPlatformStudent();
+
   /** 从 localStorage 读取选中小新的索引（1-6），默认1 */
   function _getXiaoxinIndex() {
     var raw = localStorage.getItem('xiaoxin_index');
@@ -90,6 +105,11 @@
 
   /** 获取当前选中的学生图片 */
   window.getStudentAvatar = function () {
+    var platformStudent = _getPlatformStudent();
+    if (platformStudent && platformStudent.avatarId) {
+      var platformPath = BASE + '/student/' + platformStudent.avatarId + '.png';
+      if (STUDENT_IMAGES.indexOf(platformPath) >= 0) return platformPath;
+    }
     var saved = localStorage.getItem('student_avatar');
     if (saved && saved.indexOf(BASE) === 0) return saved;
     return STUDENT_IMAGES[0];
@@ -98,5 +118,11 @@
   /** 保存选中的学生图片 */
   window.setStudentAvatar = function (path) {
     localStorage.setItem('student_avatar', path);
+  };
+
+  /** 统一账号中的昵称，供首页、聊天页和手账页共用。 */
+  window.getStudentNickname = function () {
+    var platformStudent = _getPlatformStudent();
+    return platformStudent && platformStudent.displayName ? platformStudent.displayName : '我';
   };
 })();

@@ -19,6 +19,7 @@
   border:1px solid rgba(224,197,143,.6);
   box-shadow:0 6px 16px rgba(72,56,108,.12);
 }
+.story-child-avatar { width: 38px; height: 46px; object-fit: contain; object-position: center bottom; }
 
 /* Body */
 .chat-body {

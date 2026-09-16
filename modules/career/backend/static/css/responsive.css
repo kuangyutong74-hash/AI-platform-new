@@ -4,6 +4,7 @@ button,a.action-btn,.start-session-btn,.start-button,.mode-card,.choice-btn{min-
 .hero-title,.ceremony-title,.careers-title,.my-center-head h1{font-size:clamp(1.8rem,4.2vw,3.4rem)}
 .section-title,.map-section-heading h2{font-size:clamp(1.35rem,3vw,2rem)}
 .landing-container,.careers-container,.report-container,.my-center-shell{width:min(100% - 32px,1120px)}
+.page-landing .landing-container{width:100%;max-width:none}
 
 @media(max-width:1024px){
   .hero-section{grid-template-columns:1fr .88fr;padding-left:2%;padding-right:2%}
@@ -48,3 +49,5 @@ button,a.action-btn,.start-session-btn,.start-button,.mode-card,.choice-btn{min-
   .wd-app button,.wd-app a,.prep-card,.exam-tool-btn,.diag-option,.action-plan{min-height:44px}.wd-bar{min-height:54px}.wd-back{font-size:0}.wd-back::before{content:'←';font-size:22px}.wd-clock{font-size:.72rem;padding:4px 7px}.wd-main{padding:16px 10px}.prep-grid{gap:9px}.prep-card{min-height:112px;padding:12px 9px}.triage-card{padding:12px;gap:9px}.triage-card .tri-detail{font-size:.72rem}.exam-body{width:min(100%,290px)}.exam-panel,.diag-left,.diag-right{min-width:0}.exam-tool-btn{flex:1;justify-content:center}.action-plan-grid{grid-template-columns:1fr}.action-plan{min-height:116px}.workday-bridge{padding:14px}.complete-card,.final-card{padding-left:4px;padding-right:4px}
   .replay-guide-btn{min-height:44px;min-width:44px}
 }
+
+@media(max-width:560px){.page-landing .landing-container{width:100%}.page-landing .hero-section{min-height:100dvh;padding:96px 22px 40px;text-align:left}.page-landing .hero-copy{align-items:flex-start}.page-landing .hero-title{font-size:clamp(2.7rem,12vw,3.5rem)}}

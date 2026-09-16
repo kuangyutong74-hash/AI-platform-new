@@ -301,7 +301,11 @@ class AccountTests(unittest.TestCase):
         token = response.headers["set-cookie"].split("ai_bole_session=", 1)[1].split(";", 1)[0]
         context = main.create_assessment_session(main.AssessmentSessionIn(module_id="career"), token)
         self.assertTrue(context["launchCode"])
-        self.assertEqual(context["student"], {"id": registered["account"]["id"], "displayName": "小帆", "age": 9})
+        self.assertEqual(context["student"]["id"], registered["account"]["id"])
+        self.assertEqual(context["student"]["displayName"], "小帆")
+        self.assertEqual(context["student"]["age"], 9)
+        self.assertEqual(context["student"]["avatarId"], "student-1")
+        self.assertTrue(context["student"]["avatarUrl"].endswith("/student-1.png"))
         exchanged = main.exchange_module_authorization(main.LaunchCodeExchangeIn(launchCode=context["launchCode"]))
         self.assertTrue(exchanged["token"])
         with self.assertRaises(HTTPException) as repeated:

@@ -65,7 +65,7 @@ export default function CharacterCard({ character, onSelect, onDelete, selected 
         <span className="character-type">{label}</span>
         <div className="character-meta">
           {ageGroup ? (
-            <span className={`age-chip ${ageGroupChipClass(character.age_group)}`} title="角色所属年龄段通道">
+            <span className={`age-chip ${ageGroupChipClass(character.age_group)}`} title="角色适合年龄">
               {AGE_GROUP_LABELS[ageGroup]}
             </span>
           ) : (

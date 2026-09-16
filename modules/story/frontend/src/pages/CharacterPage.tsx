@@ -17,6 +17,20 @@ import { AGE_PROFILES } from "../data/ageProfiles";
 import "./CharacterPage.css";
 
 type AgeFilter = "all" | AgeGroup;
+type PlatformIdentity = { displayName: string; avatarId: string };
+
+function readPlatformIdentity(): PlatformIdentity | null {
+  try {
+    const launch = JSON.parse(window.name || "");
+    const student = launch?.namespace === "ai-bole.launch-context.v1" ? launch.context?.student : null;
+    if (student?.displayName) {
+      const identity = { displayName: student.displayName, avatarId: student.avatarId || "student-1" };
+      sessionStorage.setItem("ai-bole.story.identity", JSON.stringify(identity));
+      return identity;
+    }
+    return JSON.parse(sessionStorage.getItem("ai-bole.story.identity") || "null");
+  } catch { return null; }
+}
 
 export default function CharacterPage() {
   const { ageGroup: channelAgeGroup } = useChannel();
@@ -29,6 +43,7 @@ export default function CharacterPage() {
   const [storyTitle, setStoryTitle] = useState("");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
+  const [platformIdentity] = useState(readPlatformIdentity);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,6 +61,15 @@ export default function CharacterPage() {
     try {
       const chars = await listCharacters();
       setCharacters(chars);
+      if (platformIdentity && channelAgeGroup) {
+        const existing = chars.find((char) => char.nickname === platformIdentity.displayName && char.avatar_type === platformIdentity.avatarId);
+        if (existing) setSelectedChar(existing);
+        else {
+          const created = await createCharacter({nickname:platformIdentity.displayName,avatar_type:platformIdentity.avatarId,avatar_color:"#f0cb70",personality:"以我自己的方式去探索和创造",age_group:channelAgeGroup});
+          setCharacters((previous) => [...previous, created]);
+          setSelectedChar(created);
+        }
+      }
     } catch {
       // Silently handle
     } finally {
@@ -131,6 +155,22 @@ export default function CharacterPage() {
 
   if (loading) return <Loading text="加载角色中..." />;
 
+  if (platformIdentity) return (
+    <div className="character-page page unified-story-start">
+      <section className="unified-identity-banner">
+        <img src={`http://localhost:3000/assets/avatars/student/${platformIdentity.avatarId}.png`} alt="" />
+        <div><h2>{platformIdentity.displayName}，今天想创作什么故事？</h2><p>故事会直接使用你在探索星球选好的昵称和形象。</p></div>
+      </section>
+      <div className="start-story-card unified-story-card">
+        <div className="start-field"><label><PngIcon name="action-write" size={24} /> 故事名字（可选）</label><input type="text" value={storyTitle} onChange={(e)=>setStoryTitle(e.target.value)} placeholder="给你的故事取个名字吧" maxLength={50}/></div>
+        <div className="theme-selector"><label>选择故事主题</label><div className="theme-grid">{themes.map((t)=><button key={t.value} className={`theme-option ${theme===t.value?"theme-option-selected":""}`} onClick={()=>setTheme(t.value)}><PngIcon name={t.icon} size={42}/><span>{t.label}</span></button>)}</div>{theme==="__custom__"&&<input type="text" className="custom-theme-input" value={customTheme} onChange={(e)=>setCustomTheme(e.target.value)} placeholder="输入你想创作的故事主题" maxLength={50} autoFocus/>}</div>
+        {error&&<p className="start-error" role="alert">{error}</p>}
+        {!selectedChar&&<p className="identity-syncing" role="status">正在带入你的形象…</p>}
+        <Button variant="accent" size="lg" onClick={handleStartStory} disabled={starting||!selectedChar}>{starting?"准备中...":"开始创作故事"}</Button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="character-page page">
       <div className="character-layout">
@@ -208,7 +248,7 @@ export default function CharacterPage() {
                     <p className="start-story-channel">
                       {selectedChar.age_group
                         ? `故事主题按「${AGE_GROUP_LABELS[selectedAgeGroup]}」推荐`
-                        : `该角色未标注年龄段，按当前通道「${AGE_GROUP_LABELS[selectedAgeGroup]}」推荐主题`}
+                        : `该角色未标注年龄段，按「${AGE_GROUP_LABELS[selectedAgeGroup]}」推荐主题`}
                     </p>
                   )}
 

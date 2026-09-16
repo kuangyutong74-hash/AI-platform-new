@@ -7,6 +7,8 @@
     url('/story-create/home/story-play-cinematic-v2.png') center/cover no-repeat;
 }
 .bg-deco-story-play .bg-orb{display:none}
+.bg-deco.bg-deco-gallery{background:linear-gradient(180deg,rgba(17,16,51,.15),rgba(18,16,53,.4) 45%,rgba(12,12,38,.96)),url('/story-create/gallery/starlight-story-hall-v1.webp') center top/cover fixed no-repeat}
+.bg-deco-gallery .bg-orb,.bg-deco-gallery .bg-float{display:none}
 .bg-deco-story-play .bg-float{color:#fff4c8;opacity:.42;text-shadow:0 0 14px rgba(255,249,205,.8)}
 .bg-orb{position:absolute;border-radius:50%;opacity:.14;filter:blur(60px)}
 .bg-orb-1{width:400px;height:400px;top:-80px;left:-100px;background:var(--pink)}
@@ -18,6 +20,16 @@
 .bg-float-3{top:65%;left:6%;animation-delay:-4s}
 .bg-float-4{top:72%;right:10%;animation-delay:-1s}
 @keyframes floatCandy{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-14px) rotate(6deg)}}
-@media(max-width:640px){.bg-orb{opacity:.08}.bg-deco-home{background-position:62% top}.bg-deco-home .bg-orb{opacity:.03}.bg-float{display:none}.bg-deco-story-play{background-position:50% center}}
+@media(max-width:640px){.bg-orb{opacity:.08}.bg-deco-home{background-position:62% top}.bg-deco-home .bg-orb{opacity:.03}.bg-float{display:none}.bg-deco-story-play{background-position:50% center}.bg-deco.bg-deco-gallery{background-position:58% top;background-attachment:scroll}}
 
 @media(prefers-reduced-motion:reduce){.bg-deco-story-play .bg-float{animation:none}}
+
+/* Gallery v2: show the complete generated scene without cover-cropping it. */
+.bg-deco.bg-deco-gallery{
+  background-color:#0e0c29;
+  background-image:linear-gradient(180deg,rgba(12,10,35,.06) 0%,rgba(12,10,35,.1) 54%,#0e0c29 100%),url('/story-create/gallery/starlight-story-hall-v1.webp');
+  background-position:center top;
+  background-size:100% auto;
+  background-repeat:no-repeat;
+  background-attachment:scroll;
+}

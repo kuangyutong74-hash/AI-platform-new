@@ -5,7 +5,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import BookCover from "./book/BookCover.vue";import BookSpread from "./book/BookSpread.vue";import BookPagination from "./book/BookPagination.vue";import BookPageContent from "./book/BookPageContent.vue";import TurningLeaf from "./book/TurningLeaf.vue";import SeriousReport from "./SeriousReport.vue";
 import { familyAdvice, insights, reportMeta, teacherAdvice, type Evidence, type Talent } from "../data/mockReport";
-import { generateReport, getEvidenceRecords, type CoreEvidenceRecord, type GeneratedReport } from "../api/core";
+import { generateReport, getEvidenceRecords, type CoreEvidenceRecord, type GeneratedReport, type ParentAnswerReference } from "../api/core";
 import { momentsForTalent } from "../data/liveMoments";
 import { useBookFlip } from "../composables/useBookFlip";import "../styles/book.css";import "../styles/reflect.css";import "../styles/report-polish.css";import "../styles/serious-report.css";
 const props=defineProps<{talents:Talent[]}>();defineEmits<{back:[];childView:[]}>();
@@ -80,8 +80,11 @@ const displayTalents=computed(()=>props.talents.map(talent=>{
 const reportInsights=computed(()=>liveReport.value?liveReport.value.cross_insights.map(item=>item.text):insights.map(item=>item.replace(/\[E\d+\]/g,"")));
 const advice=(value:string|string[])=>Array.isArray(value)?value:[value];
 const reportFamily=computed(()=>liveReport.value?advice(liveReport.value.recommendations.family):familyAdvice),reportTeacher=computed(()=>liveReport.value?advice(liveReport.value.recommendations.teacher):teacherAdvice);
+const emptyAttributions=(items:string[]):ParentAnswerReference[][]=>items.map(()=>[]);
+const familyAttributions=computed(()=>liveReport.value?.recommendation_attributions?.family||emptyAttributions(reportFamily.value));
+const teacherAttributions=computed(()=>liveReport.value?.recommendation_attributions?.teacher||emptyAttributions(reportTeacher.value));
 const richNames=computed(()=>displayTalents.value.filter(t=>t.evidence.filter(e=>e.level==="strong").length>=2).map(t=>t.adultName)),fewNames=computed(()=>displayTalents.value.filter(t=>t.evidence.length<2).map(t=>t.adultName));
-const bookPageProps=computed(()=>({talents:displayTalents.value,insights:reportInsights.value,richNames:richNames.value,fewNames:fewNames.value,family:reportFamily.value,teacher:reportTeacher.value,liveReport:liveReport.value,highlightedId:highlightedId.value}));
+const bookPageProps=computed(()=>({talents:displayTalents.value,insights:reportInsights.value,richNames:richNames.value,fewNames:fewNames.value,family:reportFamily.value,teacher:reportTeacher.value,familyAttributions:familyAttributions.value,teacherAttributions:teacherAttributions.value,liveReport:liveReport.value,highlightedId:highlightedId.value}));
 let openingTimer:number|undefined,highlightTimer:number|undefined;
 function openBook(){if(opening.value)return;opening.value=true;openingTimer=window.setTimeout(()=>{opened.value=true;opening.value=false},1280)}function closeBook(){opened.value=false;currentSpread.value=0}function previous(){if(currentSpread.value===0){closeBook();return}prev()}function forward(){if(currentSpread.value===9){ElMessage.info("已经是最后一页啦 ✦");return}next()}
 function openRaw(evidence:Evidence){rawEvidence.value=evidence;rawVisible.value=true}function jumpEvidence(id:string){const index=displayTalents.value.findIndex(t=>t.evidence.some(e=>e.id===id));if(index<0)return;goTo(index+2);window.clearTimeout(highlightTimer);window.setTimeout(async()=>{highlightedId.value=id;await nextTick();document.getElementById(`evidence-${id}`)?.scrollIntoView({block:"center"});highlightTimer=window.setTimeout(()=>highlightedId.value=undefined,1200)},520)}

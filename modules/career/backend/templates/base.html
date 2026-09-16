@@ -3,11 +3,20 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}职业体验模拟器{% endblock %}</title>
 <script defer src="http://localhost:8020/sdk/module-sdk.js"></script>
-<link rel="stylesheet" href="/static/css/style.css?v=scenario-controls-v16"><link rel="stylesheet" href="/static/css/responsive.css?v=responsive-v2">
+<link rel="stylesheet" href="/static/css/style.css?v=career-cinematic-v10"><link rel="stylesheet" href="/static/css/responsive.css?v=career-cinematic-v10">
 {% block extra_head %}{% endblock %}</head>
 <body class="{% block body_class %}{% endblock %}">
 <a class="platform-return" href="http://localhost:4173/?from=career" aria-label="返回 AI 伯乐探索星球">← 返回探索星球</a>
 <div id="app-container">{% block content %}{% endblock %}</div><button id="replay-guide-btn" class="replay-guide-btn" type="button" title="重新查看新手引导">？<span>新手引导</span></button>
+<aside class="career-music" id="career-music" aria-label="职业岛屿背景音乐">
+  <audio id="career-music-audio" src="/static/audio/exploration-theme.ogg" loop preload="metadata"></audio>
+  <button class="career-music-toggle" id="career-music-toggle" type="button" aria-pressed="false" aria-label="播放背景音乐">
+    <span class="music-disc" aria-hidden="true"><i class="music-eye eye-left"></i><i class="music-eye eye-right"></i><i class="music-smile"></i><em>♪</em></span>
+    <span class="music-copy"><b>星星唱机</b><small>点击唤醒音乐</small></span>
+  </button>
+  <button class="career-music-settings" id="career-music-settings" type="button" aria-expanded="false" aria-label="打开音乐设置"><svg viewBox="0 0 24 24"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/></svg></button>
+  <div class="career-music-panel" id="career-music-panel"><label for="career-music-volume">岛屿音乐 <b id="career-music-percent">28%</b></label><input id="career-music-volume" type="range" min="0" max="1" step="0.05" value="0.28"><small>让音乐陪你探索每一座职业小岛</small></div>
+</aside>
 <div id="font-size-control" class="font-size-control" role="group" aria-label="调节字体大小">
   <button id="font-smaller" class="font-size-btn" type="button" title="缩小字体" aria-label="缩小字体">A<sup>-</sup></button>
   <button id="font-default" class="font-size-btn font-size-active" type="button" title="默认字体" aria-label="默认字体">A</button>
@@ -74,6 +83,6 @@
   document.addEventListener('touchend', onEnd);
 })();
 </script>
-<script src="/static/js/app.js?v=career-session-map-v3"></script>
+<script src="/static/js/app.js?v=career-cinematic-v10"></script>
 {% block extra_js %}{% endblock %}</body>
 </html>

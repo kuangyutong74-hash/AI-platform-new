@@ -5,9 +5,10 @@ export default function Background() {
   const { pathname } = useLocation();
   const isHome = pathname === '/story-create' || pathname === '/story-create/';
   const isStoryPlay = pathname.startsWith('/story-create/play/');
+  const isGallery = pathname === '/story-create/gallery';
 
   return (
-    <div className={`bg-deco ${isHome ? 'bg-deco-home' : ''} ${isStoryPlay ? 'bg-deco-story-play' : ''}`} aria-hidden="true">
+    <div className={`bg-deco ${isHome ? 'bg-deco-home' : ''} ${isStoryPlay ? 'bg-deco-story-play' : ''} ${isGallery ? 'bg-deco-gallery' : ''}`} aria-hidden="true">
       <i className="bg-orb bg-orb-1" /><i className="bg-orb bg-orb-2" /><i className="bg-orb bg-orb-3" />
       <span className="bg-float bg-float-1">+</span>
       <span className="bg-float bg-float-2">*</span>
