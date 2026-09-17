@@ -1,6 +1,8 @@
+import json
+import re
 import unittest
 
-from main import EvidenceEvent, RuleAnalyzer, apply_dimension_expansion, child_story_for_event, child_story_for_events, normalize_report
+from main import EvidenceEvent, RuleAnalyzer, apply_dimension_expansion, child_story_for_event, child_story_for_events, dimension_event_story, normalize_report
 
 
 def event(event_id: str, candidate: str, strength: str = "strong") -> EvidenceEvent:
@@ -138,9 +140,98 @@ class ReportAnalyzerTests(unittest.TestCase):
         interpersonal = dimensions["interpersonal"]["analysis"]
         intrapersonal = dimensions["intrapersonal"]["analysis"]
         self.assertIn("同学", interpersonal)
-        self.assertIn("对他人和关系", interpersonal)
+        self.assertIn("回应他人", interpersonal)
         self.assertIn("自己的感受", intrapersonal)
         self.assertNotEqual(interpersonal, intrapersonal)
+
+    def test_dimension_analysis_never_repeats_the_same_sentence(self):
+        """同维度多条记录过去会被写成同一句泛化文案，这里锁定不再复读。"""
+        events = [
+            EvidenceEvent(
+                id=f"chat-{index}", module="chat", event_type="chat.observation-shared.v1",
+                occurred_at=f"2026-09-0{index}T09:00:00Z", behavior_summary="分享了一次观察或想法",
+                intelligence_candidates=["intrapersonal"], raw_evidence={"turnCount": 2, "topicKey": "运动"},
+                context={"sessionSummary": {"childWords": words}},
+            )
+            for index, words in [(1, "我今天中午吃到了非常好吃的东西"), (2, "我最近在折纸飞机，可好玩啦"), (3, "我一般暑假一周游两次")]
+        ]
+        analysis = {item["key"]: item for item in RuleAnalyzer().analyze(events)["dimensions"]}["intrapersonal"]["analysis"]
+        sentences = [part.strip() for part in analysis.split("。") if len(part.strip()) > 12]
+        self.assertEqual(len(sentences), len(set(sentences)))
+        self.assertNotIn("没有保存", analysis)
+
+    def test_prompt_echo_and_short_fragments_are_not_evidence(self):
+        """入口提示语和口头碎片只能说明点开过聊天，不能当成孩子的表达。"""
+        events = [
+            EvidenceEvent(
+                id="echo", module="chat", event_type="chat.observation-shared.v1",
+                occurred_at="2026-09-16T09:00:00Z", behavior_summary="分享了一次观察或想法",
+                intelligence_candidates=["intrapersonal"], raw_evidence={"turnCount": 1, "topicKey": "我的新发现"},
+                context={"sessionSummary": {"childWords": "今天最想记住的事"}},
+            ),
+            EvidenceEvent(
+                id="fragment", module="chat", event_type="chat.observation-shared.v1",
+                occurred_at="2026-09-15T09:00:00Z", behavior_summary="分享了一次观察或想法",
+                intelligence_candidates=["intrapersonal"], raw_evidence={"turnCount": 1, "topicKey": "运动"},
+                context={"sessionSummary": {"childWords": "游泳"}},
+            ),
+        ]
+        analysis = {item["key"]: item for item in RuleAnalyzer().analyze(events)["dimensions"]}["intrapersonal"]["analysis"]
+        self.assertNotIn("今天最想记住的事", analysis)
+        self.assertIn("没有可复述的原话或操作细节", analysis)
+
+    def test_tokenized_child_words_are_restored_before_quoting(self):
+        """语音识别的逐词空格和句首悬空虚词要还原成正常句子。"""
+        event = EvidenceEvent(
+            id="tokenized", module="chat", event_type="chat.observation-shared.v1",
+            occurred_at="2026-09-02T09:00:00Z", behavior_summary="分享了一次观察或想法",
+            intelligence_candidates=["intrapersonal"], raw_evidence={"turnCount": 3, "topicKey": "我的新发现"},
+            context={"sessionSummary": {"childWords": "的 我 今天 什么 事 都 不用 干"}},
+        )
+        analysis = {item["key"]: item for item in RuleAnalyzer().analyze([event])["dimensions"]}["intrapersonal"]["analysis"]
+        self.assertIn("“我今天什么事都不用干”", analysis)
+
+    def test_long_synopsis_is_clipped_on_a_sentence_boundary(self):
+        """故事梗概不能截到半句话，也不能留下未闭合的引号。"""
+        synopsis = (
+            "舷窗外，蓝白相间的地球渐渐缩小成一颗弹珠。小Q坐在“萤火号”飞船的驾驶舱里，金属手指轻轻搭在操控板上。"
+            "它刚刚把飞船调成自动驾驶，准备前往木星的第二颗卫星——欧罗巴，去检查那里新发现的冰下信号。"
+            "小Q习惯性地整理数据，小声嘀咕：“起飞时间是标准时07:12:33，比计划晚了0.4秒。”"
+        )
+        event = EvidenceEvent(
+            id="long-story", module="story", event_type="story.contribution-completed.v1",
+            occurred_at="2026-09-03T09:00:00Z", behavior_summary="完成故事共创表达",
+            intelligence_candidates=["linguistic"], raw_evidence={"contributionCount": 5, "storyTitle": "小Q的星空探险"},
+            context={"sessionSummary": {"storyTitle": "小Q的星空探险", "storySynopsis": synopsis}},
+        )
+        analysis = {item["key"]: item for item in RuleAnalyzer().analyze([event])["dimensions"]}["linguistic"]["analysis"]
+        # 引号必须成对，且截断点落在句末标点上，不能停在半句话或未闭合的引语里。
+        self.assertEqual(analysis.count("“"), analysis.count("”"))
+        self.assertNotIn("小声嘀咕：“起飞时间是标准", analysis)
+        self.assertIn("情节创作，故事讲到", analysis)
+        self.assertRegex(analysis, r"故事讲到[^。]*。")
+
+    def test_cross_insights_are_anchored_in_real_numbers(self):
+        """综合观察要有可复核的结论，而不是一句通用说明。"""
+        events = [
+            EvidenceEvent(
+                id="rotate", module="deep_sea", event_type="deep-sea.spatial-task-completed.v1",
+                occurred_at="2026-09-07T09:00:00Z", behavior_summary="完成深海基地建造任务",
+                intelligence_candidates=["logical"], raw_evidence={"level": 2, "adjustmentCount": 14, "completionSeconds": 197},
+                context={"sessionSummary": {"levelTwoReview": {"rotateCount": 14, "connected": True}}},
+            ),
+            EvidenceEvent(
+                id="pair", module="deep_sea", event_type="deep-sea.spatial-task-completed.v1",
+                occurred_at="2026-09-07T09:05:00Z", behavior_summary="完成深海基地建造任务",
+                intelligence_candidates=["naturalistic"], raw_evidence={"level": 1, "successfulPairs": 4, "totalPairs": 4},
+                context={"sessionSummary": {"levelOneReview": {"matchedRelationships": ["双锯鱼 → 海葵"]}}},
+            ),
+        ]
+        insights = RuleAnalyzer().analyze(events)["cross_insights"]
+        text = "".join(item["text"] for item in insights)
+        self.assertIn("14 次", text)
+        self.assertIn("4 组生态配对", text)
+        self.assertTrue(all(item["evidence_refs"] for item in insights))
 
     def test_level_three_generic_model_copy_cannot_override_specific_report(self):
         event = EvidenceEvent(
@@ -206,15 +297,167 @@ class ReportAnalyzerTests(unittest.TestCase):
 
     def test_missing_deep_sea_level_never_renders_none(self):
         incomplete = EvidenceEvent(
-            id="deep-missing-level", module="deep_sea", event_type="deep-sea.session-completed.v1",
+            id="deep-missing-level", module="deep_sea", event_type="deep-sea.spatial-task-completed.v1",
             occurred_at="2026-09-14T08:00:00Z", behavior_summary="完成深海基地任务",
-            intelligence_candidates=["logical"], raw_evidence={}, context={"sessionSummary": {}},
+            intelligence_candidates=["logical"], raw_evidence={"level": 2}, context={"sessionSummary": {}},
         )
 
         logical = next(item for item in RuleAnalyzer().analyze([incomplete])["dimensions"] if item["key"] == "logical")
 
+        self.assertNotIn("None", logical["analysis"])
+        self.assertNotIn("None", logical["adult_observation"])
+        # 观察任务要落在这一次真实发生的关卡上，而不是一句通用说明。
+        self.assertIn("洋流电网", logical["adult_observation"])
+
+    def test_deep_sea_without_level_falls_back_to_the_module_name(self):
+        unknown = EvidenceEvent(
+            id="deep-unknown-level", module="deep_sea", event_type="deep-sea.spatial-task-completed.v1",
+            occurred_at="2026-09-14T08:00:00Z", behavior_summary="完成深海基地任务",
+            intelligence_candidates=["logical"], raw_evidence={}, context={"sessionSummary": {}},
+        )
+
+        logical = next(item for item in RuleAnalyzer().analyze([unknown])["dimensions"] if item["key"] == "logical")
+
         self.assertNotIn("None", logical["adult_observation"])
         self.assertIn("这次深海任务", logical["adult_observation"])
+
+    def test_completed_deep_sea_summary_is_not_dimension_evidence(self):
+        """完整通关记录是三个关卡的合并摘要，不再单独算进任一维度。"""
+        summary = EvidenceEvent(
+            id="deep-summary", module="deep_sea", event_type="deep-sea.session-completed.v1",
+            occurred_at="2026-09-14T08:10:00Z", behavior_summary="完成深海基地三关完整重建",
+            intelligence_candidates=["logical", "spatial"],
+            raw_evidence={"completedLevels": 3, "totalLevels": 3, "adjustmentCount": 14},
+            context={"sessionSummary": {}},
+        )
+
+        report = RuleAnalyzer().analyze([summary])
+
+        for dimension in report["dimensions"]:
+            self.assertEqual(dimension["evidence_refs"], [], dimension["key"])
+        cited = [ref for insight in report["cross_insights"] for ref in insight["evidence_refs"]]
+        self.assertNotIn("deep-summary", cited)
+
+    def test_level_record_strength_follows_the_whole_session(self):
+        """单关记录只有整场走完才算留下完整过程，口径与家长端卡片标签一致。"""
+        def analysis_for(completed: bool) -> str:
+            level = EvidenceEvent(
+                id="level-1", module="deep_sea", event_type="deep-sea.spatial-task-completed.v1",
+                occurred_at="2026-09-14T08:00:00Z", behavior_summary="完成深海基地建造任务",
+                intelligence_candidates=["spatial"], session_completed=completed,
+                raw_evidence={"level": 1, "successfulPairs": 4, "totalPairs": 4}, context={"sessionSummary": {}},
+            )
+            report = RuleAnalyzer().analyze([level])
+            return next(item for item in report["dimensions"] if item["key"] == "spatial")["analysis"]
+
+        self.assertIn("其中 0 条较完整", analysis_for(False))
+        self.assertIn("其中 1 条较完整", analysis_for(True))
+
+    def test_child_quote_with_inner_quotes_avoids_nesting(self):
+        """原话自带引号时外层改用「」，家长不会读到嵌套引号。"""
+        chat = EvidenceEvent(
+            id="ev-nested", module="chat", event_type="chat.observation-shared.v1",
+            occurred_at="2026-09-17T05:42:00Z", behavior_summary="分享了一次观察或想法",
+            intelligence_candidates=["intrapersonal"], raw_evidence={"turnCount": 2},
+            context={"sessionSummary": {"childWords": "我想从“一个从没去过的地方”开始"}},
+        )
+
+        text = dimension_event_story(chat, "intrapersonal")
+
+        self.assertIn("「我想从“一个从没去过的地方”开始」", text)
+        self.assertNotIn("“我想从“", text)
+
+    def test_strong_count_only_covers_records_that_write_something(self):
+        """没有为某维度写下内容的记录不能算成“较完整”，否则数字会和页面卡片对不上。"""
+        level_three = EvidenceEvent(
+            id="level-3", module="deep_sea", event_type="deep-sea.spatial-task-completed.v1",
+            occurred_at="2026-09-14T08:05:00Z", behavior_summary="完成深海基地建造任务",
+            intelligence_candidates=["linguistic"], session_completed=True,
+            raw_evidence={"level": 3}, context={"sessionSummary": {"levelThreeReview": {}}},
+        )
+        story = EvidenceEvent(
+            id="story-1", module="story", event_type="story.contribution-completed.v1",
+            occurred_at="2026-09-14T08:20:00Z", behavior_summary="完成故事共创表达",
+            intelligence_candidates=["linguistic"],
+            raw_evidence={"contributionCount": 2, "storyTitle": "小Q的星空探险"},
+            context={"sessionSummary": {"storyTitle": "小Q的星空探险", "storySynopsis": "小Q在舱里检查仪表。"}},
+        )
+
+        linguistic = next(item for item in RuleAnalyzer().analyze([level_three, story])["dimensions"] if item["key"] == "linguistic")
+
+        # 记录仍要登记（家长要知道孩子参加过），但不算“较完整”。
+        self.assertEqual(len(linguistic["evidence_refs"]), 2)
+        self.assertIn("其中 0 条较完整", linguistic["analysis"])
+
+    def test_session_id_alone_marks_a_completed_level(self):
+        """调用方只给 session_id、没给 session_completed 时，仍能认出整场已走完。
+
+        旧版核心服务不会回填 session_completed，只靠会话号也要得到同样的判定，
+        否则家长端看到的“较完整”条数会随核心服务版本变化。
+        """
+        session = "session-abc"
+        level_two = EvidenceEvent(
+            id="level-2", module="deep_sea", event_type="deep-sea.spatial-task-completed.v1",
+            session_id=session, occurred_at="2026-09-14T08:05:00Z", behavior_summary="完成深海基地建造任务",
+            intelligence_candidates=["spatial"], raw_evidence={"level": 2, "adjustmentCount": 14},
+            context={"sessionSummary": {"levelTwoReview": {"connected": True, "rotateCount": 14}}},
+        )
+        session_done = EvidenceEvent(
+            id="session-done", module="deep_sea", event_type="deep-sea.session-completed.v1",
+            session_id=session, occurred_at="2026-09-14T08:30:00Z", behavior_summary="完成深海基地三关完整重建",
+            intelligence_candidates=["spatial"], raw_evidence={"completedLevels": 3, "totalLevels": 3}, context={},
+        )
+
+        spatial = next(item for item in RuleAnalyzer().analyze([level_two, session_done])["dimensions"] if item["key"] == "spatial")
+
+        # 合并摘要本身不出卡片，但单关记录因此被标成“较完整”。
+        self.assertEqual(len(spatial["evidence_refs"]), 1)
+        self.assertIn("其中 1 条较完整", spatial["analysis"])
+
+    def test_report_never_contains_nested_quotes(self):
+        """孩子原话自带引号时，整份报告的任何位置都不能出现嵌套引号。
+
+        家长端最刺眼的问题就是读到 “我想从“一个从没去过的地方”开始”。
+        这里一次性覆盖维度分析、孩子的故事、证据说明和证据明细四条渲染路径。
+        """
+        quoted = "我想从“一个从没去过的地方”开始"
+        events = [
+            EvidenceEvent(
+                id="chat-quoted", module="chat", event_type="chat.observation-shared.v1",
+                occurred_at="2026-09-17T05:42:00Z", behavior_summary="分享了一次观察或想法",
+                intelligence_candidates=["intrapersonal"], raw_evidence={"turnCount": 3},
+                context={"sessionSummary": {"childWords": quoted}},
+            ),
+            EvidenceEvent(
+                id="chat-activity", module="chat", event_type="chat.observation-shared.v1",
+                occurred_at="2026-09-17T06:05:00Z", behavior_summary="完成了一次互动小任务",
+                intelligence_candidates=["interpersonal"],
+                raw_evidence={"turnCount": 1, "interactionActivities": [{"activityType": "picture_choice", "response": quoted, "revisionCount": 1}]},
+                context={"sessionSummary": {"childWords": quoted}},
+            ),
+            EvidenceEvent(
+                id="story-highlight", module="story", event_type="story.contribution-completed.v1",
+                occurred_at="2026-09-17T06:30:00Z", behavior_summary="完成故事共创表达",
+                intelligence_candidates=["linguistic"],
+                raw_evidence={"contributionCount": 2, "storyTitle": "月亮迷路了"},
+                context={"sessionSummary": {"storyTitle": "月亮迷路了", "storySynopsis": "月亮在云里绕了三圈。", "childHighlight": quoted, "childIdeas": [quoted]}},
+            ),
+            EvidenceEvent(
+                id="deep-sea-mediation", module="deep_sea", event_type="deep-sea.spatial-task-completed.v1",
+                occurred_at="2026-09-17T07:10:00Z", behavior_summary="完成海洋议事厅协商",
+                intelligence_candidates=["interpersonal"], session_completed=True,
+                raw_evidence={"level": 3},
+                context={"sessionSummary": {"levelThreeReview": {"solutionSummary": "轮流先说各自的需要。", "childUtterances": [quoted]}}},
+            ),
+        ]
+
+        report = RuleAnalyzer().analyze(events)
+        blob = json.dumps(report, ensure_ascii=False)
+
+        nested = re.findall(r"“[^”]{0,80}“", blob)
+        self.assertEqual(nested, [], f"报告里出现嵌套引号：{nested}")
+        # 自带引号的原话应当改用「」包住，内容本身保持原样。
+        self.assertIn(f"「{quoted}」", blob)
 
 
 if __name__ == "__main__":
