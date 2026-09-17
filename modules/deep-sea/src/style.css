@@ -132,6 +132,268 @@ textarea:focus-visible {
     linear-gradient(160deg, rgba(255,255,255,.09), rgba(76,29,149,.06));
 }
 
+/* Deep Sea Rebuild — cinematic family-animation visual system v1 */
+.level-one-screen,
+.level-two-screen,
+.level-three-screen,
+.ceremony-screen,
+.report-screen {
+  position: relative;
+  isolation: isolate;
+  background-color: #041b38 !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+}
+
+.level-one-screen { background-image: linear-gradient(rgba(1, 18, 38, .16), rgba(1, 18, 38, .32)), url('./assets/generated/rebuild-v1/level1-coral-sanctuary-cinematic-v1.png') !important; }
+.level-two-screen { background-image: linear-gradient(rgba(1, 19, 39, .16), rgba(1, 19, 39, .34)), url('./assets/generated/rebuild-v1/level2-current-engine-clean-bay-v2.png') !important; }
+.level-three-screen { background-image: linear-gradient(rgba(19, 8, 46, .18), rgba(13, 8, 37, .38)), url('./assets/generated/rebuild-v1/level3-council-grotto-cinematic-v1.png') !important; }
+.ceremony-screen,
+.report-screen { background-image: linear-gradient(rgba(2, 18, 48, .3), rgba(2, 13, 38, .58)), url('./assets/generated/rebuild-v1/ending-guardian-hall-cinematic-v1.png') !important; }
+
+.level-one-screen::before,
+.level-two-screen::before,
+.level-three-screen::before,
+.ceremony-screen::before,
+.report-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 5%, rgba(137, 235, 255, .18), transparent 34%);
+}
+
+.game-stage .level-section-heading,
+.game-stage .level-main-title,
+.game-stage .level-helper-text {
+  color: #fff8dc !important;
+  border-color: rgba(255, 211, 112, .42);
+  background: linear-gradient(145deg, rgba(12, 42, 75, .96), rgba(26, 31, 72, .96));
+  box-shadow: 0 10px 26px rgba(0, 8, 30, .32), inset 0 1px rgba(255,255,255,.18);
+  text-shadow: 0 2px 8px rgba(0, 15, 40, .55);
+  backdrop-filter: none;
+}
+
+.game-stage [class*="bg-white/"],
+.game-stage [class*="bg-cyan-50/"],
+.game-stage [class*="bg-rose-50/"],
+.game-stage [class*="bg-amber-50/"],
+.game-stage [class*="bg-emerald-50/"] {
+  color: #173a50;
+  background: linear-gradient(145deg, rgba(255, 250, 232, .98), rgba(219, 247, 247, .96)) !important;
+  border-color: rgba(255, 214, 128, .48) !important;
+  box-shadow: 0 14px 34px rgba(0, 12, 36, .24), inset 0 1px rgba(255,255,255,.92) !important;
+  backdrop-filter: none !important;
+}
+
+.game-stage button:not(:disabled) {
+  border-color: rgba(255, 218, 128, .5) !important;
+  box-shadow: 0 9px 0 rgba(106, 54, 33, .28), 0 15px 30px rgba(0, 14, 42, .22), inset 0 1px rgba(255,255,255,.55) !important;
+}
+
+.game-stage button:not(:disabled):hover { transform: translateY(-2px) scale(1.02); }
+.game-stage button:not(:disabled):active { transform: translateY(3px) scale(.99); box-shadow: 0 3px 0 rgba(106,54,33,.28), 0 7px 16px rgba(0,14,42,.2) !important; }
+
+.level-two-workbench { align-items: stretch; gap: clamp(16px, 2vw, 30px) !important; }
+
+.level-two-screen .grid-station {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.level-two-screen .current-grid-frame {
+  margin: auto;
+  padding: 8px;
+  border-radius: 24px;
+  background: rgba(3, 39, 55, .24);
+  border: 1px solid rgba(113, 234, 237, .2);
+  box-shadow: inset 0 1px rgba(218, 255, 250, .14), 0 18px 34px rgba(0, 12, 28, .22);
+}
+
+.level-two-screen .current-grid {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 18px !important;
+  box-shadow: none !important;
+}
+
+.level-two-screen .current-grid-cell {
+  background: linear-gradient(145deg, rgba(19, 82, 92, .88), rgba(5, 45, 64, .92)) !important;
+  border: 1px solid rgba(104, 235, 231, .27) !important;
+  box-shadow: inset 0 1px rgba(220, 255, 248, .14), 0 5px 11px rgba(0, 15, 29, .22) !important;
+}
+
+.level-two-screen .current-grid-cell:hover {
+  border-color: rgba(255, 213, 112, .72) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.2), 0 0 0 2px rgba(255, 194, 72, .18), 0 7px 16px rgba(0, 12, 28, .28) !important;
+}
+
+.level-two-screen .pipe-bay {
+  width: clamp(260px, 22vw, 330px) !important;
+  position: relative;
+  padding: 10px 10px 8px 18px;
+  overflow: visible !important;
+  border-left: 0;
+  transform: translateX(-78px);
+  margin-right: -78px;
+}
+
+.level-two-screen .pipe-bay::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 116px;
+  bottom: 10px;
+  left: 2px;
+  width: 7px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #785221, #f4c765 42%, #8b5d26 76%, #3a2719);
+  box-shadow: 0 2px 8px rgba(0, 9, 22, .55), inset 1px 0 rgba(255, 244, 191, .62);
+}
+
+.level-two-screen .pipe-bay > * { position: relative; z-index: 1; }
+
+.level-two-screen .pipe-rack { padding: 0 !important; background: transparent !important; border: 0 !important; box-shadow: none !important; }
+.level-two-screen .pipe-rack > h4,
+.level-two-screen .pipe-rack > p { color: #fff2c9 !important; text-shadow: 0 2px 8px rgba(0, 15, 31, .78); }
+.level-two-screen .pipe-rack > .grid { display: flex !important; flex-direction: column; gap: 24px !important; }
+
+.level-two-screen .pipe-rack-slot {
+  position: relative;
+  min-height: 72px;
+  display: grid !important;
+  grid-template-columns: 76px 1fr;
+  grid-template-rows: 1fr;
+  align-items: center;
+  padding: 5px 16px !important;
+  color: #fff3cf !important;
+  background: linear-gradient(145deg, rgba(7, 47, 64, .9), rgba(10, 69, 76, .84)) !important;
+  border-color: rgba(255, 204, 102, .5) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.14), 0 8px 16px rgba(0, 13, 31, .28) !important;
+}
+
+.level-two-screen .pipe-rack-slot::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: -18px;
+  right: -8px;
+  bottom: -13px;
+  height: 8px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f0c76c, #8d6129 55%, #3e2918);
+  box-shadow: 0 4px 8px rgba(0, 10, 24, .42), inset 0 1px rgba(255, 248, 198, .7);
+}
+
+.level-two-screen .pipe-rack-slot > span { margin-top: 0 !important; color: #fff3cf !important; text-align: left; font-size: 15px !important; }
+.level-two-screen .pipe-rack-slot:hover,
+.level-two-screen .pipe-rack-slot[class*="border-cyan-400"] { background: linear-gradient(145deg, rgba(10, 91, 96, .96), rgba(15, 102, 105, .9)) !important; border-color: #ffd477 !important; transform: translateX(-4px); }
+
+.level-two-screen .operation-console,
+.level-two-screen .power-status {
+  color: #e8fbf7 !important;
+  background: linear-gradient(145deg, rgba(3, 31, 49, .98), rgba(7, 54, 65, .97)) !important;
+  border: 1px solid rgba(255, 210, 113, .34) !important;
+  box-shadow: 0 10px 22px rgba(0, 11, 28, .24), inset 0 1px rgba(255,255,255,.1) !important;
+}
+
+.level-two-screen .operation-console { padding: 12px 14px !important; }
+
+.level-two-screen .operation-console h5,
+.level-two-screen .operation-console li,
+.level-two-screen .power-status span { color: inherit !important; }
+
+.level-two-screen .operation-console .operation-copy,
+.level-two-screen .operation-console .operation-copy li,
+.level-two-screen .operation-console .operation-copy span {
+  color: #f3fff9 !important;
+  opacity: 1 !important;
+  text-shadow: 0 2px 5px rgba(0, 7, 18, .95) !important;
+}
+
+@media (max-width: 980px) {
+  .level-two-workbench { flex-direction: column; overflow-y: auto; }
+  .level-two-screen .pipe-bay { width: 100% !important; transform: none; margin-right: 0; border-left: 0; border-top: 1px solid rgba(255, 206, 105, .2); }
+  .level-two-screen .pipe-rack > .grid { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; }
+  .level-two-screen .pipe-rack-slot { display: flex !important; min-height: 92px; padding: 10px !important; }
+}
+
+.level-one-screen .ocean-habitat {
+  background-image: linear-gradient(rgba(233, 251, 247, .05), rgba(255, 221, 153, .12)), url('./assets/generated/rebuild-v1/level1-coral-sanctuary-cinematic-v1.png') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  border-color: rgba(255, 221, 139, .62) !important;
+  box-shadow: 0 18px 44px rgba(0, 18, 43, .34), inset 0 1px rgba(255,255,255,.35);
+}
+
+.level-three-screen .phase-title {
+  color: #fff7dc !important;
+  text-shadow: 0 3px 12px rgba(27, 10, 57, .8);
+}
+
+.level-three-screen .phase-description {
+  color: #fff4d0 !important;
+  background: rgba(23, 24, 66, .86) !important;
+  border-color: rgba(255, 215, 132, .38) !important;
+  box-shadow: 0 12px 30px rgba(10, 4, 35, .3);
+}
+
+.report-screen { color: #173a50; }
+.report-screen > section,
+.report-screen .report-body > div > div,
+.report-screen .report-actions {
+  backdrop-filter: none !important;
+}
+
+@media (max-width: 900px) {
+  .level-one-screen,
+  .level-two-screen,
+  .level-three-screen,
+  .ceremony-screen,
+  .report-screen { background-position: 55% center !important; }
+}
+
+/* Story, tutorial and completion overlays use the same pearl-and-brass kit. */
+.game-stage > .fixed[class*="inset-0"] > div[class*="bg-white"],
+.game-stage .fixed[class*="inset-0"] > div[class*="bg-white"] {
+  color: #16394f !important;
+  border: 2px solid rgba(255, 208, 108, .62) !important;
+  border-radius: 24px !important;
+  background:
+    radial-gradient(circle at 78% 0, rgba(116, 224, 244, .3), transparent 35%),
+    linear-gradient(145deg, #fff8e9, #e1f7f5) !important;
+  box-shadow: 0 28px 70px rgba(0, 10, 36, .48), inset 0 1px white !important;
+  overflow: hidden;
+}
+
+.game-stage > .fixed[class*="inset-0"] > div[class*="bg-white"] > div:first-child,
+.game-stage .fixed[class*="inset-0"] > div[class*="bg-white"] > div:first-child {
+  color: #fff7dc !important;
+  border-bottom-color: rgba(255, 215, 128, .35) !important;
+  background: linear-gradient(115deg, #082f54, #253168 62%, #4b2c67) !important;
+}
+
+.game-stage > .fixed[class*="inset-0"] > div[class*="bg-white"] h3,
+.game-stage .fixed[class*="inset-0"] > div[class*="bg-white"] h3 { color: #fff7dc !important; text-shadow: 0 2px 8px rgba(0,0,0,.3); }
+
+.game-stage > .fixed[class*="inset-0"] > div[class*="bg-white"] p,
+.game-stage .fixed[class*="inset-0"] > div[class*="bg-white"] p { color: #174a62 !important; }
+
+.game-stage input,
+.game-stage textarea {
+  border-color: rgba(41, 156, 184, .42) !important;
+  background: rgba(255, 252, 240, .97) !important;
+  box-shadow: inset 0 2px 7px rgba(14, 69, 91, .08);
+}
+
+.game-stage ::selection { color: #082f49; background: #fde68a; }
+.game-stage * { scrollbar-color: #62cfe3 rgba(5, 37, 69, .18); }
+
 .game-stage button {
   border-width: 1px;
   border-style: solid;

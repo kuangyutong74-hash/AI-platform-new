@@ -68,6 +68,84 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 /* ==== Responsive ==== */
 @media(max-width:1100px){.end-bottom-actions{gap:14px}.end-action-card{min-height:90px;padding:16px 20px;gap:14px}.end-act-icon{width:48px;height:48px;font-size:26px}.end-act-text strong{font-size:16px}}
 @media(max-width:760px){.end-hero{top:8%;max-width:86%;width:86%}.end-mascot-area{left:0;top:28%;bottom:auto;width:32%;height:48%}.end-summary-card{left:28%;top:38%;width:68%;height:35%}.end-tomorrow-note{left:5%;right:auto;top:66%;width:34%;height:25%}.end-note-content{inset:12% 8% 5%}.end-note-content h2{margin:0 0 4px;font-size:16px;line-height:1.15}.end-note-content p{margin:3px 0;font-size:10px;line-height:1.3}.end-bottom-actions{left:38%;right:3%;bottom:3%;grid-template-columns:1fr 1fr;gap:8px}.end-action-card{min-height:68px;padding:8px;gap:6px}.end-act-icon{width:30px;height:30px;font-size:20px}.end-act-text strong{margin:0;font-size:12px}.end-act-text small{display:none}.end-rainbow-clouds{width:36%}.end-cloud-smile{width:19%}.end-butterfly{width:13%}}
+
+/* Cinematic farewell terrace */
+body{background:#071531;color:#fff8e9}
+.end-scene{
+  min-height:100%;height:auto;padding:clamp(24px,3vw,48px) clamp(28px,5vw,88px) clamp(24px,3vw,44px);
+  display:grid;grid-template-columns:minmax(180px,.75fr) minmax(420px,1.6fr) minmax(250px,.9fr);
+  grid-template-rows:auto minmax(0,1fr) auto;gap:clamp(18px,2vw,30px);
+  align-items:center;background:
+    linear-gradient(90deg,rgba(4,17,42,.80) 0%,rgba(5,22,54,.42) 47%,rgba(6,17,38,.70) 100%),
+    url('assets/generated/chat-farewell-terrace-cinematic-v1.png') center/cover no-repeat;
+}
+.end-scene:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,10,27,.18),transparent 30%,rgba(2,9,24,.58));z-index:1}
+.end-scene-bg,.end-cloud-smile,.end-rainbow-clouds,.end-butterfly,.end-heart-float,.end-heart-bubble,.end-confetti,.end-summary-bg,.end-note-bg,.end-note-tape,.end-act-bg{display:none}
+.end-hero,.end-mascot-area,.end-summary-card,.end-tomorrow-note,.end-bottom-actions{position:relative;inset:auto;z-index:3;width:auto;height:auto;transform:none}
+.end-hero{grid-column:1/-1;grid-row:1;text-align:left;max-width:none;padding-left:clamp(0px,19vw,330px)}
+.end-hero .end-weather-circle{width:42px;height:42px;margin:0 0 10px;border:1px solid rgba(255,214,126,.55);background:#162e59;color:#ffd77c;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+.end-hero h1{margin:0 0 8px;max-width:760px;font-family:"KaiTi","STKaiti",serif;font-size:clamp(38px,4vw,66px);line-height:1.04;letter-spacing:.02em;color:#fff6df;text-shadow:0 4px 20px rgba(0,0,0,.58)}
+.end-hero p{margin:3px 0;color:#e8d9bd;font-size:clamp(14px,1.15vw,19px);text-shadow:0 2px 8px rgba(0,0,0,.7)}
+.end-mascot-area{grid-column:1;grid-row:2;align-self:end;min-height:clamp(260px,36vh,460px);display:flex;align-items:flex-end;justify-content:center}
+.end-mascot-area:before{content:"今天也很勇敢 ✦";position:absolute;top:0;left:50%;transform:translateX(-50%);white-space:nowrap;padding:10px 16px;border:1px solid rgba(255,210,116,.5);border-radius:999px;background:#182b53;color:#ffe1a0;font-weight:800;box-shadow:0 12px 28px rgba(0,0,0,.28)}
+.end-mascot-img{position:relative;inset:auto;width:min(100%,280px);height:auto;max-height:390px;object-fit:contain;filter:drop-shadow(0 16px 18px rgba(0,0,0,.44))}
+.end-summary-card{grid-column:2;grid-row:2;align-self:stretch;min-height:330px;padding:70px clamp(24px,3vw,44px) 28px;border:1px solid rgba(255,215,136,.58);border-radius:24px;background:linear-gradient(145deg,#fff8e8 0%,#f4dfb7 100%);box-shadow:0 24px 55px rgba(1,7,22,.42),inset 0 1px #fff;color:#352b42}
+.end-summary-ribbon{position:absolute;top:22px;left:26px;width:auto;height:auto;padding:9px 20px;border-radius:999px;background:#f5ad3d;color:#312343;box-shadow:0 7px 0 #bd6a29;font-weight:900;letter-spacing:.05em}
+.end-summary-ribbon img{display:none}.end-summary-ribbon span{position:static;transform:none;font-size:16px}
+.end-summary-stats{position:static;height:auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;gap:12px}
+.end-stat-item{position:relative;padding:18px 8px 14px;border-right:1px solid rgba(79,56,74,.16)}.end-stat-item:last-child{border-right:0}
+.end-stat-icon{width:auto;height:auto;font-size:30px;filter:drop-shadow(0 4px 4px rgba(86,55,17,.18))}.end-stat-num{margin-top:12px;font-size:clamp(25px,2.4vw,38px);color:#cb572d}.end-stat-label{margin-top:6px;color:#756273;font-size:14px}
+.end-encourage{position:static;min-height:auto;margin-top:20px;padding:13px 18px;border:1px solid rgba(196,137,46,.25);border-radius:12px;background:#fffaf0;color:#7b5c46}.end-enc-text{color:#7b5c46}
+.end-tomorrow-note{grid-column:3;grid-row:2;align-self:stretch;min-height:330px;padding:28px 24px;border:1px solid rgba(255,213,124,.5);border-radius:24px;background:linear-gradient(180deg,#182f5d,#102142);box-shadow:0 24px 55px rgba(1,7,22,.42);color:#fff5dc}
+.end-tomorrow-note:before{content:"✦ 聊天小贴士";display:block;margin-bottom:22px;color:#ffd271;font-weight:900;letter-spacing:.08em}
+.end-note-content{position:static;inset:auto;text-align:left}.end-note-content h2{margin:0 0 22px;font-family:"KaiTi","STKaiti",serif;font-size:clamp(24px,2vw,34px);line-height:1.2;color:#fff}.end-note-content p{margin:12px 0;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.12);font-size:15px;line-height:1.65;color:#d8e2f3}.end-note-content p:last-child{border-bottom:0}
+.end-bottom-actions{grid-column:1/-1;grid-row:3;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.end-action-card{position:relative;min-height:92px;padding:17px 19px;gap:14px;border:1px solid rgba(255,213,128,.42);border-radius:18px;background:#10264a;color:#fff6df;box-shadow:0 14px 28px rgba(1,7,22,.38);transition:transform .2s ease,background .2s ease,border-color .2s ease}
+.end-action-card:hover{transform:translateY(-4px);background:#183562;border-color:#ffd77e}.end-action-card:focus-visible{outline:3px solid #ffd56c;outline-offset:3px}
+.end-act-icon{width:52px;height:52px;border-radius:16px;background:#f4b343;color:#2d2144;box-shadow:inset 0 1px rgba(255,255,255,.7),0 7px 14px rgba(0,0,0,.25);font-size:27px}.end-act-text strong{font-size:17px;color:#fff7e5}.end-act-text small{color:#b9c8df;font-size:12px}
+@media(max-width:1280px){body{overflow:auto}.end-scene{grid-template-columns:190px minmax(0,1fr);grid-template-rows:auto auto auto auto}.end-hero{grid-column:1/-1;padding-left:210px}.end-mascot-area{grid-column:1;grid-row:2}.end-summary-card{grid-column:2;grid-row:2}.end-tomorrow-note{grid-column:1/-1;grid-row:3;min-height:auto}.end-note-content{display:grid;grid-template-columns:1.2fr repeat(3,1fr);align-items:center;gap:12px}.end-note-content h2{margin:0}.end-note-content p{margin:0;padding:0 12px;border-bottom:0;border-left:1px solid rgba(255,255,255,.12)}.end-bottom-actions{grid-row:4;grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:720px){body{overflow:auto}.end-scene{min-height:100vh;padding:22px 16px;display:block}.end-hero{padding:0;margin-bottom:20px;text-align:center}.end-hero .end-weather-circle{margin:0 auto 8px}.end-mascot-area{min-height:210px;margin-bottom:16px}.end-mascot-area:before{top:4px}.end-mascot-img{max-height:230px}.end-summary-card,.end-tomorrow-note{min-height:auto;margin-bottom:16px;padding:68px 18px 20px}.end-tomorrow-note{padding:22px 20px}.end-note-content{display:block}.end-note-content h2{margin-bottom:16px}.end-note-content p{margin:10px 0;padding:0 0 10px;border-left:0;border-bottom:1px solid rgba(255,255,255,.12)}.end-summary-stats{grid-template-columns:1fr 1fr}.end-stat-item:nth-child(2){border-right:0}.end-bottom-actions{grid-template-columns:1fr 1fr}.end-action-card{min-height:82px;padding:12px}.end-act-text small{display:none}}
+
+/* Original cinematic 3D component system — replaces platform emoji */
+:root{--end-icon-sprite:url('assets/generated/chat-end-icons-cinematic-v1.png')}
+.end-weather-circle,.end-stat-icon,.end-enc-icon,.end-act-icon{
+  background-image:var(--end-icon-sprite)!important;background-size:800% auto!important;background-repeat:no-repeat!important;
+  color:transparent!important;font-size:0!important;text-shadow:none!important;
+}
+.end-hero .end-weather-circle{width:58px;height:58px;border:0;background-color:transparent;box-shadow:none;filter:drop-shadow(0 8px 9px rgba(0,0,0,.34));background-position:28.57% 50%!important}
+.end-summary-card{
+  padding:78px clamp(20px,2.3vw,34px) 25px;border:2px solid #f6c96f;
+  background:linear-gradient(145deg,#fff7df 0%,#f5dca8 68%,#e9bc66 100%);
+  box-shadow:0 9px 0 #9a512d,0 25px 52px rgba(1,7,22,.44),inset 0 2px rgba(255,255,255,.8);
+  overflow:hidden;
+}
+.end-summary-card:before{content:"";position:absolute;inset:13px;border:1px solid rgba(117,63,42,.22);border-radius:16px;pointer-events:none}
+.end-summary-card:after{content:"✦";position:absolute;right:22px;top:18px;color:#a75c2c;font-size:20px}
+.end-summary-ribbon{top:18px;left:22px;padding:11px 22px;border:1px solid #ffd77e;background:linear-gradient(180deg,#ec6d4a,#bd3f38);color:#fff8e8;box-shadow:0 6px 0 #792f31,0 11px 18px rgba(71,32,24,.2);transform:none}
+.end-summary-stats{gap:14px}
+.end-stat-item{
+  min-height:180px;padding:16px 10px 14px;border:1px solid rgba(107,65,55,.18)!important;border-radius:18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,244,214,.72));
+  box-shadow:0 7px 0 rgba(153,90,46,.2),inset 0 1px #fff;
+}
+.end-stat-item:before{content:"";position:absolute;left:12px;right:12px;top:76px;height:1px;background:linear-gradient(90deg,transparent,rgba(128,79,57,.18),transparent)}
+.end-stat-icon{width:72px;height:72px;filter:drop-shadow(0 7px 7px rgba(76,47,25,.22))}
+.end-stat-item:nth-child(1) .end-stat-icon{background-position:0 50%!important}
+.end-stat-item:nth-child(2) .end-stat-icon{background-position:14.285% 50%!important}
+.end-stat-item:nth-child(3) .end-stat-icon{background-position:28.57% 50%!important}
+.end-stat-item:nth-child(4) .end-stat-icon{background-position:42.855% 50%!important}
+.end-stat-num{margin-top:4px;color:#8f3f32;font-family:"Trebuchet MS","Microsoft YaHei",sans-serif;text-shadow:0 1px #fff;font-size:clamp(27px,2.5vw,40px)}
+.end-stat-num.small{font-size:17px}.end-stat-label{color:#654d56;font-weight:800}
+.end-encourage{position:relative;margin-top:22px;padding:14px 18px;border:1px solid #425f91;border-radius:16px;background:linear-gradient(180deg,#213f72,#142b55);box-shadow:0 6px 0 #091a39;color:#fff2d2}
+.end-enc-icon{width:45px;height:45px;flex:0 0 45px;background-position:42.855% 50%!important;filter:drop-shadow(0 5px 5px rgba(0,0,0,.3))}.end-enc-text{color:#fff2d2;font-weight:800}
+.end-tomorrow-note{border:2px solid #dfae54;background:linear-gradient(145deg,#17396d,#0b214a 70%);box-shadow:0 7px 0 #07152f,0 24px 50px rgba(1,7,22,.46),inset 0 1px rgba(255,255,255,.18)}
+.end-tomorrow-note:after{content:"";position:absolute;inset:12px;border:1px solid rgba(255,217,139,.25);border-radius:15px;pointer-events:none}
+.end-tomorrow-note:before{color:#ffd470;text-shadow:0 2px 5px rgba(0,0,0,.4)}
+.end-action-card{border:2px solid #dba94f;background:linear-gradient(160deg,#183c70,#0b234d);box-shadow:0 6px 0 #06172f,0 16px 28px rgba(1,7,22,.4),inset 0 1px rgba(255,255,255,.16)}
+.end-action-card:hover{background:linear-gradient(160deg,#24548c,#123362);border-color:#ffe09a}.end-act-icon{width:66px;height:66px;flex:0 0 66px;border:0;border-radius:0;background-color:transparent;box-shadow:none;filter:drop-shadow(0 7px 6px rgba(0,0,0,.34))}
+.end-action-card:nth-child(1) .end-act-icon{background-position:57.14% 50%!important}.end-action-card:nth-child(2) .end-act-icon{background-position:71.425% 50%!important}.end-action-card:nth-child(3) .end-act-icon{background-position:85.71% 50%!important}.end-action-card:nth-child(4) .end-act-icon{background-position:100% 50%!important}
+.end-act-text strong{color:#fff4d5}.end-act-text small{color:#c8d8ee}
+@media(max-width:720px){.end-summary-card{padding:70px 14px 20px}.end-summary-stats{gap:10px}.end-stat-item{min-height:150px}.end-stat-icon{width:58px;height:58px}.end-stat-item:before{top:66px}.end-act-icon{width:52px;height:52px;flex-basis:52px}}
   </style>
   <script src="assets/avatars/avatar-config.js"></script>
 </head>

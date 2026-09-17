@@ -15,12 +15,30 @@ const {currentSpread,fromSpread,targetSpread,direction,flipping,goTo,next,prev}=
 const sourceNames:Record<string,string>={story:"故事共创",deep_sea:"深海基地重建",chat:"聊天观察",career:"职业模拟器"};
 function isLevelThree(event:CoreEvidenceRecord){return event.moduleId==="deep_sea"&&event.eventType==="deep-sea.spatial-task-completed.v1"&&Number(event.payload.level)===3}
 function childWords(event:CoreEvidenceRecord){return String(event.sessionSummary?.childWords||"").trim()}
+function chatTurns(event:CoreEvidenceRecord){
+  const value=event.sessionSummary?.childTurns||event.payload.childTurns;
+  return Array.isArray(value)?value.map(item=>typeof item==="object"&&item?String((item as {text?:unknown}).text||"").trim():"").filter(Boolean):[]
+}
+function chatTopic(event:CoreEvidenceRecord){return String(event.payload.topicKey||"自由交流").trim()||"自由交流"}
 function mentionedPeople(words:string){return ["同学","朋友","老师","爸爸","妈妈","家人","伙伴"].filter(name=>words.includes(name))}
+function chatExcerpt(event:CoreEvidenceRecord,key:string){
+  const turns=chatTurns(event),all=turns.join("；"),people=mentionedPeople(all);
+  if(key==="interpersonal"&&people.length){
+    const related=[...turns].reverse().find(turn=>people.some(name=>turn.includes(name)))||turns.at(-1)||childWords(event);
+    return {text:related,people}
+  }
+  return {text:turns.at(-1)||childWords(event),people}
+}
+function chatFingerprint(event:CoreEvidenceRecord){return `${chatTopic(event)}|${chatTurns(event).join("|")||childWords(event)}`}
+function deduplicateEvents(events:CoreEvidenceRecord[]){
+  const seen=new Set<string>();
+  return events.filter(event=>{if(event.moduleId!=="chat")return true;const key=chatFingerprint(event);if(!key||seen.has(key))return false;seen.add(key);return true})
+}
 function dimensionSummary(key:string,event:CoreEvidenceRecord,fallback:string){
   if(event.moduleId==="chat"){
-    const words=childWords(event),people=mentionedPeople(words);
-    if(key==="interpersonal")return people.length?`孩子谈到与${people.join("、")}的相处，并表达了对这段关系的关注。`:"孩子参与了交流，但现有记录没有保存可确认的他人观点或互动细节。";
-    if(key==="intrapersonal")return words?"孩子在聊天中说出了自己的感受、想法或期待。":"孩子完成了聊天，但现有记录没有保存可引用的自我表达。";
+    const {text,people}=chatExcerpt(event,key),topic=chatTopic(event),quote=text?`：“${text.slice(0,96)}”`:"";
+    if(key==="interpersonal")return people.length?`在“${topic}”交流中，孩子谈到${people.join("、")}${quote}`:`在“${topic}”交流中，孩子留下了自己的观察${quote}`;
+    if(key==="intrapersonal")return text?`在“${topic}”交流中，孩子表达了自己的感受或想法${quote}`:`孩子完成了“${topic}”交流，但该记录没有保存可引用原文。`;
   }
   if(event.moduleId==="career"&&key==="intrapersonal")return "孩子在导师追问中解释了自己的想法、理由或感受。";
   if(event.moduleId==="deep_sea"&&event.eventType==="deep-sea.spatial-task-completed.v1"){
@@ -36,9 +54,9 @@ function dimensionSummary(key:string,event:CoreEvidenceRecord,fallback:string){
 }
 function dimensionDetails(key:string,event:CoreEvidenceRecord,details:string[]){
   if(event.moduleId==="chat"){
-    const words=childWords(event),people=mentionedPeople(words),quote=words?`“${words.slice(0,120)}”`:"这条历史记录未保存聊天原文。";
-    if(key==="interpersonal")return [people.length?`关系对象：孩子提到了${people.join("、")}。`:"关系对象：没有保存可确认的具体人物。",`人际视角：关注表达中如何理解、回应或期待他人；原话为${quote}`];
-    if(key==="intrapersonal")return [`自我表达：${quote}`,"内省视角：关注孩子如何命名自己的感受、偏好、想法或期待。"];
+    const turns=chatTurns(event),all=turns.join("；"),people=mentionedPeople(all),quotes=turns.slice(-3).map((turn,index)=>`表达 ${Math.max(1,turns.length-2)+index}：“${turn.slice(0,120)}”`);
+    if(key==="interpersonal")return [people.length?`关系对象：孩子提到了${people.join("、")}。`:`交流话题：${chatTopic(event)}。`,...(quotes.length?quotes:["这条历史记录未保存聊天原文。"]),"人际视角：关注孩子如何理解、回应或期待他人。"];
+    if(key==="intrapersonal")return [...(quotes.length?quotes:["这条历史记录未保存聊天原文。"]),"内省视角：关注孩子如何命名自己的感受、偏好、想法或期待。"];
   }
   if(event.moduleId==="career"&&key==="intrapersonal")return details.filter(detail=>detail.startsWith("导师对话：")).concat("内省视角：关注孩子如何解释自己的选择、感受和理由。");
   if(event.moduleId==="deep_sea"&&event.eventType==="deep-sea.spatial-task-completed.v1"){
@@ -62,13 +80,14 @@ function groupDeepSeaRounds(items:Evidence[],events:CoreEvidenceRecord[]){
 }
 const displayTalents=computed(()=>props.talents.map(talent=>{
   if(!liveEvents.value.length)return {...talent,evidence:[],moments:[]};
-  const events=liveEvents.value.filter(event=>event.reportDimensions.includes(talent.key));
+  const events=deduplicateEvents(liveEvents.value.filter(event=>event.reportDimensions.includes(talent.key)));
   const explanations=liveReport.value?.evidence_explanations||[];
   const evidence=events.map(event=>{
     const explanation=explanations.find(item=>item.evidence_ref===event.id);
     const summary=dimensionSummary(talent.key,event,explanation?.summary||event.behaviorSummary);
     const details=dimensionDetails(talent.key,event,explanation?.details||["生成完成后会显示这次活动中具体发生的过程。"]);
-    return {id:event.id,behavior:summary,source:sourceNames[event.moduleId]||"探索活动",continent:`${talent.continent} · ${sourceNames[event.moduleId]||"探索活动"}`,time:event.occurredAt.replace("T"," ").slice(0,16),level:event.evidenceLevel,raw:"",logTitle:explanation?.title||"报告智能体正在整理",logSummary:summary,logDetails:details} as Evidence
+    const logTitle=event.moduleId==="chat"?`聊天观察：${chatTopic(event)}`:explanation?.title||"报告智能体正在整理";
+    return {id:event.id,behavior:summary,source:sourceNames[event.moduleId]||"探索活动",continent:`${talent.continent} · ${sourceNames[event.moduleId]||"探索活动"}`,time:event.occurredAt.replace("T"," ").slice(0,16),level:event.evidenceLevel,raw:"",logTitle,logSummary:summary,logDetails:details} as Evidence
   });
   return {...talent,evidence:groupDeepSeaRounds(evidence,events),moments:momentsForTalent(liveEvents.value,talent.key).map(moment=>{
     const event=liveEvents.value.find(item=>item.id===moment.evidenceId);
@@ -105,13 +124,28 @@ async function exportFormalPdf(){
     doc.querySelectorAll<HTMLElement>("#formal-dimensions > .formal-dimension").forEach(b=>blocks.push(b));
     const advice=doc.querySelector<HTMLElement>("#formal-advice");if(advice)blocks.push(advice);
     if(!blocks.length)blocks.push(doc);
+    const usableH=pageH-margin*2;
     let y=margin;
     for(const block of blocks){
       const canvas=await html2canvas(block,{backgroundColor:"#ffffff",scale:2,useCORS:true,scrollX:0,scrollY:0,width:block.scrollWidth,height:block.scrollHeight,windowWidth:block.scrollWidth,windowHeight:block.scrollHeight});
       const imgH=canvas.height*contentW/canvas.width;
-      if(y+imgH>pageH-margin){pdf.addPage();y=margin}
-      pdf.addImage(canvas.toDataURL("image/jpeg",.92),"JPEG",margin,y,contentW,imgH);
-      y+=imgH+3;
+      if(imgH<=usableH){
+        if(y+imgH>pageH-margin){pdf.addPage();y=margin}
+        pdf.addImage(canvas.toDataURL("image/jpeg",.94),"JPEG",margin,y,contentW,imgH);
+        y+=imgH+3;
+        continue
+      }
+      if(y>margin){pdf.addPage();y=margin}
+      const pixelsPerMm=canvas.width/contentW,maxSlicePx=Math.max(1,Math.floor(usableH*pixelsPerMm));
+      for(let top=0;top<canvas.height;top+=maxSlicePx){
+        const sliceH=Math.min(maxSlicePx,canvas.height-top),slice=document.createElement("canvas");
+        slice.width=canvas.width;slice.height=sliceH;
+        slice.getContext("2d")?.drawImage(canvas,0,top,canvas.width,sliceH,0,0,canvas.width,sliceH);
+        const sliceHmm=sliceH/pixelsPerMm;
+        pdf.addImage(slice.toDataURL("image/jpeg",.94),"JPEG",margin,margin,contentW,sliceHmm);
+        if(top+sliceH<canvas.height)pdf.addPage()
+      }
+      y=pageH-margin;
     }
     pdf.save(`AI伯乐天赋观察报告-${new Date().toISOString().slice(0,10)}.pdf`);
     ElMessage.success("报告已导出");

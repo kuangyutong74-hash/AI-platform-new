@@ -193,7 +193,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
     .top-button{border-color:rgba(255,235,187,.24);color:#fff0cc;background:rgba(13,26,49,.48);box-shadow:none}
     .top-button:hover{border-color:rgba(255,220,145,.55);background:rgba(63,78,104,.72);box-shadow:0 9px 22px rgba(4,11,23,.23)}
     .top-button.danger{color:#ffd6bd;border-color:rgba(255,171,123,.42)}
-    .workspace{height:calc(100% - 86px);grid-template-columns:minmax(500px,1fr) 132px;background:transparent}
+    .workspace{height:calc(100% - 86px);grid-template-columns:minmax(500px,1fr) 320px;background:transparent}
     .chat-section::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 38%,transparent 0 24%,rgba(8,18,35,.09) 72%)}
     .chat-bg{display:none}
     .messages{z-index:2;padding:26px 42px 205px;scrollbar-color:rgba(255,220,161,.45) transparent}
@@ -213,10 +213,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
     .composer textarea{color:#3f342d}.composer textarea::placeholder{color:#887d70}.character-count{color:#8d8072}
     .send-button{border-radius:18px;background:linear-gradient(145deg,#ffd27e,#df8f36);box-shadow:0 8px 20px rgba(98,53,20,.24)}
     .send-button img{filter:saturate(.8)}
-    .roadmap-panel{margin:16px 16px 18px 0;border:1px solid var(--glass-line);border-radius:26px;background:linear-gradient(180deg,rgba(20,35,61,.72),rgba(13,27,50,.58));box-shadow:0 18px 46px rgba(4,11,24,.22);backdrop-filter:blur(18px)}
-    .roadmap-panel h2{color:#ffe6b3}.roadmap-step{color:#b9c8da}.roadmap-step strong{font-size:11px}.roadmap-icon{border:1px solid rgba(255,235,188,.18);background:rgba(255,255,255,.09)}
-    .roadmap-step:not(:last-child)::after{width:2px;background:linear-gradient(#f5c36c,#9cc6da);box-shadow:0 0 9px rgba(245,195,108,.6)}
-    .roadmap-step.lit{color:#ffe1a1}.roadmap-step.lit .roadmap-icon{background:rgba(245,184,91,.2);box-shadow:0 0 22px rgba(245,184,91,.16)}
+    .roadmap-panel{margin:16px 16px 18px 0;border:1px solid var(--glass-line);border-radius:22px;background:linear-gradient(180deg,rgba(20,35,61,.92),rgba(13,27,50,.88));box-shadow:0 18px 46px rgba(4,11,24,.28);backdrop-filter:blur(18px)}
+    .compass-panel{padding:22px 18px 18px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(245,195,108,.42) transparent}
+    .compass-head h2{margin:0;color:#fff0c9;text-align:left;font-family:"KaiTi","STKaiti",serif;font-size:25px;line-height:1.15}.compass-head p{margin:7px 0 0;color:#bfcde0;font-size:13px}
+    .compass-rose{position:relative;width:152px;height:152px;margin:18px auto 20px;display:grid;place-items:center}.compass-rose svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 10px 14px rgba(2,8,19,.38))}.compass-rose svg circle{stroke:rgba(255,223,153,.54);stroke-width:1.5}.compass-rose svg path{fill:rgba(255,255,255,.055);stroke:rgba(255,229,171,.46);stroke-width:1.2}.compass-rose svg .compass-needle{fill:#f0a953;stroke:#ffd889;transform-origin:60px 60px;animation:compassSettle .9s cubic-bezier(.16,1,.3,1) both}.compass-rose span{position:relative;z-index:1;width:82px;color:#fff5d9;text-align:center;font-size:12px;font-weight:800;line-height:1.35}
+    @keyframes compassSettle{from{transform:rotate(-24deg)}to{transform:rotate(0)}}
+    .compass-directions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.compass-action{min-height:82px;padding:11px 9px;display:flex;align-items:flex-start;gap:8px;border:1px solid rgba(255,231,177,.2);border-radius:14px;color:#fff2d2;text-align:left;background:rgba(255,255,255,.06);cursor:pointer;transition:transform .18s ease-out,border-color .18s,background .18s}.compass-action:hover{transform:translateY(-2px);border-color:rgba(255,214,132,.64);background:rgba(245,184,91,.13)}.compass-action:focus-visible{outline:3px solid rgba(255,211,126,.55);outline-offset:2px}.compass-action svg{width:24px;height:24px;flex:0 0 24px;fill:none;stroke:#f5c36c;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.compass-action span{min-width:0}.compass-action strong,.compass-action small{display:block}.compass-action strong{font-size:13px;line-height:1.25}.compass-action small{margin-top:5px;color:#aebdd2;font-size:10px;line-height:1.35}
+    .compass-suggestions{margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,233,183,.16)}.compass-suggestions-title{color:#f5cc7b;font-size:12px;font-weight:800}.compass-prompts{display:grid;gap:8px;padding:10px 0 0;overflow:visible}.compass-prompts button{width:100%;min-height:0;padding:10px 12px;border:1px solid rgba(255,231,177,.2);border-radius:12px;color:#e8eff8;text-align:left;white-space:normal;line-height:1.4;background:rgba(7,18,37,.38);box-shadow:none;backdrop-filter:none}.compass-prompts button:hover{border-color:rgba(255,211,126,.6);background:rgba(245,184,91,.12)}.compass-prompts.recovery button{min-height:0;border-color:rgba(255,194,126,.42);color:#fff0d0;background:rgba(126,67,45,.35)}
     .modal-backdrop{align-items:end;padding:28px;background:rgba(5,12,24,.58);backdrop-filter:blur(12px)}
     .modal-card{width:min(880px,100%);max-height:calc(100vh - 56px);overflow:auto;padding:34px 40px 32px;border:1px solid rgba(255,234,184,.5);border-radius:34px;text-align:left;color:#fff5df;background:linear-gradient(145deg,rgba(27,43,70,.97),rgba(18,32,55,.96));box-shadow:0 30px 90px rgba(2,7,17,.52),inset 0 1px 0 rgba(255,255,255,.12)}
     .modal-close{border-color:rgba(255,235,188,.25);color:#ffe2aa;background:rgba(255,255,255,.08)}
@@ -234,8 +237,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
     .completion-lead{color:#f5e6c9}.completion-box textarea{border-color:rgba(255,235,188,.28);color:#fff;background:rgba(6,16,32,.36)}
     .task-submit{color:#342517;background:linear-gradient(135deg,#ffd482,#e99b43)}.task-later{border-color:rgba(255,235,188,.3);background:rgba(255,255,255,.06)}
     .platform-return{top:auto;left:22px;bottom:108px;border-color:rgba(255,232,177,.34);color:#fff0cd;background:rgba(15,29,52,.78);box-shadow:0 10px 28px rgba(4,11,24,.3)}
-    @media(max-width:1180px){.mood-grid{grid-template-columns:repeat(4,1fr)}.workspace{grid-template-columns:minmax(380px,1fr) 100px}.messages,.composer-wrap{padding-inline:24px}}
-    @media(max-width:900px){.topbar{margin:0;border-width:0 0 1px;border-radius:0;background:rgba(14,28,51,.84)}.workspace{min-height:calc(100vh - 68px)}.main-panel{min-height:calc(100vh - 68px)}.messages{padding:24px 16px 192px}.composer-wrap{padding:0 14px 14px}.modal-backdrop{padding:12px}.modal-card{max-height:calc(100vh - 24px);padding:32px 20px 24px;border-radius:28px}.mood-grid{grid-template-columns:repeat(2,1fr)}.mood-grid button{min-height:70px;border-radius:22px}.platform-return{display:none}}
+    @media(max-width:1180px){.mood-grid{grid-template-columns:repeat(4,1fr)}.workspace{grid-template-columns:minmax(380px,1fr) 270px}.messages,.composer-wrap{padding-inline:24px}.compass-panel{padding:18px 14px}.compass-rose{width:128px;height:128px}.compass-directions{grid-template-columns:1fr}.compass-action{min-height:58px}.compass-action small{display:none}}
+    @media(max-width:900px){.topbar{margin:0;border-width:0 0 1px;border-radius:0;background:rgba(14,28,51,.84)}.workspace{min-height:calc(100vh - 68px)}.main-panel{min-height:calc(100vh - 68px)}.messages{padding:24px 16px 235px}.composer-wrap{padding:0 14px 14px}.roadmap-panel.compass-panel{display:block;position:fixed;z-index:18;left:14px;right:14px;bottom:92px;width:auto;height:auto;margin:0;padding:10px 12px;border-radius:16px}.compass-head,.compass-rose,.compass-directions,.compass-suggestions-title{display:none}.compass-suggestions{margin:0;padding:0;border:0}.compass-prompts{display:flex;gap:8px;padding:0;overflow-x:auto}.compass-prompts button{width:auto;min-width:150px;flex:1 0 150px;padding:9px 11px}.modal-backdrop{padding:12px}.modal-card{max-height:calc(100vh - 24px);padding:32px 20px 24px;border-radius:28px}.mood-grid{grid-template-columns:repeat(2,1fr)}.mood-grid button{min-height:70px;border-radius:22px}.platform-return{display:none}}
     @media(max-width:560px){.topbar{padding:8px 10px}.top-actions{padding:0}.message-bubble{max-width:calc(100% - 56px)}.composer{border-radius:22px}.entry-grid,.task-options{grid-template-columns:1fr}.modal-card h2{font-size:24px}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
   </style>
@@ -244,8 +247,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
   <script src="/assets/avatars/avatar-config.js"></script>
 </head>
 <body>
-  <a class="platform-return" id="platformReturnLink" href="http://localhost:4173/?from=chat" aria-label="返回 AI 伯乐探索星球">← 返回探索星球</a>
-
   <div class="app-shell">
    <main class="app-frame" id="chat-shell">
 
@@ -265,10 +266,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 	        <button class="top-button" id="moodButton" type="button">
 	          <img src="assets/icons/mood.svg" alt=""><span>选择心情</span>
 	        </button>
-        <button class="top-button" id="btnReturnPlanet" type="button" aria-label="返回探索星球">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="6.5" fill="#9b7bff"/><ellipse cx="12" cy="12" rx="11" ry="4.2" stroke="#6b4bd6" stroke-width="1.7" transform="rotate(-18 12 12)"/><circle cx="7.6" cy="9.6" r="1.2" fill="#fff"/><circle cx="15" cy="14" r="0.9" fill="#fff" opacity=".85"/><circle cx="12" cy="6" r="0.7" fill="#fff" opacity=".7"/></svg>
-          <span>返回星球</span>
-        </button>
         <a class="top-button" href="/home.html">
           <img src="assets/icons/home.svg" alt=""><span>返回首页</span>
         </a>
@@ -290,7 +287,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
             <div id="messageList"></div>
           </div>
           <footer class="composer-wrap">
-            <div class="quick-replies" id="quickReplies"></div>
             <div class="composer" id="inputArea">
               <button class="btn-mic" id="btnMic" title="语音输入">
                 <img src="assets/icons/microphone.svg" alt="">
@@ -305,18 +301,26 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
         </section>
       </section>
 
-      <!-- Roadmap Panel -->
-      <aside class="roadmap-panel" id="exploreMap">
-        <h2>成长路线图</h2>
-        <nav class="roadmap-list">
-          <button class="roadmap-step lit" data-cat="root"><span class="roadmap-icon"><img src="assets/icons/roadmap.svg" alt=""></span><strong>路线图</strong></button>
-          <button class="roadmap-step" data-cat="daily"><span class="roadmap-icon"><img src="assets/icons/daily.svg" alt=""></span><strong>日常</strong></button>
-          <button class="roadmap-step" data-cat="sports"><span class="roadmap-icon"><img src="assets/icons/sports.svg" alt=""></span><strong>运动</strong></button>
-          <button class="roadmap-step" data-cat="study"><span class="roadmap-icon"><img src="assets/icons/study.svg" alt=""></span><strong>学习</strong></button>
-          <button class="roadmap-step" data-cat="emotion"><span class="roadmap-icon"><img src="assets/icons/emotion.svg" alt=""></span><strong>情绪</strong></button>
-          <button class="roadmap-step" data-cat="hobby"><span class="roadmap-icon"><img src="assets/icons/interest.svg" alt=""></span><strong>兴趣</strong></button>
-          <button class="roadmap-step" data-cat="social"><span class="roadmap-icon"><img src="assets/icons/social.svg" alt=""></span><strong>社交</strong></button>
-        </nav>
+      <!-- Conversation Compass -->
+      <aside class="roadmap-panel compass-panel" id="exploreMap" aria-labelledby="compassTitle">
+        <header class="compass-head">
+          <h2 id="compassTitle">聊天指南针</h2>
+          <p>想从哪个方向继续？</p>
+        </header>
+        <div class="compass-rose" aria-hidden="true">
+          <svg viewBox="0 0 120 120" fill="none"><circle cx="60" cy="60" r="48"/><circle cx="60" cy="60" r="34"/><path d="M60 16 70 50 104 60 70 70 60 104 50 70 16 60 50 50Z"/><path class="compass-needle" d="m60 24 8 32-8 8-8-8 8-32Z"/><circle cx="60" cy="60" r="6"/></svg>
+          <span id="compassTopic">我的新发现</span>
+        </div>
+        <div class="compass-directions" aria-label="选择继续聊天的方向">
+          <button class="compass-action" type="button" data-prompt="我想再讲一个具体的细节："><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h11M4 18h8"/><circle cx="19" cy="17" r="3"/></svg><span><strong>讲细一点</strong><small>补充一个画面</small></span></button>
+          <button class="compass-action" type="button" data-prompt="这件事让我感觉……"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 1 0-7.6 7.6L12 21l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z"/></svg><span><strong>说说感受</strong><small>它带来什么感觉</small></span></button>
+          <button class="compass-action" type="button" data-prompt="我在意这件事，是因为……"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.5 2.5 0 1 1 3.9 2.1c-1 .7-1.6 1.2-1.6 2.4M12 17h.01"/></svg><span><strong>想想原因</strong><small>为什么会在意</small></span></button>
+          <button class="compass-action" type="button" data-prompt="如果换一个角度，我还想到……"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-7a5 5 0 0 0-5 5v0M4 17h7a5 5 0 0 0 5-5v0"/><path d="m17 4 3 3-3 3M7 14l-3 3 3 3"/></svg><span><strong>换个角度</strong><small>看看另一种可能</small></span></button>
+        </div>
+        <section class="compass-suggestions" aria-labelledby="compassHintTitle">
+          <div class="compass-suggestions-title" id="compassHintTitle">小新想到的线索</div>
+          <div class="quick-replies compass-prompts" id="quickReplies"></div>
+        </section>
       </aside>
     </div>
 
@@ -444,7 +448,7 @@ var TOPIC_CATEGORY_LABELS={daily:'日常生活',sports:'运动',study:'学习',e
 function detectCategories(){var t=messages.filter(function(m){return m.role==='user'}).map(function(m){return m.content}).join(' ');var r={};TOPIC_CATEGORY_MAP.forEach(function(e){e.keywords.forEach(function(k){if(t.indexOf(k)>=0)r[e.cat]=true})});return r}
 function conversationTopic(){var categories=Object.keys(detectCategories());return categories.length?TOPIC_CATEGORY_LABELS[categories[0]]:'我的新发现'}
 function conversationArtifactSummary(childMessages){var excerpts=childMessages.map(function(item){return String(item.content||'').replace(/\s+/g,' ').trim()}).filter(Boolean).sort(function(a,b){return b.length-a.length});if(!excerpts.length)return'完成了一次聊天观察。';var quote=excerpts[0].slice(0,120);return'我在这次聊天中说：“'+quote+(excerpts[0].length>120?'…':'')+'”'}
-function updateRoadmap(){var n=detectCategories(),c=false;for(var k in n){if(!litCategories[k]){litCategories[k]=true;c=true}}if(!c)return;exploreMap.querySelectorAll('.roadmap-step').forEach(function(e){if(litCategories[e.dataset.cat])e.classList.add('lit')})}
+function updateRoadmap(){var topic=document.getElementById('compassTopic');if(topic)topic.textContent=conversationTopic()}
 
 // ===== WELCOME =====
 var WEATHER_ACK_MAP={sunny:'今天的心情像晴天，适合带着这份轻快出发。',cloudy:'今天有点像多云，小新会陪你慢一点。',storm:'今天心里像有阵雷雨，可以先从最想说的一小段开始。',rainbow:'今天的心情像彩虹，把这份开心带进聊天里吧。',breeze:'今天像一阵微风，我们轻轻松松地聊。',lightrain:'今天像有一点小雨，不急着说很多也没关系。',custom:'今天的感觉还说不清，我们可以边聊边发现。'};
@@ -709,6 +713,19 @@ function showShortReplyRecovery(){
   quickReplies.innerHTML=choices.map(function(v){return'<button type="button">'+v+'</button>'}).join('');
   quickReplies.querySelectorAll('button').forEach(function(button,index){button.addEventListener('click',function(){msgInput.value=choices[index];sendMessage()})});
 }
+
+// ===== Conversation compass =====
+document.querySelectorAll('.compass-action').forEach(function(button){
+  button.addEventListener('click',function(){
+    var prompt=this.dataset.prompt||'';
+    if(!prompt)return;
+    msgInput.value=prompt;
+    updateCharCount();
+    autoResizeTextarea();
+    msgInput.focus();
+    msgInput.setSelectionRange(prompt.length,prompt.length);
+  });
+});
 
 var PRE_CHAT_PLANS={
   story:{label:'故事种子',steps:[{type:'picture_choice',title:'故事从哪里开始？',prompt:'先挑一颗最想展开的故事种子。',options:['一件真的发生的小事','一个从没去过的地方','一件会说话的物品']},{type:'picture_choice',title:'接下来会发生什么？',prompt:'选一个最想继续展开的方向。',options:['遇见一位新伙伴','发现一个意外秘密','需要解决一个小麻烦']},{type:'sentence_completion',title:'用你的话打开故事',prompt:'把前两张卡连起来，写下你想说的第一句话。',lead:'故事一开始，'}]},
@@ -1182,10 +1199,6 @@ btnEnd.addEventListener('click',async function(){
 function leaveChat(url){
   if(turnCount>0&&!finalized){finalizeConversation().then(function(){location.href=url}).catch(function(){location.href=url})}else{location.href=url}
 }
-var btnReturnPlanet=document.getElementById('btnReturnPlanet');
-if(btnReturnPlanet)btnReturnPlanet.addEventListener('click',function(){leaveChat('http://localhost:4173/?from=chat')});
-var platformReturnLink=document.getElementById('platformReturnLink');
-if(platformReturnLink)platformReturnLink.addEventListener('click',function(e){e.preventDefault();leaveChat('http://localhost:4173/?from=chat')});
 var homeLinks=document.querySelectorAll('a[href="/home.html"]');
 homeLinks.forEach(function(homeLink){homeLink.addEventListener('click',function(e){if(turnCount>0&&!finalized){e.preventDefault();leaveChat('/home.html')}})});
 btnPinyin.addEventListener('click',function(){this.classList.toggle('on')});

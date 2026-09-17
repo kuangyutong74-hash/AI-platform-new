@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full p-3 md:p-4 gap-3">
+  <div class="level-two-screen game-stage flex flex-col h-full p-3 md:p-4 gap-3">
 
     <!-- ============================================================ -->
     <!-- 顶部：沫沫对话框 + 关卡信息                                 -->
@@ -34,10 +34,10 @@
     <!-- ============================================================ -->
     <!-- 主游戏区：左侧大网格 + 右侧管道材料箱                       -->
     <!-- ============================================================ -->
-    <div class="flex-1 flex gap-2 min-h-0">
+    <div class="level-two-workbench flex-1 flex gap-2 min-h-0">
 
       <!-- ===== 左侧：大型网格区 ===== -->
-      <div class="flex-[3] flex flex-col items-center bg-cyan-50/30 rounded-xl border border-cyan-200/30 p-2 overflow-auto">
+      <div class="grid-station flex-[3] flex flex-col items-center p-2 overflow-auto">
         <div class="flex items-center justify-between w-full mb-1.5">
           <h3 class="text-sm font-bold text-cyan-800" v-html="p('🌊 海底电网 · ' + ROWS + 'x' + COLS)"></h3>
           <div class="flex items-center gap-2 text-xs text-cyan-800/85 font-medium">
@@ -51,10 +51,10 @@
         </div>
 
         <!-- 网格（放大格子，宽屏下饱满） -->
-        <div ref="gridWrapperRef" class="relative w-full" :style="{ maxWidth: (COLS * 64 + 16) + 'px' }">
+        <div ref="gridWrapperRef" class="current-grid-frame relative w-full" :style="{ maxWidth: (COLS * 64 + 16) + 'px' }">
           <!-- ⚡ 电光特效 Canvas（覆盖在网格区域上方） -->
           <Level2Effects :connectionPath="connectionPath" :isConnected="isConnected" />
-          <div ref="gridRef" class="grid gap-1 p-2 rounded-xl border-2 shadow-inner"
+          <div ref="gridRef" class="current-grid grid gap-1 p-2"
              :style="{
                gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
                width: '100%',
@@ -64,7 +64,7 @@
           <div v-for="(cell, idx) in flatGrid" :key="idx"
                :data-row="cell.row"
                :data-col="cell.col"
-               class="relative flex items-center justify-center transition-all duration-200 cursor-pointer select-none rounded-lg group"
+               class="current-grid-cell relative flex items-center justify-center transition-all duration-200 cursor-pointer select-none rounded-lg group"
                :style="{ width: '56px', height: '56px', fontSize: '28px' }"
                :class="[
                  gridCellClass(cell),
@@ -99,7 +99,8 @@
                  :class="'obstacle-' + cell.obstacle.kind"
                  :title="cell.obstacle.label">
               <span class="obstacle-halo"></span>
-              <span class="obstacle-emoji">{{ cell.obstacle.emoji }}</span>
+              <span class="obstacle-token" :class="'obstacle-token-' + cell.obstacle.kind" aria-hidden="true"></span>
+              <span class="sr-only">{{ cell.obstacle.label }}</span>
               <span class="obstacle-bubble bubble-a"></span>
               <span class="obstacle-bubble bubble-b"></span>
             </div>
@@ -123,16 +124,16 @@
       </div>
 
       <!-- ===== 右侧：管道选择器（加宽） ===== -->
-      <div class="w-[280px] shrink-0 flex flex-col gap-3 overflow-y-auto">
+      <aside class="pipe-bay w-[280px] shrink-0 flex flex-col gap-3 overflow-y-auto">
         
         <!-- 管道库（放大卡片） -->
-        <div class="bg-white/60 rounded-2xl p-4 border border-cyan-200/30">
+        <div class="pipe-rack p-4">
           <h4 class="text-lg md:text-xl font-bold text-cyan-700 mb-3"><span v-html="p('🔧 管道库')"></span></h4>
         <p class="text-sm text-cyan-800/90 font-medium mb-3" v-html="p('点击选中 → 点击网格放置')"></p>
           <div class="grid grid-cols-2 gap-3">
             <div v-for="(pipe, i) in pipeTypes" :key="i"
                  @mouseenter="playHover" @click="selectPipeType(i)"
-                 class="relative flex flex-col items-center bg-white/80 rounded-xl py-4 border-2 cursor-pointer hover:shadow-lg transition-all"
+                 class="pipe-rack-slot relative flex flex-col items-center rounded-xl py-4 border-2 cursor-pointer hover:shadow-lg transition-all"
                  :class="[
                    selectedPipe === i ? 'border-cyan-400 shadow-md bg-cyan-50/80' : 'border-cyan-200/40 hover:border-cyan-300',
                    showTutorial && tutorialStep === 1 && i === 0 ? 'z-50 ring-4 ring-yellow-400 shadow-[0_0_20px_#facc15] scale-105 pointer-events-auto' : ''
@@ -144,9 +145,9 @@
         </div>
 
         <!-- 操作说明 -->
-        <div class="bg-cyan-50/60 rounded-2xl p-4 border border-cyan-200/20">
+        <div class="operation-console rounded-2xl p-4">
           <h5 class="text-base font-bold text-cyan-700 mb-2"><span v-html="p('💡 操作')"></span></h5>
-          <ul class="text-sm text-cyan-900/90 font-medium space-y-1.5 leading-relaxed">
+          <ul class="operation-copy text-sm font-medium space-y-1.5 leading-relaxed">
             <li v-html="p('• 选管道 → 点格子放置')"></li>
             <li v-html="p('• 点击已放管道可旋转')"></li>
             <li v-html="p('• 右键点击可移除')"></li>
@@ -162,7 +163,7 @@
         </div>
 
         <!-- 进度 -->
-        <div class="bg-white/60 rounded-2xl p-4 border border-cyan-200/30">
+        <div class="power-status rounded-2xl p-4">
           <div class="flex items-center justify-between mb-2">
             <span class="text-base font-bold text-cyan-700" v-html="p('⚡ 连通状态')"></span>
             <span class="text-sm font-bold" :class="isConnected ? 'text-emerald-600' : 'text-cyan-400'">
@@ -170,7 +171,7 @@
             </span>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
 
     <!-- ============================================================ -->
@@ -1047,10 +1048,8 @@ function launchConfetti() {
 }
 
 .obstacle-cell {
-  background:
-    radial-gradient(circle at 50% 75%, rgba(15, 23, 42, 0.72), transparent 48%),
-    linear-gradient(155deg, rgba(30, 58, 78, 0.94), rgba(8, 47, 73, 0.74));
-  box-shadow: inset 0 1px 5px rgba(255,255,255,0.13), inset 0 -6px 12px rgba(2,6,23,0.28);
+  background: linear-gradient(155deg, rgba(16, 72, 83, .82), rgba(4, 39, 58, .9));
+  box-shadow: inset 0 1px 0 rgba(167, 243, 246, .22), inset 0 -8px 14px rgba(2, 18, 31, .32);
 }
 
 .obstacle-scene {
@@ -1071,14 +1070,27 @@ function launchConfetti() {
   filter: blur(1px);
 }
 
-.obstacle-emoji {
+.obstacle-token {
   position: relative;
   z-index: 2;
-  font-size: 30px;
-  line-height: 1;
-  filter: drop-shadow(0 4px 3px rgba(2,6,23,.52)) saturate(1.15);
-  transform: translateY(1px);
+  width: 47px;
+  height: 47px;
+  display: block;
+  background-image: url('../assets/generated/rebuild-v1/level2-obstacle-atlas-v1.png');
+  background-repeat: no-repeat;
+  background-size: 400% 200%;
+  filter: drop-shadow(0 5px 4px rgba(2, 13, 25, .62));
+  transform: translateY(1px) scale(.94);
 }
+
+.obstacle-token-coral { background-position: 0 0; }
+.obstacle-token-rock { background-position: 33.333% 0; }
+.obstacle-token-weed { background-position: 66.666% 0; }
+.obstacle-token-shell { background-position: 100% 0; }
+.obstacle-token-crab { background-position: 0 100%; }
+.obstacle-token-puffer { background-position: 33.333% 100%; }
+.obstacle-token-jelly { background-position: 66.666% 100%; }
+.obstacle-token-star { background-position: 100% 100%; }
 
 .obstacle-bubble {
   position: absolute;
@@ -1093,14 +1105,14 @@ function launchConfetti() {
 
 .bubble-a { top: 6px; right: 7px; }
 .bubble-b { width: 3px; height: 3px; top: 15px; right: 3px; animation-delay: -1.2s; }
-.obstacle-jelly .obstacle-emoji,
-.obstacle-star .obstacle-emoji {
+.obstacle-jelly .obstacle-token,
+.obstacle-star .obstacle-token {
   filter: drop-shadow(0 0 7px rgba(103,232,249,.8)) drop-shadow(0 4px 3px rgba(2,6,23,.5));
 }
-.obstacle-coral .obstacle-emoji {
+.obstacle-coral .obstacle-token {
   filter: drop-shadow(0 0 6px rgba(251,113,133,.35)) drop-shadow(0 4px 3px rgba(2,6,23,.5));
 }
-.obstacle-weed .obstacle-emoji {
+.obstacle-weed .obstacle-token {
   animation: seaweedSway 3s ease-in-out infinite;
   transform-origin: bottom center;
 }

@@ -23,7 +23,7 @@
     </div>
 
     <!-- 主内容 -->
-    <div class="relative z-10 w-full max-w-2xl flex flex-col items-center ceremony-enter">
+    <div class="relative z-10 w-full max-w-5xl flex flex-col items-center ceremony-enter">
 
       <!-- 顶部大标题 -->
       <div class="text-center mb-3">
@@ -32,7 +32,7 @@
           <span v-html="p('任务全部完成')"></span>
           <img :src="medalSrc" alt="" class="ceremony-inline-icon" />
         </div>
-        <h1 class="title-glow text-2xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-300 to-yellow-400 leading-tight">
+        <h1 class="ceremony-title title-glow text-2xl md:text-4xl font-bold leading-tight">
           <span v-html="p('恭喜小队长！')"></span>
         </h1>
         <p class="text-cyan-100/90 text-sm md:text-base mt-0.5 font-bold tracking-wide">
@@ -40,8 +40,9 @@
         </p>
       </div>
 
+      <div class="ceremony-stage w-full">
       <!-- 沫沫授勋 -->
-      <div class="momo-panel flex items-start gap-2.5 w-full mb-3 bg-white/15 backdrop-blur-md rounded-2xl px-4 py-3 md:px-5 md:py-3.5 border-2 border-white/25 shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+      <div class="momo-panel flex items-start gap-2.5 w-full px-4 py-3 md:px-5 md:py-3.5">
         <MomoDolphin size="lg" class="shrink-0" />
         <div class="flex-1 min-w-0">
           <div class="text-base md:text-lg font-bold text-cyan-50 mb-0.5" v-html="p('沫沫队长说：')"></div>
@@ -54,7 +55,7 @@
       </div>
 
       <!-- 勋章卡片（点击翻转） -->
-      <div class="mb-3 flex flex-col items-center">
+      <div class="medal-stage flex flex-col items-center">
         <div @click="flipBadge"
              class="badge-wrap relative w-32 h-32 md:w-40 md:h-40 cursor-pointer perspective-1000 badge-bounce">
           <div class="absolute -inset-3 rounded-full bg-amber-400/30 blur-xl animate-pulse pointer-events-none"></div>
@@ -86,9 +87,10 @@
           </span>
         </div>
       </div>
+      </div>
 
       <!-- 三关战绩 -->
-      <div class="w-full mb-3">
+      <div class="achievement-board w-full mb-3">
         <h3 class="text-center text-sm md:text-base font-bold text-cyan-50 mb-1.5 inline-flex items-center justify-center gap-2 w-full">
           <img :src="homeBaseIcon" alt="" class="ceremony-section-icon" />
           <span v-html="p('冒险战绩')"></span>
@@ -422,6 +424,71 @@ onUnmounted(() => {
 .ceremony-screen {
   background: radial-gradient(circle at 50% 18%, rgba(250,204,21,.1), transparent 30%);
 }
+
+.ceremony-title {
+  color: #ffe49a;
+  letter-spacing: -.025em;
+  text-shadow: 0 3px 0 rgba(102, 58, 17, .7), 0 10px 28px rgba(255, 198, 62, .38);
+}
+
+.ceremony-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, .8fr);
+  align-items: center;
+  gap: clamp(20px, 3vw, 42px);
+  margin-bottom: 18px;
+}
+
+.momo-panel {
+  position: relative;
+  min-height: 150px;
+  align-items: center;
+  color: #fff8dc;
+  border: 1px solid rgba(255, 214, 122, .6);
+  border-radius: 24px 24px 24px 8px;
+  background: radial-gradient(circle at 8% 20%, rgba(60, 224, 232, .22), transparent 34%), linear-gradient(145deg, rgba(8, 52, 81, .97), rgba(28, 38, 91, .97));
+  box-shadow: 0 18px 38px rgba(2, 12, 42, .36), inset 0 1px rgba(255,255,255,.16);
+}
+
+.momo-panel::after {
+  content: '';
+  position: absolute;
+  left: 26px;
+  bottom: -17px;
+  width: 28px;
+  height: 24px;
+  background: #172c5a;
+  clip-path: polygon(0 0, 100% 0, 16% 100%);
+}
+
+.medal-stage {
+  position: relative;
+  min-height: 218px;
+  justify-content: center;
+  border-radius: 50% 50% 24px 24px;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 224, 116, .34), transparent 46%);
+}
+
+.medal-stage::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 12%;
+  right: 12%;
+  bottom: 10px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #f4d17f, #81511f 66%, #2f1d18);
+  box-shadow: 0 14px 26px rgba(0, 8, 31, .45), inset 0 2px rgba(255, 246, 192, .7);
+}
+
+.achievement-board {
+  padding: 14px 18px 18px;
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(6, 34, 68, .82), rgba(14, 28, 69, .94));
+  border: 1px solid rgba(255, 218, 128, .48);
+  box-shadow: 0 22px 48px rgba(0, 9, 38, .34), inset 0 1px rgba(255,255,255,.12);
+}
 .ceremony-caustics {
   opacity: .28;
   background-image:
@@ -564,7 +631,7 @@ onUnmounted(() => {
   animation: cardSlideUp 0.6s ease-out both;
   min-height: 118px;
   box-shadow: 0 10px 28px rgba(2, 6, 23, .2), inset 0 1px rgba(255,255,255,.14);
-  backdrop-filter: blur(12px);
+  backdrop-filter: none;
   transition: transform .25s ease, box-shadow .25s ease;
 }
 
@@ -574,16 +641,16 @@ onUnmounted(() => {
 }
 
 .achievement-emerald {
-  border-color: rgba(110,231,183,.45);
-  background: radial-gradient(circle at 50% 0, rgba(52,211,153,.28), transparent 48%), linear-gradient(145deg, rgba(6,78,59,.78), rgba(6,95,70,.48));
+  border-color: rgba(99, 227, 193, .62);
+  background: linear-gradient(155deg, #0c675f, #123d5a);
 }
 .achievement-amber {
-  border-color: rgba(253,230,138,.48);
-  background: radial-gradient(circle at 50% 0, rgba(251,191,36,.3), transparent 48%), linear-gradient(145deg, rgba(120,53,15,.76), rgba(146,64,14,.46));
+  border-color: rgba(255, 211, 119, .68);
+  background: linear-gradient(155deg, #80511f, #55364c);
 }
 .achievement-violet {
-  border-color: rgba(196,181,253,.46);
-  background: radial-gradient(circle at 50% 0, rgba(167,139,250,.3), transparent 48%), linear-gradient(145deg, rgba(76,29,149,.76), rgba(91,33,182,.46));
+  border-color: rgba(204, 185, 255, .65);
+  background: linear-gradient(155deg, #53409b, #352b72);
 }
 
 .level-card::after {
@@ -592,6 +659,18 @@ onUnmounted(() => {
   inset: 0;
   pointer-events: none;
   background: linear-gradient(115deg, rgba(255,255,255,.12), transparent 32%, transparent 72%, rgba(255,255,255,.05));
+}
+
+.level-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 14%;
+  right: 14%;
+  height: 3px;
+  border-radius: 0 0 8px 8px;
+  background: #ffe49a;
+  box-shadow: 0 0 14px rgba(255, 218, 119, .48);
 }
 
 .level-card-number {
@@ -682,5 +761,12 @@ onUnmounted(() => {
 @keyframes medalShimmer {
   0%, 100% { filter: drop-shadow(0 10px 16px rgba(2,6,23,.4)) drop-shadow(0 0 15px rgba(251,191,36,.35)); }
   50% { filter: drop-shadow(0 12px 18px rgba(2,6,23,.36)) drop-shadow(0 0 30px rgba(253,224,71,.72)); }
+}
+
+@media (max-width: 760px) {
+  .ceremony-stage { grid-template-columns: 1fr; gap: 12px; }
+  .momo-panel { min-height: 112px; }
+  .medal-stage { min-height: 190px; }
+  .achievement-board { padding: 12px; }
 }
 </style>
