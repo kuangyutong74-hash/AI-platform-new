@@ -24,6 +24,7 @@ const DEEPSEEK_MODEL = process.env.AI_MODEL || process.env.ZHIPUAI_MODEL || proc
 const DEEPSEEK_MODEL_ANALYZE = process.env.DEEPSEEK_MODEL_ANALYZE || DEEPSEEK_MODEL;
 const DEEPSEEK_MODEL_REPLY = process.env.DEEPSEEK_MODEL_REPLY || DEEPSEEK_MODEL;
 const DEEPSEEK_BASE_URL = process.env.AI_BASE_URL || process.env.AI_API_BASE || process.env.ZHIPUAI_BASE_URL || process.env.ZHIPU_BASE_URL || process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
+const CORE_INTERNAL_URL = (process.env.CORE_INTERNAL_URL || 'http://127.0.0.1:8120').replace(/\/$/, '');
 
 
 // 数据目录（可通过环境变量覆盖，供测试使用临时目录）
@@ -131,8 +132,48 @@ app.use(function (err, req, res, next) {
   next(err);
 });
 
-// 无账号体系：所有请求统一使用固定 guest 身份
-function guestIdentity(req, _res, next) { req.userId = 'guest'; next(); }
+// 从平台登录 Cookie 获取当前学生身份。未登录或 Core 暂时不可用时回退为 guest。
+async function resolveRequestUserId(cookieHeader, fetchImpl) {
+  if (typeof cookieHeader !== 'string' || !/(?:^|;\s*)ai_bole_session=/.test(cookieHeader)) {
+    return 'guest';
+  }
+
+  const request = fetchImpl || global.fetch;
+  if (typeof request !== 'function') return 'guest';
+
+  const controller = new AbortController();
+  const timeout = setTimeout(function () { controller.abort(); }, 2000);
+  try {
+    const response = await request(CORE_INTERNAL_URL + '/api/account/me', {
+      headers: { Cookie: cookieHeader, Accept: 'application/json' },
+      signal: controller.signal,
+    });
+    if (!response.ok) return 'guest';
+    const payload = await response.json();
+    const identity = payload && (payload.selected_student || payload.account);
+    return identity && typeof identity.id === 'string' && identity.id.trim()
+      ? identity.id.trim()
+      : 'guest';
+  } catch (_) {
+    return 'guest';
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function guestIdentity(req, _res, next) {
+  req.userId = await resolveRequestUserId(req.headers.cookie || '');
+  next();
+}
+
+function userSessionKey(userId, sessionId) {
+  const normalizedUserId = String(userId || 'guest');
+  const normalizedSessionId = String(sessionId || '');
+  // 保持旧版未登录会话的内存键兼容；登录用户必须带身份前缀以隔离账号。
+  return normalizedUserId === 'guest'
+    ? normalizedSessionId
+    : normalizedUserId + ':' + normalizedSessionId;
+}
 // 基础安全响应头（HTML 和 API 统一设置）
 app.use(securityHeadersMiddleware);
 
@@ -146,7 +187,7 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// 会话历史存储（内存），key: sessionId, value: 消息数组
+// 会话历史存储（内存），key: userId:sessionId, value: 消息数组
 const sessionStore = new Map();
 // 每轮 AI 回复的时间戳，用于计算学生的"耗时"（上一轮回复完→本轮发言，单位秒）
 const lastAiReplyTime = new Map();
@@ -247,8 +288,9 @@ function buildAnalyzeConversation(history, studentMessage) {
 }
 
 // 多轮会话接口（带历史记忆）
-app.post('/chat/session', async (req, res) => {
+app.post('/chat/session', guestIdentity, async (req, res) => {
   const { sessionId, topicSource } = req.body;
+    const sessionKey = userSessionKey(req.userId, sessionId);
     const rawMessage = req.body.message;
 
     // sessionId 校验
@@ -282,21 +324,21 @@ app.post('/chat/session', async (req, res) => {
 
     // 把学生发送消息的时间记录下来，方便以后计算耗时
     const now = Date.now();
-    const lastReplyTime = lastAiReplyTime.get(sessionId);
+    const lastReplyTime = lastAiReplyTime.get(sessionKey);
     const durationSec = lastReplyTime ? Math.round((now - lastReplyTime) / 1000) : null;
 
     // 获取或创建该 session 的历史
-    if (!sessionStore.has(sessionId)) {
+    if (!sessionStore.has(sessionKey)) {
       // Try to recover from history.json (survives server restarts)
       const history = readHistory();
-      const existing = history.find(h => h.sessionId === sessionId && !h.completed && (!h.userId || h.userId === 'guest'));
+      const existing = history.find(h => h.sessionId === sessionId && !h.completed && h.userId === req.userId);
       if (existing && existing.messages) {
-        sessionStore.set(sessionId, existing.messages);
+        sessionStore.set(sessionKey, existing.messages);
       } else {
-        sessionStore.set(sessionId, []);
+        sessionStore.set(sessionKey, []);
       }
     }
-    const history = sessionStore.get(sessionId);
+    const history = sessionStore.get(sessionKey);
 
     // 记录 topicSource（只存不发给 AI，方便以后后端过滤）
     const source = topicSource || 'normal';
@@ -318,12 +360,12 @@ app.post('/chat/session', async (req, res) => {
     try {
         // 读取或初始化 conversation state（仅存入局部变量，
         // 只有 runV2Turn 成功后才会持久化到 conversationStateStore）。
-        let previousState = conversationStateStore.get(sessionId);
+        let previousState = conversationStateStore.get(sessionKey);
 
         if (!previousState) {
           const historyEntries = readHistory();
           const entry = historyEntries.find(
-            h => h.sessionId === sessionId
+            h => h.sessionId === sessionId && h.userId === req.userId
           );
           const cs = getV2Cs();
           if (
@@ -540,11 +582,11 @@ app.post('/chat/session', async (req, res) => {
         });
 
         conversationStateStore.set(
-          sessionId,
+          sessionKey,
           result.nextState
         );
 
-        lastAiReplyTime.set(sessionId, Date.now());
+        lastAiReplyTime.set(sessionKey, Date.now());
 
         // chat-log
         const logEntry = {
@@ -619,7 +661,7 @@ app.post('/api/session/restore', guestIdentity, (req, res) => {
     if (!conv) {
       return res.status(403).json({ error: '无权恢复此对话' });
     }
-    sessionStore.set(sessionId, [...messages]);
+    sessionStore.set(userSessionKey(req.userId, sessionId), [...messages]);
     res.json({ ok: true, count: messages.length });
   } catch (err) {
     res.status(500).json({ error: 'INTERNAL_ERROR' });
@@ -721,12 +763,12 @@ app.post('/api/history', guestIdentity, (req, res) => {
     // Upsert: prefer convId match, then sessionId match
     let existingIdx = -1;
     if (convId) {
-      existingIdx = history.findIndex(h => h.id === convId && !h.completed);
-      if (existingIdx < 0) existingIdx = history.findIndex(h => h.id === convId);
+      existingIdx = history.findIndex(h => h.id === convId && h.userId === req.userId && !h.completed);
+      if (existingIdx < 0) existingIdx = history.findIndex(h => h.id === convId && h.userId === req.userId);
     }
     if (existingIdx < 0 && sessionId) {
-      existingIdx = history.findIndex(h => h.sessionId === sessionId && !h.completed);
-      if (existingIdx < 0) existingIdx = history.findIndex(h => h.sessionId === sessionId && h.completed);
+      existingIdx = history.findIndex(h => h.sessionId === sessionId && h.userId === req.userId && !h.completed);
+      if (existingIdx < 0) existingIdx = history.findIndex(h => h.sessionId === sessionId && h.userId === req.userId && h.completed);
     }
 
     const isNew = existingIdx < 0;
@@ -758,11 +800,11 @@ app.post('/api/history', guestIdentity, (req, res) => {
     // V2 conversationState 持久化
     if (
       sessionId &&
-      conversationStateStore.has(sessionId)
+      conversationStateStore.has(userSessionKey(req.userId, sessionId))
     ) {
       entry.conversationState =
         getV2Cs().normalizeConversationState(
-          conversationStateStore.get(sessionId)
+          conversationStateStore.get(userSessionKey(req.userId, sessionId))
         );
     } else if (
       previousEntry &&
@@ -845,15 +887,15 @@ app.put('/api/history/auto-save', guestIdentity, (req, res) => {
     // 如果有 convId（续接旧对话），优先用 convId 查找原记录
     let existingIdx = -1;
     if (convId) {
-      existingIdx = history.findIndex(h => h.id === convId && !h.completed);
-      if (existingIdx < 0) existingIdx = history.findIndex(h => h.id === convId);
+      existingIdx = history.findIndex(h => h.id === convId && h.userId === req.userId && !h.completed);
+      if (existingIdx < 0) existingIdx = history.findIndex(h => h.id === convId && h.userId === req.userId);
     }
     if (existingIdx < 0) {
-      existingIdx = history.findIndex(h => h.sessionId === sessionId && !h.completed);
+      existingIdx = history.findIndex(h => h.sessionId === sessionId && h.userId === req.userId && !h.completed);
       // 该会话已由结束流程标记完成：自动保存不再追加一条"未完成"的重复记录。
       // 注意必须单独查一次 completed 条目——上面的查找只匹配未完成的，否则守卫永远不生效。
       if (existingIdx < 0) {
-        existingIdx = history.findIndex(h => h.sessionId === sessionId && h.completed);
+        existingIdx = history.findIndex(h => h.sessionId === sessionId && h.userId === req.userId && h.completed);
         if (existingIdx >= 0) {
           return res.json({ id: history[existingIdx].id, updated: false, skipped: true });
         }
@@ -891,11 +933,11 @@ app.put('/api/history/auto-save', guestIdentity, (req, res) => {
 
     // V2 conversationState 持久化
     if (
-      conversationStateStore.has(sessionId)
+      conversationStateStore.has(userSessionKey(req.userId, sessionId))
     ) {
       entry.conversationState =
         getV2Cs().normalizeConversationState(
-          conversationStateStore.get(sessionId)
+          conversationStateStore.get(userSessionKey(req.userId, sessionId))
         );
     } else if (
       previousEntryAuto &&
@@ -2124,4 +2166,6 @@ module.exports = {
   _readHistory: readHistory,
   _writeHistory: writeHistory,
   _logSanitizedBackgroundError: logSanitizedBackgroundError,
+  _resolveRequestUserId: resolveRequestUserId,
+  _userSessionKey: userSessionKey,
 };
