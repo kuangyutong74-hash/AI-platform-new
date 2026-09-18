@@ -5,6 +5,7 @@ APP_DIR="/opt/ai-bole"
 SERVICE_USER="ai-bole"
 REPO_URL="${AI_BOLE_REPO_URL:-https://github.com/kuangyutong74-hash/AI-.git}"
 BRANCH="${AI_BOLE_DEPLOY_BRANCH:-master}"
+SOURCE_ARCHIVE="${AI_BOLE_SOURCE_ARCHIVE:-}"
 PUBLIC_ORIGIN="${ECS_PUBLIC_ORIGIN:-}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 STAGING_DIR="/opt/ai-bole-staging-${STAMP}"
@@ -40,8 +41,19 @@ copy_if_present() {
   fi
 }
 
-echo "[1/7] 获取 ${BRANCH} 最新代码"
-git clone --depth 1 --branch "${BRANCH}" "${REPO_URL}" "${STAGING_DIR}"
+echo "[1/7] 获取部署源码"
+if [[ -n "${SOURCE_ARCHIVE}" ]]; then
+  if [[ ! -f "${SOURCE_ARCHIVE}" ]]; then
+    echo "找不到部署归档：${SOURCE_ARCHIVE}" >&2
+    exit 1
+  fi
+  mkdir -p "${STAGING_DIR}"
+  tar -xzf "${SOURCE_ARCHIVE}" -C "${STAGING_DIR}"
+  DEPLOY_VERSION="${AI_BOLE_DEPLOY_VERSION:-本地归档-${STAMP}}"
+else
+  git -c http.version=HTTP/1.1 clone --depth 1 --branch "${BRANCH}" "${REPO_URL}" "${STAGING_DIR}"
+  DEPLOY_VERSION="$(git -C "${STAGING_DIR}" rev-parse --short HEAD)"
+fi
 
 echo "[2/7] 保留密钥与业务数据"
 cp -a "${APP_DIR}/.env" "${STAGING_DIR}/.env"
@@ -101,7 +113,7 @@ if systemctl start "${SERVICES[@]}" \
   && curl --fail --silent --show-error http://127.0.0.1:4173/ >/dev/null; then
   rm -rf -- "${BACKUP_DIR}"
   trap - EXIT
-  echo "部署成功：$(git -C "${APP_DIR}" rev-parse --short HEAD)"
+  echo "部署成功：${DEPLOY_VERSION}"
   exit 0
 fi
 

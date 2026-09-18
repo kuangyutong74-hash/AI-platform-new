@@ -193,6 +193,8 @@ ECS_PUBLIC_ORIGIN=http://你的公网IP bash /opt/ai-bole/scripts/deploy-ecs-upd
 
 默认拉取 `master` 分支。私有仓库需先为服务器配置只读 Deploy Key；也可通过 `AI_BOLE_REPO_URL` 和 `AI_BOLE_DEPLOY_BRANCH` 覆盖仓库与分支。部署期间服务会短暂停止，生产数据和 `.env` 不应提交到 Git。
 
+如果 ECS 访问 GitHub 不稳定，可在本地用 `git archive` 生成仅含已提交文件的归档并上传，再指定 `AI_BOLE_SOURCE_ARCHIVE` 部署；其余备份、构建、健康检查与回滚流程不变。
+
 重建仅用于开发的 Core 测试数据：
 
 ```powershell
