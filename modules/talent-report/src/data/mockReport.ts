@@ -8,7 +8,7 @@ export type ChatScene={type:"chat";topic:string;words:string;turns:number};
 export type CareerScene={type:"career";career:string;completed:number;stages:number;adjustments:number;retries:number;hints:number};
 export type MomentSceneData=DeepSeaPipelineScene|EcologyScene|MediationScene|StoryScene|ChatScene|CareerScene;
 export type Moment = { id:string; kind:"story"|"base"|"chat"|"career"; title:string; caption:string; quote?:string; stickers?:string[]; source?:string; time?:string; evidenceId?:string; imageUrl?:string; sceneData?:MomentSceneData; isExample?:boolean };
-export type Talent = { key:string; adultName:string; childName:string; icon:string; label:string; color:string; relativeStrength:number; moduleUrl:string; continent:string; module:string; encouragement:string; evidence:Evidence[]; moments?:Moment[] };
+export type Talent = { key:string; adultName:string; childName:string; icon:string; label:string; color:string; relativeStrength:number; moduleUrl:string; continent:string; module:string; encouragement:string; evidence:Evidence[]; moments?:Moment[]; usedEvidenceIds?:string[] };
 
 const e = (id:string, behavior:string, source:string, continent:string, time:string, level:EvidenceLevel, raw:string):Evidence => ({ id, behavior, source, continent, time, level, raw });
 export const talents:Talent[] = [

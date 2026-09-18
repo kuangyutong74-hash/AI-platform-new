@@ -31,7 +31,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from jsonschema import Draft202012Validator, FormatChecker
 
-from reports import generate_internal_report
+from reports import ANALYSIS_VERSION, DEEP_SEA_SESSION_EVENT, generate_internal_report
 
 
 ROOT = Path(__file__).resolve().parent
@@ -938,6 +938,9 @@ def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple
            WHERE s.child_profile_id=? ORDER BY se.occurred_at ASC""", (profile_id,)
     ).fetchall()
     dimension_by_construct = construct_dimension_map()
+    # 单关记录写入时整场还没结束，无法判断它是否留下了完整过程。这里按会话
+    # 回填“这一场是否走完”，报告侧据此判定卡片是“较完整记录”还是“参考线索”。
+    completed_sessions = {row["session_id"] for row in rows if row["event_type"] == DEEP_SEA_SESSION_EVENT}
     events = []
     for row in rows:
         constructs = json.loads(row["constructs_json"])
@@ -998,7 +1001,7 @@ def standard_events_for_report(db: sqlite3.Connection, profile_id: str) -> tuple
                     intelligence_candidates.append(dimension)
         if row["module_id"] == "career" and context["sessionSummary"].get("mentorReflections") and "intrapersonal" not in intelligence_candidates:
             intelligence_candidates.append("intrapersonal")
-        events.append({"id": row["evidence_id"], "module": row["module_id"], "event_type": row["event_type"], "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "intelligence_candidates": intelligence_candidates, "behavior_summary": row["behavior_summary"], "raw_evidence": payload, "context": context})
+        events.append({"id": row["evidence_id"], "module": row["module_id"], "event_type": row["event_type"], "occurred_at": row["occurred_at"], "evidence_level": row["evidence_level"], "session_id": row["session_id"], "session_completed": row["session_id"] in completed_sessions, "intelligence_candidates": intelligence_candidates, "behavior_summary": row["behavior_summary"], "raw_evidence": payload, "context": context})
     return events, [row["evidence_id"] for row in rows]
 
 
@@ -1009,7 +1012,9 @@ REPORT_MODULE_QUESTION_BANK = {
     "career": {"lead":"聊聊面对任务","question":"面对一个没做过的新任务，孩子通常怎样开始？","options":["先观察再做","马上动手试","先问清步骤","需要陪着做"],"placeholder":"可以写下最近的一次尝试"},
 }
 REPORT_QUESTION_VERSION = "module-bank-v1"
-REPORT_ANALYSIS_VERSION = "dimension-observation-v3"
+# 与报告生成侧共用同一个分析版本。两边写死不同字符串时，缓存校验会一直判定
+# “旧报告”，家长端要么拿不到缓存，要么看到上一版文案。
+REPORT_ANALYSIS_VERSION = ANALYSIS_VERSION
 
 
 def fallback_report_questions(child_name: str, report: dict, events: list[dict]) -> dict:
@@ -1606,7 +1611,11 @@ def create_report_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict
     with connect() as db:
         profile = profile_for_account(db, account["id"])
         events, evidence_ids = standard_events_for_report(db, profile["id"])
-        evidence_hash = hashlib.sha256(json.dumps(events, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+        # 缓存键里带上分析规则版本。否则报告文案升级后，证据没变的孩子会一直
+        # 看到上一版生成的旧报告，“已修复”对家长端不生效。
+        evidence_hash = hashlib.sha256(
+            f"{ANALYSIS_VERSION}:{json.dumps(events, ensure_ascii=False, sort_keys=True)}".encode("utf-8")
+        ).hexdigest()
         cached = db.execute(
             "SELECT id,status,report_json FROM reports WHERE child_profile_id=? AND evidence_set_hash=? AND status='published' ORDER BY published_at DESC LIMIT 1",
             (profile["id"], evidence_hash),

@@ -17,6 +17,9 @@
 /out/
 /dist/
 **/dist/
+# 验收/回滚用的构建输出（dist-verify、dist.old.<时间戳>）
+**/dist-verify/
+**/dist.old.*/
 
 # caches and runtimes
 **/__pycache__/
@@ -29,6 +32,7 @@
 /modules/platform-core/data/backups/
 /.wrangler/
 /.runtime/
+**/.runtime/
 /outputs/
 /work/
 
