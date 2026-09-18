@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+umask 022
 
 APP_DIR="/opt/ai-bole"
 SERVICE_USER="ai-bole"
@@ -96,6 +97,14 @@ echo "[6/7] 构建前端"
 (cd "${STAGING_DIR}/modules/deep-sea" && npm run build)
 (cd "${STAGING_DIR}/modules/talent-report" && npm run build)
 chown -R "${SERVICE_USER}:${SERVICE_USER}" "${STAGING_DIR}"
+find "${STAGING_DIR}" -type d -exec chmod 755 {} +
+chmod 600 "${STAGING_DIR}/.env"
+for static_dir in \
+  "${STAGING_DIR}/modules/story/frontend/dist" \
+  "${STAGING_DIR}/modules/deep-sea/dist" \
+  "${STAGING_DIR}/modules/talent-report/dist"; do
+  find "${static_dir}" -type f -exec chmod 644 {} +
+done
 
 echo "[7/7] 切换版本并检查服务"
 systemctl stop "${SERVICES[@]}"
