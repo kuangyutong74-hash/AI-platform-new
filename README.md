@@ -183,6 +183,16 @@ npm test
 npm run verify:workspace
 ```
 
+### ECS 更新部署
+
+首次部署完成后，服务器可从 GitHub 拉取新版本，在临时目录安装依赖和构建，保留根目录 `.env`、Core 数据、聊天数据、故事数据库与职业数据库，再切换版本并执行健康检查。失败时会自动恢复旧版本。
+
+```bash
+ECS_PUBLIC_ORIGIN=http://你的公网IP bash /opt/ai-bole/scripts/deploy-ecs-update.sh
+```
+
+默认拉取 `master` 分支。私有仓库需先为服务器配置只读 Deploy Key；也可通过 `AI_BOLE_REPO_URL` 和 `AI_BOLE_DEPLOY_BRANCH` 覆盖仓库与分支。部署期间服务会短暂停止，生产数据和 `.env` 不应提交到 Git。
+
 重建仅用于开发的 Core 测试数据：
 
 ```powershell
