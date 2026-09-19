@@ -8,6 +8,10 @@ import os
 import hashlib
 import secrets
 import uuid
+import asyncio
+import json
+from urllib.error import HTTPError, URLError
+from urllib.request import Request as UrlRequest, urlopen
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -16,6 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import User, AuthToken, Session
+from config import CORE_INTERNAL_URL
 
 
 # ---- Password hashing (pbkdf2_hmac, stdlib only) ----
@@ -163,6 +168,42 @@ async def get_current_user_optional(
         return None
     token = auth.removeprefix("Bearer ").strip()
     return await get_user_by_token(db, token)
+
+
+# ---- Unified platform identity ----
+
+def _fetch_platform_student(session_token: str) -> dict | None:
+    request = UrlRequest(
+        f"{CORE_INTERNAL_URL}/api/account/me",
+        headers={
+            "Cookie": f"ai_bole_session={session_token}",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urlopen(request, timeout=2) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, ValueError, json.JSONDecodeError):
+        return None
+    identity = payload.get("selected_student") or payload.get("account")
+    if (
+        not isinstance(identity, dict)
+        or identity.get("role", "student") != "student"
+        or not str(identity.get("id", "")).strip()
+    ):
+        return None
+    return identity
+
+
+async def get_platform_student(request: Request) -> dict:
+    """Resolve the current student from the shared platform cookie."""
+    token = request.cookies.get("ai_bole_session", "")
+    if not token:
+        raise HTTPException(status_code=401, detail="请先登录平台账号")
+    student = await asyncio.to_thread(_fetch_platform_student, token)
+    if not student:
+        raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
+    return student
 
 
 # ---- Claim old sessions ----

@@ -72,3 +72,15 @@ async def _migrate(conn):
         await conn.exec_driver_sql("DROP TABLE characters")
         await conn.exec_driver_sql("ALTER TABLE characters_new RENAME TO characters")
         await conn.commit()
+
+    char_columns = {
+        row[1]
+        for row in (await conn.exec_driver_sql("PRAGMA table_info(characters)")).fetchall()
+    }
+    if "owner_id" not in char_columns:
+        # 旧数据保留为 owner_id=NULL，不自动归给任意新登录账号。
+        await conn.exec_driver_sql("ALTER TABLE characters ADD COLUMN owner_id VARCHAR(80)")
+        await conn.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_characters_owner_id ON characters(owner_id)"
+        )
+        await conn.commit()

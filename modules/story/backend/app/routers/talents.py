@@ -1,21 +1,29 @@
 from dataclasses import asdict
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.auth import require_platform_student_id
+from app.models.character import Character
 from app.models.story import Story
 from app.services import talent_service
 
 router = APIRouter(prefix="/talents", tags=["talents"])
 
 
-async def _story_profile(story_id: int, db: AsyncSession):
-    story = await db.get(Story, story_id)
+async def _story_profile(story_id: int, owner_id: str, db: AsyncSession):
+    story = (await db.execute(
+        select(Story).join(Character).where(
+            Story.id == story_id,
+            Character.owner_id == owner_id,
+        )
+    )).scalar_one_or_none()
     if not story:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="故事不存在")
 
-    profile = await talent_service.generate_talent_profile(db, story_id)
+    profile = await talent_service.generate_talent_profile(db, story_id, owner_id)
     if not profile:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="无法生成创作回顾")
     return profile
@@ -25,10 +33,11 @@ async def _story_profile(story_id: int, db: AsyncSession):
 async def get_child_feedback(
     story_id: int,
     response: Response,
+    owner_id: str = Depends(require_platform_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     """Return child-friendly feedback without scores, levels or scoring evidence."""
-    profile = await _story_profile(story_id, db)
+    profile = await _story_profile(story_id, owner_id, db)
     response.headers["Cache-Control"] = "no-store"
     return {
         "story_id": profile.story_id,
@@ -44,10 +53,11 @@ async def get_child_feedback(
 async def get_talent_profile(
     story_id: int,
     response: Response,
+    owner_id: str = Depends(require_platform_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     """Get three independent 100-point talent reports plus language progress."""
-    p = await _story_profile(story_id, db)
+    p = await _story_profile(story_id, owner_id, db)
 
     response.headers["Cache-Control"] = "no-store"
     return asdict(p)

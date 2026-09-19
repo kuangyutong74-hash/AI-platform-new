@@ -15,6 +15,8 @@ load_dotenv(PLATFORM_DIR / ".env", override=False)
 STATIC_DIR = BASE_DIR / "static"
 TEMPLATES_DIR = BASE_DIR / "templates"
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{BASE_DIR / 'career_sim.db'}")
+# platform-core 实际监听 8020（见 scripts/服务配置.psd1）；career 后端用它校验 ai_bole_session Cookie。
+CORE_INTERNAL_URL = os.getenv("CORE_INTERNAL_URL", "http://127.0.0.1:8020").rstrip("/")
 
 # OpenAI-compatible API. Generic/Zhipu names take priority; legacy DeepSeek names remain supported.
 AI_API_KEY = os.getenv("AI_API_KEY") or os.getenv("ZHIPUAI_API_KEY") or os.getenv("ZHIPU_API_KEY") or os.getenv("DEEPSEEK_API_KEY", "")

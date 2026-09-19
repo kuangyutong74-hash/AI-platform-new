@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.auth import require_platform_student_id
 from app.models.character import Character
 from app.models.story import Story
 from app.schemas.character import CharacterCreate, CharacterOut, CharacterUpdate
@@ -22,9 +23,13 @@ def _story_titles(char: Character) -> list[str]:
 
 
 @router.get("", response_model=list[CharacterOut])
-async def list_characters(db: AsyncSession = Depends(get_db)):
+async def list_characters(
+    owner_id: str = Depends(require_platform_student_id),
+    db: AsyncSession = Depends(get_db),
+):
     result = await db.execute(
         select(Character)
+        .where(Character.owner_id == owner_id)
         .options(selectinload(Character.stories))
         .order_by(Character.created_at.desc(), Character.id.desc())
     )
@@ -44,8 +49,13 @@ async def list_characters(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("", response_model=CharacterOut, status_code=status.HTTP_201_CREATED)
-async def create_character(req: CharacterCreate, db: AsyncSession = Depends(get_db)):
+async def create_character(
+    req: CharacterCreate,
+    owner_id: str = Depends(require_platform_student_id),
+    db: AsyncSession = Depends(get_db),
+):
     char = Character(
+        owner_id=owner_id,
         nickname=req.nickname,
         avatar_type=req.avatar_type,
         avatar_color=req.avatar_color,
@@ -59,8 +69,14 @@ async def create_character(req: CharacterCreate, db: AsyncSession = Depends(get_
 
 
 @router.get("/{character_id}", response_model=CharacterOut)
-async def get_character(character_id: int, db: AsyncSession = Depends(get_db)):
-    char = await db.get(Character, character_id)
+async def get_character(
+    character_id: int,
+    owner_id: str = Depends(require_platform_student_id),
+    db: AsyncSession = Depends(get_db),
+):
+    char = (await db.execute(
+        select(Character).where(Character.id == character_id, Character.owner_id == owner_id)
+    )).scalar_one_or_none()
     if not char:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
     return char
@@ -70,9 +86,12 @@ async def get_character(character_id: int, db: AsyncSession = Depends(get_db)):
 async def update_character(
     character_id: int,
     req: CharacterUpdate,
+    owner_id: str = Depends(require_platform_student_id),
     db: AsyncSession = Depends(get_db),
 ):
-    char = await db.get(Character, character_id)
+    char = (await db.execute(
+        select(Character).where(Character.id == character_id, Character.owner_id == owner_id)
+    )).scalar_one_or_none()
     if not char:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
     char.age_group = req.age_group
@@ -82,8 +101,14 @@ async def update_character(
 
 
 @router.delete("/{character_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_character(character_id: int, db: AsyncSession = Depends(get_db)):
-    char = await db.get(Character, character_id)
+async def delete_character(
+    character_id: int,
+    owner_id: str = Depends(require_platform_student_id),
+    db: AsyncSession = Depends(get_db),
+):
+    char = (await db.execute(
+        select(Character).where(Character.id == character_id, Character.owner_id == owner_id)
+    )).scalar_one_or_none()
     if not char:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
     await db.delete(char)

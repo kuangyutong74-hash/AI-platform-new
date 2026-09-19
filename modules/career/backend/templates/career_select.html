@@ -124,6 +124,12 @@ async function startSession(){
     if(!student||!student.displayName||!student.age){
       throw new Error('学生资料不完整，请返回探索星球检查姓名和年龄');
     }
+    const previousStudentId=localStorage.getItem('career-student-token-v1')||'';
+    if(previousStudentId&&previousStudentId!==student.id){
+      localStorage.removeItem('career-explored-v1');
+      localStorage.removeItem('career-session-map-v1');
+    }
+    localStorage.setItem('career-student-token-v1',student.id);
     const fd=new FormData();
     fd.set('career_id',selectedCareerId);
     fd.set('student_name',student.displayName);

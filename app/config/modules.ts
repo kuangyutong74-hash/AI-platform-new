@@ -52,6 +52,15 @@ export async function launchPlatformModule(item: PlatformModule) {
   const response = await fetch(`${CORE_API_URL}/api/v1/assessment-sessions`, {method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({module_id:canonicalModuleId(item.id)})});
   if (!response.ok) throw new Error("探索记录暂时无法创建");
   const context = await response.json();
-  window.name = JSON.stringify({namespace:"ai-bole.launch-context.v1",context});
-  window.location.assign(item.url);
+  const destination = new URL(item.url);
+  // The session cookie belongs to the account API host (ports do not matter),
+  // which can differ from the hostname used to open the platform shell.
+  if (["localhost", "127.0.0.1"].includes(destination.hostname)) {
+    destination.hostname = new URL(CORE_API_URL).hostname;
+  }
+  window.name = JSON.stringify({
+    namespace:"ai-bole.launch-context.v1",
+    context:{...context,platformOrigin:window.location.origin,coreApiUrl:CORE_API_URL},
+  });
+  window.location.assign(destination.toString());
 }

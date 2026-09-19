@@ -1,0 +1,7 @@
+{
+  "generator": "OpenAI built-in image generation",
+  "useCase": "stylized-concept",
+  "prompt": "Original premium 3D family-animation-film career town at warm sunrise, with career buildings concentrated at the far edges and a calm central area for the task interface. Environment only; no people, text, logos, UI, watermarks, copyrighted characters, or copied film scenes.",
+  "source": "career-workday-town-v1.png",
+  "output": "career-workday-town-v1.webp"
+}

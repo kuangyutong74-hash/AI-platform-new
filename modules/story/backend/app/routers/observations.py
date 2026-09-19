@@ -5,6 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.auth import require_platform_student_id
+from app.models.character import Character
 from app.models.observation import Observation
 from app.models.story import Story
 from app.schemas.observation import ObservationOut, ObservationSummary
@@ -12,8 +14,13 @@ from app.schemas.observation import ObservationOut, ObservationSummary
 router = APIRouter(prefix="/observations", tags=["observations"])
 
 
-async def _verify_story_exists(story_id: int, db: AsyncSession) -> Story:
-    story = await db.get(Story, story_id)
+async def _verify_story_exists(story_id: int, owner_id: str, db: AsyncSession) -> Story:
+    story = (await db.execute(
+        select(Story).join(Character).where(
+            Story.id == story_id,
+            Character.owner_id == owner_id,
+        )
+    )).scalar_one_or_none()
     if not story:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="故事不存在")
     return story
@@ -22,9 +29,10 @@ async def _verify_story_exists(story_id: int, db: AsyncSession) -> Story:
 @router.get("", response_model=list[ObservationOut])
 async def get_observations(
     story_id: int,
+    owner_id: str = Depends(require_platform_student_id),
     db: AsyncSession = Depends(get_db),
 ):
-    await _verify_story_exists(story_id, db)
+    await _verify_story_exists(story_id, owner_id, db)
     result = await db.execute(
         select(Observation)
         .where(Observation.story_id == story_id)
@@ -36,9 +44,10 @@ async def get_observations(
 @router.get("/summary/{story_id}", response_model=ObservationSummary)
 async def get_observation_summary(
     story_id: int,
+    owner_id: str = Depends(require_platform_student_id),
     db: AsyncSession = Depends(get_db),
 ):
-    await _verify_story_exists(story_id, db)
+    await _verify_story_exists(story_id, owner_id, db)
 
     result = await db.execute(
         select(Observation).where(Observation.story_id == story_id)

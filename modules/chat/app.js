@@ -24,7 +24,8 @@ const DEEPSEEK_MODEL = process.env.AI_MODEL || process.env.ZHIPUAI_MODEL || proc
 const DEEPSEEK_MODEL_ANALYZE = process.env.DEEPSEEK_MODEL_ANALYZE || DEEPSEEK_MODEL;
 const DEEPSEEK_MODEL_REPLY = process.env.DEEPSEEK_MODEL_REPLY || DEEPSEEK_MODEL;
 const DEEPSEEK_BASE_URL = process.env.AI_BASE_URL || process.env.AI_API_BASE || process.env.ZHIPUAI_BASE_URL || process.env.ZHIPU_BASE_URL || process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
-const CORE_INTERNAL_URL = (process.env.CORE_INTERNAL_URL || 'http://127.0.0.1:8120').replace(/\/$/, '');
+// 本地 core 监听 8020；服务器由根目录 .env 的 CORE_INTERNAL_URL 覆盖（服务器 core 为 8120）。
+const CORE_INTERNAL_URL = (process.env.CORE_INTERNAL_URL || 'http://127.0.0.1:8020').replace(/\/$/, '');
 
 
 // 数据目录（可通过环境变量覆盖，供测试使用临时目录）
@@ -132,14 +133,17 @@ app.use(function (err, req, res, next) {
   next(err);
 });
 
-// 从平台登录 Cookie 获取当前学生身份。未登录或 Core 暂时不可用时回退为 guest。
+// 从平台登录 Cookie 获取当前学生身份。
+// - 没有 ai_bole_session Cookie → 访客（'guest'），允许未登录体验。
+// - 带 Cookie 但 Core 不可用 / 超时 / 身份解析失败 → 返回 null（让上层 503 拒绝写入），
+//   避免已登录用户被静默归入 guest 桶与其他未登录用户共享数据。
 async function resolveRequestUserId(cookieHeader, fetchImpl) {
-  if (typeof cookieHeader !== 'string' || !/(?:^|;\s*)ai_bole_session=/.test(cookieHeader)) {
-    return 'guest';
-  }
+  const hasSessionCookie = typeof cookieHeader === 'string'
+    && /(?:^|;\s*)ai_bole_session=/.test(cookieHeader);
+  if (!hasSessionCookie) return 'guest';
 
   const request = fetchImpl || global.fetch;
-  if (typeof request !== 'function') return 'guest';
+  if (typeof request !== 'function') return null;
 
   const controller = new AbortController();
   const timeout = setTimeout(function () { controller.abort(); }, 2000);
@@ -148,21 +152,24 @@ async function resolveRequestUserId(cookieHeader, fetchImpl) {
       headers: { Cookie: cookieHeader, Accept: 'application/json' },
       signal: controller.signal,
     });
-    if (!response.ok) return 'guest';
+    if (!response.ok) return null;
     const payload = await response.json();
     const identity = payload && (payload.selected_student || payload.account);
     return identity && typeof identity.id === 'string' && identity.id.trim()
       ? identity.id.trim()
-      : 'guest';
+      : null;
   } catch (_) {
-    return 'guest';
+    return null;
   } finally {
     clearTimeout(timeout);
   }
 }
 
-async function guestIdentity(req, _res, next) {
+async function guestIdentity(req, res, next) {
   req.userId = await resolveRequestUserId(req.headers.cookie || '');
+  if (req.userId === null) {
+    return res.status(503).json({ error: 'PLATFORM_UNAVAILABLE', detail: '统一账号服务暂时不可用，已登录用户请稍后再试' });
+  }
   next();
 }
 

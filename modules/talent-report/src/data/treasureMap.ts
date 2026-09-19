@@ -1,7 +1,11 @@
 export type StarState = { discovered:string[]; order:string[] };
 export type MapPosition = { x:number; y:number };
+export type StarReflectionChoice = "like_me"|"not_me"|"unsure";
+export type StarReflection = { choice:StarReflectionChoice; reason:string; updatedAt:string };
+export type StarReflections = Record<string,StarReflection>;
 
 export const STAR_STATE_KEY="ai-bole-treasure-stars";
+export const STAR_REFLECTIONS_KEY="ai-bole-treasure-star-reflections-v1";
 
 export const mapCopy={
   tag:"睡前故事时间",
@@ -80,3 +84,11 @@ export function loadStarState(validKeys:string[]):StarState{
 
 export function saveStarState(state:StarState){localStorage.setItem(STAR_STATE_KEY,JSON.stringify(state))}
 export function resetStarState(){localStorage.removeItem(STAR_STATE_KEY)}
+export function loadStarReflections(validKeys:string[]):StarReflections{
+  try{
+    const parsed=JSON.parse(localStorage.getItem(STAR_REFLECTIONS_KEY)||"{}") as StarReflections;
+    return Object.fromEntries(Object.entries(parsed).filter(([key,value])=>validKeys.includes(key)&&["like_me","not_me","unsure"].includes(value?.choice)&&typeof value.reason==="string"));
+  }catch{return {}}
+}
+export function saveStarReflections(reflections:StarReflections){localStorage.setItem(STAR_REFLECTIONS_KEY,JSON.stringify(reflections))}
+export function resetStarReflections(){localStorage.removeItem(STAR_REFLECTIONS_KEY)}

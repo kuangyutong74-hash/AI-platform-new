@@ -149,7 +149,7 @@ textarea:focus-visible {
 .level-one-screen { background-image: linear-gradient(rgba(1, 18, 38, .16), rgba(1, 18, 38, .32)), url('./assets/generated/rebuild-v1/level1-coral-sanctuary-cinematic-v1.png') !important; }
 .level-two-screen { background-image: linear-gradient(rgba(1, 19, 39, .16), rgba(1, 19, 39, .34)), url('./assets/generated/rebuild-v1/level2-current-engine-clean-bay-v2.png') !important; }
 .level-three-screen { background-image: linear-gradient(rgba(19, 8, 46, .18), rgba(13, 8, 37, .38)), url('./assets/generated/rebuild-v1/level3-council-grotto-cinematic-v1.png') !important; }
-.ceremony-screen,
+.ceremony-screen { background-image: linear-gradient(rgba(2,18,48,.08),rgba(2,13,38,.2)), url('./assets/generated/rebuild-v1/ending-guardian-hall-cinematic-v1.png') !important; }
 .report-screen { background-image: linear-gradient(rgba(2, 18, 48, .3), rgba(2, 13, 38, .58)), url('./assets/generated/rebuild-v1/ending-guardian-hall-cinematic-v1.png') !important; }
 
 .level-one-screen::before,
@@ -164,6 +164,7 @@ textarea:focus-visible {
   pointer-events: none;
   background: radial-gradient(circle at 50% 5%, rgba(137, 235, 255, .18), transparent 34%);
 }
+.ceremony-screen::before{display:none}
 
 .game-stage .level-section-heading,
 .game-stage .level-main-title,

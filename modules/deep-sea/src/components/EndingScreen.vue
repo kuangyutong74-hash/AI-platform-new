@@ -1,19 +1,10 @@
 <template>
   <div class="ceremony-screen flex flex-col items-center justify-center h-full px-3 py-3 relative overflow-hidden">
 
-    <!-- 深海渐变背景 -->
-    <div class="absolute inset-0 bg-gradient-to-b from-[#082f49]/70 via-[#155e75]/55 to-[#312e81]/65 pointer-events-none"></div>
-    <div class="absolute inset-0 opacity-30 pointer-events-none"
-         style="background: radial-gradient(circle at 50% 20%, #fde047 0%, transparent 45%), radial-gradient(circle at 20% 80%, #22d3ee 0%, transparent 40%), radial-gradient(circle at 80% 70%, #a78bfa 0%, transparent 35%);">
-    </div>
-    <div class="ceremony-caustics absolute inset-0 pointer-events-none"></div>
     <div class="absolute inset-0 pointer-events-none overflow-hidden">
       <span v-for="i in 18" :key="'bubble-' + i" class="ceremony-bubble"
             :style="{ left: ((i * 37) % 96) + '%', animationDelay: (-i * .43) + 's', animationDuration: (5 + i % 5) + 's' }"></span>
     </div>
-
-    <!-- 全屏礼花 Canvas -->
-    <canvas ref="fireworksCanvas" class="absolute inset-0 pointer-events-none z-20"></canvas>
 
     <!-- 星光粒子 -->
     <div class="absolute inset-0 pointer-events-none overflow-hidden">
@@ -58,7 +49,7 @@
       <div class="medal-stage flex flex-col items-center">
         <div @click="flipBadge"
              class="badge-wrap relative w-32 h-32 md:w-40 md:h-40 cursor-pointer perspective-1000 badge-bounce">
-          <div class="absolute -inset-3 rounded-full bg-amber-400/30 blur-xl animate-pulse pointer-events-none"></div>
+          <div class="medal-light absolute -inset-3 rounded-full pointer-events-none"></div>
           <div class="relative w-full h-full transition-transform duration-700 preserve-3d"
                :class="{ 'rotate-y-180': isFlipped }">
             <!-- 正面 -->
@@ -410,9 +401,8 @@ function starStyle(i) {
 }
 
 onMounted(() => {
-  // 页面载入后播放号角 + 启动礼花
+  // 页面载入后只播放号角；庆祝画面保持安静，不再叠加 Canvas 礼花。
   setTimeout(() => playFanfare(), 300)
-  startFireworks()
 })
 
 onUnmounted(() => {
@@ -422,7 +412,11 @@ onUnmounted(() => {
 
 <style scoped>
 .ceremony-screen {
-  background: radial-gradient(circle at 50% 18%, rgba(250,204,21,.1), transparent 30%);
+  width: 100%;
+  min-height: 100dvh;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
 }
 
 .ceremony-title {
@@ -444,10 +438,10 @@ onUnmounted(() => {
   min-height: 150px;
   align-items: center;
   color: #fff8dc;
-  border: 1px solid rgba(255, 214, 122, .6);
-  border-radius: 24px 24px 24px 8px;
-  background: radial-gradient(circle at 8% 20%, rgba(60, 224, 232, .22), transparent 34%), linear-gradient(145deg, rgba(8, 52, 81, .97), rgba(28, 38, 91, .97));
-  box-shadow: 0 18px 38px rgba(2, 12, 42, .36), inset 0 1px rgba(255,255,255,.16);
+  border: 3px solid #e7ba64;
+  border-radius: 28px 28px 28px 9px;
+  background: #123f59;
+  box-shadow: 0 15px 32px rgba(2, 12, 42, .38), inset 0 2px 8px rgba(255,244,199,.18);
 }
 
 .momo-panel::after {
@@ -457,7 +451,7 @@ onUnmounted(() => {
   bottom: -17px;
   width: 28px;
   height: 24px;
-  background: #172c5a;
+  background: #0a2b43;
   clip-path: polygon(0 0, 100% 0, 16% 100%);
 }
 
@@ -484,19 +478,10 @@ onUnmounted(() => {
 
 .achievement-board {
   padding: 14px 18px 18px;
-  border-radius: 26px;
-  background: linear-gradient(180deg, rgba(6, 34, 68, .82), rgba(14, 28, 69, .94));
-  border: 1px solid rgba(255, 218, 128, .48);
-  box-shadow: 0 22px 48px rgba(0, 9, 38, .34), inset 0 1px rgba(255,255,255,.12);
-}
-.ceremony-caustics {
-  opacity: .28;
-  background-image:
-    repeating-radial-gradient(ellipse at 20% 20%, transparent 0 24px, rgba(165,243,252,.18) 26px 28px, transparent 31px 58px);
-  background-size: 210px 145px;
-  filter: blur(1px);
-  animation: causticsDrift 12s linear infinite;
-  mix-blend-mode: screen;
+  border-radius: 18px;
+  background: #173e57;
+  border: 4px solid #b8793d;
+  box-shadow: 0 20px 42px rgba(0, 9, 38, .42), inset 0 0 0 3px #f1c878;
 }
 .ceremony-bubble {
   position: absolute;
@@ -513,6 +498,7 @@ onUnmounted(() => {
   filter: drop-shadow(0 10px 16px rgba(2,6,23,.4)) drop-shadow(0 0 18px rgba(251,191,36,.42));
   animation: medalShimmer 2.8s ease-in-out infinite;
 }
+.medal-light{background:radial-gradient(circle,rgba(255,220,121,.3),transparent 68%);filter:none;animation:none}
 .medal-back {
   overflow: hidden;
   border: 6px solid #fbbf24;
@@ -584,7 +570,7 @@ onUnmounted(() => {
 .rotate-y-180 { transform: rotateY(180deg); }
 
 .ceremony-enter {
-  animation: ceremonyIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: ceremonyIn .7s cubic-bezier(.16,1,.3,1) both;
 }
 
 .title-glow {
@@ -624,41 +610,39 @@ onUnmounted(() => {
 }
 
 .badge-bounce {
-  animation: badgePop 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s both;
+  animation: badgePop .8s cubic-bezier(.16,1,.3,1) .25s both;
 }
 
 .level-card {
   animation: cardSlideUp 0.6s ease-out both;
   min-height: 118px;
-  box-shadow: 0 10px 28px rgba(2, 6, 23, .2), inset 0 1px rgba(255,255,255,.14);
+  border-width: 3px !important;
+  border-radius: 18px !important;
+  box-shadow: 0 12px 24px rgba(2, 6, 23, .28), inset 0 2px 7px rgba(255,245,209,.16);
   backdrop-filter: none;
   transition: transform .25s ease, box-shadow .25s ease;
 }
 
 .level-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 34px rgba(2, 6, 23, .27), inset 0 1px rgba(255,255,255,.2);
+  transform: translateY(-3px) rotate(-.4deg);
+  box-shadow: 0 17px 30px rgba(2, 6, 23, .34);
 }
 
 .achievement-emerald {
-  border-color: rgba(99, 227, 193, .62);
-  background: linear-gradient(155deg, #0c675f, #123d5a);
+  border-color: #79d5b9;
+  background: #12665f;
 }
 .achievement-amber {
-  border-color: rgba(255, 211, 119, .68);
-  background: linear-gradient(155deg, #80511f, #55364c);
+  border-color: #efc371;
+  background: #774923;
 }
 .achievement-violet {
-  border-color: rgba(204, 185, 255, .65);
-  background: linear-gradient(155deg, #53409b, #352b72);
+  border-color: #bca7ed;
+  background: #4b3b8d;
 }
 
 .level-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(115deg, rgba(255,255,255,.12), transparent 32%, transparent 72%, rgba(255,255,255,.05));
+  display: none;
 }
 
 .level-card::before {
@@ -717,11 +701,16 @@ onUnmounted(() => {
 }
 
 .level-card-badge {
-  box-shadow: inset 0 1px rgba(255,255,255,.12);
+  border-radius: 9px !important;
+  box-shadow: inset 0 -2px rgba(3,25,45,.2);
 }
 
 .sparkle-badge {
-  animation: sparkle 2s ease-in-out infinite;
+  border: 2px solid #f4cc78 !important;
+  border-radius: 9px !important;
+  background: #9a5f29 !important;
+  box-shadow: 0 7px 16px rgba(3,19,39,.3), inset 0 2px 6px rgba(255,231,171,.2);
+  animation: none;
 }
 
 @keyframes ceremonyIn {
@@ -748,10 +737,6 @@ onUnmounted(() => {
   0%, 100% { opacity: 0.3; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.5); }
 }
-@keyframes causticsDrift {
-  from { background-position: 0 0; transform: scale(1.05) rotate(0deg); }
-  to { background-position: 210px 145px; transform: scale(1.1) rotate(2deg); }
-}
 @keyframes ceremonyBubbleRise {
   0% { transform: translateY(0) scale(.45); opacity: 0; }
   14% { opacity: .75; }
@@ -764,6 +749,7 @@ onUnmounted(() => {
 }
 
 @media (max-width: 760px) {
+  .ceremony-screen { background-attachment: scroll !important; }
   .ceremony-stage { grid-template-columns: 1fr; gap: 12px; }
   .momo-panel { min-height: 112px; }
   .medal-stage { min-height: 190px; }

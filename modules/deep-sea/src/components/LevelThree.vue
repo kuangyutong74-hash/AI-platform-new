@@ -4,7 +4,7 @@
     <Level3Effects :harmony="harmony" :triggerCelebration="showComplete" />
     <!-- ======== 顶部：沫沫 + 和解进度条 ======== -->
     <div class="shrink-0 flex items-center justify-between">
-      <div class="flex items-center gap-2 bg-cyan-50/80 px-4 py-2 rounded-full border border-cyan-200/50">
+      <div class="level-guide-banner flex items-center gap-2 px-4 py-2">
         <MomoDolphin size="sm" :animate="false" />
         <span class="level-helper-text text-sm md:text-base" v-html="p('来调解壳壳和彩彩的矛盾吧！🤝')"></span>
       </div>
@@ -15,7 +15,7 @@
     </div>
 
     <!-- 和解进度条（加大） -->
-    <div class="shrink-0 bg-white/60 rounded-xl px-5 py-3 border border-cyan-200/30">
+    <div class="harmony-panel shrink-0 px-5 py-3">
       <div class="flex items-center justify-between mb-1.5">
         <span class="text-base md:text-lg font-bold text-cyan-700" v-html="p('💚 和解进度')"></span>
         <span class="text-base md:text-lg" :class="harmony >= 100 ? 'text-emerald-600 font-bold' : 'text-cyan-400'">{{ harmony }}%</span>
@@ -34,7 +34,7 @@
 
       <!-- ===== 左：壳壳面板（可滚动） ===== -->
       <div class="w-[260px] shrink-0 flex flex-col gap-2 overflow-y-auto">
-        <div class="bg-white/70 rounded-2xl p-4 border-2 text-center transition-all duration-500"
+        <div class="character-side-panel keke-side p-4 text-center transition-all duration-500"
              :class="kekeAnger >= 60 ? 'border-rose-300' : kekeAnger >= 30 ? 'border-orange-200' : 'border-emerald-200'">
           <CharacterImage charId="keke" size="xl" customClass="block mx-auto mb-1" />
           <div class="text-xl font-bold text-cyan-800" v-html="p('壳壳')"></div>
@@ -316,7 +316,7 @@
 
       <!-- ===== 右：彩彩面板（可滚动） ===== -->
       <div class="w-[260px] shrink-0 flex flex-col gap-2 overflow-y-auto">
-        <div class="bg-white/70 rounded-2xl p-4 border-2 text-center transition-all duration-500"
+        <div class="character-side-panel caicai-side p-4 text-center transition-all duration-500"
              :class="caicaiAnger >= 60 ? 'border-rose-300' : caicaiAnger >= 30 ? 'border-orange-200' : 'border-emerald-200'">
           <CharacterImage charId="caicai" size="xl" customClass="block mx-auto mb-1" />
           <div class="text-xl font-bold text-cyan-800" v-html="p('彩彩')"></div>
@@ -1642,4 +1642,16 @@ async function goNextLevel() {
 .scroll-thin::-webkit-scrollbar { width: 4px; }
 .scroll-thin::-webkit-scrollbar-track { background: transparent; }
 .scroll-thin::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+
+/* 议事厅视觉重构：实体舞台组件取代浅色玻璃卡片。 */
+.level-guide-banner{border:2px solid #efc56f;border-radius:14px;background:#123e5b;box-shadow:0 10px 24px rgba(2,14,37,.34);color:#fff1c7}.level-guide-banner .level-helper-text{color:#fff1c7!important;background:transparent!important;border:0!important;box-shadow:none!important}
+.harmony-panel{border:3px solid #d49a4c;border-radius:16px;background:#123e5b;box-shadow:0 13px 28px rgba(2,14,37,.32)}.harmony-panel span{color:#fff1c7!important}.harmony-panel>div:last-child{height:14px!important;border:2px solid #6e4c29;background:#082d45!important}.harmony-panel>div:last-child>div{background:#51c6a4!important;box-shadow:inset 0 2px 3px rgba(255,255,255,.32)}
+.phase-status-strip{border:2px solid #d49a4c;border-radius:13px;background:#123e5b;box-shadow:0 9px 22px rgba(2,14,37,.3);backdrop-filter:none}.phase-status-chip{color:#cdeff1}.phase-status-chip.active{color:#312710;background:#f0c76d;box-shadow:none}
+.phase-title{border:3px solid #e9bc62;border-radius:15px;color:#fff1c7;text-shadow:0 2px 5px rgba(0,10,29,.55);background:#174c68;box-shadow:0 11px 24px rgba(2,14,37,.3);backdrop-filter:none;-webkit-backdrop-filter:none}.phase-title::before{display:none}.phase-title-observe,.phase-title-decide,.phase-title-plan,.phase-title-negotiate{color:#fff1c7;background:#174c68;border-color:#e9bc62;box-shadow:0 11px 24px rgba(2,14,37,.3)}
+.phase-description{border:2px solid #8bbfc2;border-radius:12px;background:#103b55;color:#e4f7f5;box-shadow:0 8px 18px rgba(2,14,37,.26);backdrop-filter:none}
+.character-side-panel{border:3px solid #d49a4c!important;border-radius:20px;background:#123e5b;box-shadow:0 16px 32px rgba(2,14,37,.38);color:#fff1c7}.character-side-panel>div:nth-of-type(1),.character-side-panel>div:nth-of-type(2){color:#fff1c7!important}.character-side-panel>div:last-child{border:2px solid rgba(239,197,111,.65)!important;border-radius:13px!important;background:#fff0cf!important;color:#593a27!important}.character-side-panel button{width:38px;height:38px;border-radius:10px;background:#173f58!important;color:#fff1c7;box-shadow:0 5px 12px rgba(2,14,37,.24)}
+.character-reading-card{border:3px solid #d49a4c;border-radius:18px;background:#123e5b;box-shadow:0 16px 32px rgba(2,14,37,.34)}.character-reading-card.keke-card,.character-reading-card.caicai-card{border-color:#d49a4c;background:#123e5b}.character-reading-card>div:first-child span{color:#fff1c7!important}.reading-dialogue{border:2px solid #d8ad70;border-radius:12px;background:#fff0d6;color:#533521!important;box-shadow:none}.emotion-question{border:0;border-radius:10px;background:#205a72;color:#fff1c7;box-shadow:none}
+.voice-circle{border:2px solid #e9bc62;border-radius:10px;background:#174c68;color:#fff1c7;box-shadow:0 5px 11px rgba(2,14,37,.25)}.choice-button{min-height:48px;border:2px solid #c98f48;border-radius:11px;background:#f7d891;color:#45341f;box-shadow:0 5px 11px rgba(2,14,37,.2)}.choice-button:hover,.choice-button.idle:hover{border-color:#fff0bd;background:#ffe5a3;transform:translateY(-2px)}
+.choice-button.selected-correct,.evidence-choice.selected-correct{color:#083e36;border-color:#69d6ad;background:#9ce3c7}.evidence-box{border:2px solid #78bfc0!important;background:#0e354e!important}.evidence-title{color:#fff1c7!important}.evidence-choice{border-color:#c98f48!important;background:#f8dfaa!important;color:#45341f!important}
+@media(max-width:900px){.level-guide-banner{border-radius:12px}.character-side-panel{border-radius:16px}.harmony-panel{border-radius:13px}}
 </style>

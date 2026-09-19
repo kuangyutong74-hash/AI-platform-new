@@ -11,6 +11,7 @@ class Character(Base):
     __tablename__ = "characters"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    owner_id: Mapped[Optional[str]] = mapped_column(String(80), nullable=True, index=True)
     nickname: Mapped[str] = mapped_column(String(100), nullable=False)
     avatar_type: Mapped[str] = mapped_column(String(50), nullable=False)
     avatar_color: Mapped[str] = mapped_column(String(7), nullable=False)

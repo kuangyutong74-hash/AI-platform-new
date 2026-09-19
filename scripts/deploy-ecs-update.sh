@@ -57,6 +57,12 @@ else
 fi
 
 echo "[2/7] 保留密钥与业务数据"
+# 服务器上 core 监听 8120（与本地 8020 不同）。各模块内部调用 core 依赖此变量；
+# 旧 .env 若缺失则补写，缺失时模块会退回本地默认端口导致身份校验失败。
+if ! grep -q '^CORE_INTERNAL_URL=' "${APP_DIR}/.env"; then
+  printf '\n# 服务器 core 监听 8120（本地为 8020），由部署脚本自动补写。\nCORE_INTERNAL_URL=http://127.0.0.1:8120\n' >> "${APP_DIR}/.env"
+  echo "已向 .env 补写 CORE_INTERNAL_URL=http://127.0.0.1:8120"
+fi
 cp -a "${APP_DIR}/.env" "${STAGING_DIR}/.env"
 copy_if_present "modules/platform-core/data"
 copy_if_present "modules/chat/data"

@@ -1,4 +1,4 @@
-import { apiFetch, BASE_URL } from './client';
+import { apiFetch, authorizedFetch, BASE_URL } from './client';
 
 // ── Types ──
 
@@ -137,7 +137,7 @@ export function sendStoryTurn(
   signal?: AbortSignal,
   forceEnding = false,
 ): Promise<Response> {
-  return fetch(`${BASE_URL}/stories/${storyId}/turn`, {
+  return authorizedFetch(`${BASE_URL}/stories/${storyId}/turn`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ child_input: childInput, force_ending: forceEnding }),
@@ -156,7 +156,7 @@ export function getObservationSummary(storyId: number) {
 }
 
 export async function synthesizeSpeech(text: string, signal?: AbortSignal): Promise<Blob> {
-  const response = await fetch(`${BASE_URL}/tts`, {
+  const response = await authorizedFetch(`${BASE_URL}/tts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),

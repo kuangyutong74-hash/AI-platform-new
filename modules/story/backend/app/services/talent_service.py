@@ -1043,7 +1043,11 @@ async def ensure_missing_observations(
     return saved
 
 
-async def generate_talent_profile(db: AsyncSession, story_id: int) -> TalentProfile | None:
+async def generate_talent_profile(
+    db: AsyncSession,
+    story_id: int,
+    owner_id: str | None = None,
+) -> TalentProfile | None:
     story = await db.get(Story, story_id)
     if not story:
         return None
@@ -1110,6 +1114,7 @@ async def generate_talent_profile(db: AsyncSession, story_id: int) -> TalentProf
             .join(Character, Story.character_id == Character.id)
             .where(
                 Character.age_group == age_group,
+                Character.owner_id == owner_id,
                 Story.id != story.id,
                 Story.started_at < story.started_at,
                 Story.is_deleted.is_(False),

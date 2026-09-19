@@ -15,25 +15,6 @@ const API={
   async postForm(url,fd){return this.request(url,{method:'POST',body:fd})}
 };
 
-/* Shared cinematic music controller used across the career experience. */
-(function initCareerMusic(){
-  const root=document.getElementById('career-music');
-  const audio=document.getElementById('career-music-audio');
-  const toggle=document.getElementById('career-music-toggle');
-  const settings=document.getElementById('career-music-settings');
-  const volume=document.getElementById('career-music-volume');
-  const percent=document.getElementById('career-music-percent');
-  if(!root||!audio||!toggle||!settings||!volume||!percent)return;
-  const key='ai-bole.career-music.v1';
-  let state={enabled:false,volume:.28};
-  try{state=Object.assign(state,JSON.parse(localStorage.getItem(key)||'{}'))}catch(_){}
-  audio.volume=Math.max(0,Math.min(1,Number(state.volume)||.28));volume.value=String(audio.volume);
-  const sync=()=>{const playing=!audio.paused;root.classList.toggle('is-playing',playing);toggle.setAttribute('aria-pressed',String(playing));toggle.setAttribute('aria-label',playing?'暂停背景音乐':'播放背景音乐');toggle.querySelector('.music-copy small').textContent=playing?'正在唱歌啦':'点击唤醒音乐';percent.textContent=Math.round(audio.volume*100)+'%';localStorage.setItem(key,JSON.stringify({enabled:playing,volume:audio.volume}))};
-  toggle.addEventListener('click',()=>{if(audio.paused)audio.play().then(sync).catch(sync);else{audio.pause();sync()}});
-  settings.addEventListener('click',()=>{const open=root.classList.toggle('is-open');settings.setAttribute('aria-expanded',String(open));settings.setAttribute('aria-label',open?'关闭音乐设置':'打开音乐设置')});
-  volume.addEventListener('input',()=>{audio.volume=Number(volume.value);sync()});audio.addEventListener('play',sync);audio.addEventListener('pause',sync);sync();
-})();
-
 function showCoachTip(key,target,message,title='新手小提示',force=false){
   if(!target||(!force&&localStorage.getItem(key)))return;
   target.classList.add('coach-target');

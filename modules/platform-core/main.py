@@ -838,21 +838,24 @@ def policy_for_event(event_type: str) -> dict:
 initialize_database()
 
 CAREER_DB_PATH = REPO_ROOT / "modules" / "career" / "backend" / "career_sim.db"
+STORY_DB_PATH = REPO_ROOT / "modules" / "story" / "story_cocreate.db"
 
 
 def career_mentor_reflections(db: sqlite3.Connection, profile_id: str, career_id: str, occurred_at: str) -> list[dict[str, str]]:
-    """关联同一孩子、同一职业且时间最接近的导师对话；不跨孩子猜测。"""
-    profile = db.execute("SELECT display_name FROM child_profiles WHERE id=?", (profile_id,)).fetchone()
-    child_name = str(profile["display_name"] or "").strip() if profile else ""
-    if not child_name or not career_id or not CAREER_DB_PATH.exists():
+    """关联同一孩子、同一职业且时间最接近的导师对话；严格按平台账号 id 匹配，绝不按名字猜测。
+
+    child_profiles.id 与 accounts.id 同源，career 后端在创建会话时把平台账号 id 写入
+    sessions.student_token；此处以 student_token 作为唯一归属键，避免重名孩子互相串户。
+    """
+    if not profile_id or not career_id or not CAREER_DB_PATH.exists():
         return []
     try:
         target = datetime.fromisoformat(occurred_at.replace("Z", "+00:00")).replace(tzinfo=None)
         with sqlite3.connect(CAREER_DB_PATH) as career_db:
             career_db.row_factory = sqlite3.Row
             sessions = career_db.execute(
-                "SELECT id,created_at FROM sessions WHERE student_name=? AND career_id=? ORDER BY created_at DESC LIMIT 12",
-                (child_name, career_id),
+                "SELECT id,created_at FROM sessions WHERE student_token=? AND career_id=? ORDER BY created_at DESC LIMIT 12",
+                (profile_id, career_id),
             ).fetchall()
             if not sessions:
                 return []
@@ -1145,6 +1148,17 @@ def exchange_module_authorization(payload: LaunchCodeExchangeIn) -> dict:
     return {"token": token, "tokenType": "Bearer", "expiresAt": expires}
 
 
+@app.get("/api/v1/module-authorizations:identity")
+def module_authorization_identity(authorization: str | None = Header(default=None)) -> dict:
+    """Resolve a verified module token to its student owner."""
+    auth = require_module_authorization(authorization)
+    return {
+        "studentId": auth["child_profile_id"],
+        "sessionId": auth["session_id"],
+        "moduleId": auth["module_id"],
+    }
+
+
 @app.patch("/api/v1/assessment-sessions/{session_id}")
 def change_assessment_session(session_id: str, payload: SessionStatusIn, authorization: str | None = Header(default=None)) -> dict:
     auth = require_module_authorization(authorization)
@@ -1230,6 +1244,26 @@ def create_artifact_v1(payload: ArtifactIn, authorization: str | None = Header(d
             (payload.preview_resource_id, auth["session_id"]),
         ).fetchone():
             raise HTTPException(422, "作品预览不属于当前探索会话")
+        # 校验 source_resource_id（如 story:{id}）必须归属当前探索会话对应的孩子，
+        # 防止学生通过 source_resource_id 把别人的故事全文塞进自己的报告。
+        story_ref = re.fullmatch(r"story:(\d+)", str(payload.source_resource_id or ""))
+        if story_ref:
+            owner = db.execute(
+                "SELECT child_profile_id FROM assessment_sessions WHERE id=?",
+                (auth["session_id"],),
+            ).fetchone()
+            if owner and STORY_DB_PATH.exists():
+                try:
+                    with sqlite3.connect(STORY_DB_PATH) as story_db:
+                        story_db.row_factory = sqlite3.Row
+                        story_owner = story_db.execute(
+                            "SELECT c.owner_id FROM stories s JOIN characters c ON s.character_id=c.id WHERE s.id=?",
+                            (int(story_ref.group(1)),),
+                        ).fetchone()
+                except sqlite3.Error:
+                    story_owner = None
+                if not story_owner or not story_owner["owner_id"] or story_owner["owner_id"] != owner["child_profile_id"]:
+                    raise HTTPException(422, "作品引用了不属于当前孩子的故事内容")
         existing = db.execute(
             "SELECT session_id FROM artifacts WHERE id=?", (payload.artifact_id,)
         ).fetchone()
@@ -2044,11 +2078,20 @@ def create_session(payload: AccountCredentialsIn, response: Response) -> dict:
 
 
 @app.post("/api/account/password/reset")
-def reset_password(payload: PasswordResetIn) -> dict:
+def reset_password(
+    payload: PasswordResetIn,
+    ai_bole_session: str | None = Cookie(default=None),
+) -> dict:
+    # 必须已登录：密码重置是敏感操作，绝不允许仅凭用户名任意重置他人密码。
+    # 学生忘记密码应联系家长/教师走账号后台流程，或在已登录态下通过此接口改密。
+    viewer = require_account(ai_bole_session)
+    viewer_username = str(viewer["username"] or "")
+    if viewer_username != payload.username.strip().lower():
+        raise HTTPException(403, "只能修改当前登录账号的密码")
     with connect() as db:
         account = find_account_by_username(db, payload.username)
-        if not account:
-            raise HTTPException(404, "没有找到这个账号，请核对用户名")
+        if not account or account["id"] != viewer["id"]:
+            raise HTTPException(403, "只能修改当前登录账号的密码")
         salt = secrets.token_hex(16)
         db.execute(
             "UPDATE accounts SET password_hash=?,password_salt=?,updated_at=? WHERE id=?",

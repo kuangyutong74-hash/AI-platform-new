@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
+from app.auth import require_platform_student_id
 from app.models.character import Character
 from app.models.message import StoryMessage
 from app.models.story import Story
@@ -38,9 +39,14 @@ router = APIRouter(prefix="/stories", tags=["stories"])
 async def list_stories(
     character_id: int | None = None,
     status: str | None = None,
+    owner_id: str = Depends(require_platform_student_id),
     db: AsyncSession = Depends(get_db),
 ):
-    query = select(Story).where(Story.is_deleted == False)
+    query = (
+        select(Story)
+        .join(Character, Story.character_id == Character.id)
+        .where(Story.is_deleted == False, Character.owner_id == owner_id)
+    )
     if character_id:
         query = query.where(Story.character_id == character_id)
     if status:
@@ -51,8 +57,14 @@ async def list_stories(
 
 
 @router.post("", response_model=StoryOut, status_code=status.HTTP_201_CREATED)
-async def create_story(req: StoryCreate, db: AsyncSession = Depends(get_db)):
-    char = await db.get(Character, req.character_id)
+async def create_story(
+    req: StoryCreate,
+    owner_id: str = Depends(require_platform_student_id),
+    db: AsyncSession = Depends(get_db),
+):
+    char = (await db.execute(
+        select(Character).where(Character.id == req.character_id, Character.owner_id == owner_id)
+    )).scalar_one_or_none()
     if not char:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
 
@@ -69,6 +81,7 @@ async def create_story(req: StoryCreate, db: AsyncSession = Depends(get_db)):
         duplicate = await db.execute(
             select(Story.id).where(
                 Story.is_deleted == False,
+                Story.character_id.in_(select(Character.id).where(Character.owner_id == owner_id)),
                 func.lower(Story.title) == title.lower(),
             )
         )
@@ -87,8 +100,12 @@ async def create_story(req: StoryCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{story_id}", response_model=StoryOut)
-async def get_story(story_id: int, db: AsyncSession = Depends(get_db)):
-    story = await _get_story(story_id, db)
+async def get_story(
+    story_id: int,
+    owner_id: str = Depends(require_platform_student_id),
+    db: AsyncSession = Depends(get_db),
+):
+    story = await _get_story(story_id, owner_id, db)
     return story
 
 
@@ -96,9 +113,10 @@ async def get_story(story_id: int, db: AsyncSession = Depends(get_db)):
 async def update_story(
     story_id: int,
     req: StoryUpdate,
+    owner_id: str = Depends(require_platform_student_id),
     db: AsyncSession = Depends(get_db),
 ):
-    story = await _get_story(story_id, db)
+    story = await _get_story(story_id, owner_id, db)
     if req.title is not None:
         title_guard = guard_child_input(req.title)
         if title_guard.blocked:
@@ -112,6 +130,7 @@ async def update_story(
                 select(Story.id).where(
                     Story.is_deleted == False,
                     Story.id != story_id,
+                    Story.character_id.in_(select(Character.id).where(Character.owner_id == owner_id)),
                     func.lower(Story.title) == title.lower(),
                 )
             )
@@ -131,6 +150,7 @@ async def update_story(
 async def complete_story_with_child_ending(
     story_id: int,
     req: StoryCompleteRequest,
+    owner_id: str = Depends(require_platform_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     """Persist a child-authored ending before completing the story.
@@ -139,7 +159,7 @@ async def complete_story_with_child_ending(
     the saved story and from the platform artifact.  This endpoint makes the
     child's final paragraph part of the canonical message history first.
     """
-    story = await _get_story(story_id, db)
+    story = await _get_story(story_id, owner_id, db)
     if story.status != "active":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="这个故事已经结束啦！")
 
@@ -164,24 +184,36 @@ async def complete_story_with_child_ending(
 
 
 @router.delete("/{story_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_story(story_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_story(
+    story_id: int,
+    owner_id: str = Depends(require_platform_student_id),
+    db: AsyncSession = Depends(get_db),
+):
     """Soft-delete: marks story as deleted but preserves data for parent/teacher review."""
-    story = await _get_story(story_id, db)
+    story = await _get_story(story_id, owner_id, db)
     story.is_deleted = True
     await db.commit()
 
 
 @router.get("/parent/all", response_model=list[StoryOut])
-async def list_all_stories(db: AsyncSession = Depends(get_db)):
+async def list_all_stories(
+    owner_id: str = Depends(require_platform_student_id),
+    db: AsyncSession = Depends(get_db),
+):
     """Parent/teacher view: shows ALL stories including deleted ones."""
-    query = select(Story).order_by(Story.updated_at.desc())
+    query = (select(Story).join(Character).where(Character.owner_id == owner_id)
+             .order_by(Story.updated_at.desc()))
     result = await db.execute(query)
     return result.scalars().all()
 
 
 @router.get("/{story_id}/messages", response_model=list[StoryMessageOut])
-async def get_story_messages(story_id: int, db: AsyncSession = Depends(get_db)):
-    await _get_story(story_id, db)
+async def get_story_messages(
+    story_id: int,
+    owner_id: str = Depends(require_platform_student_id),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_story(story_id, owner_id, db)
     result = await db.execute(
         select(StoryMessage)
         .where(StoryMessage.story_id == story_id)
@@ -215,10 +247,11 @@ async def get_story_messages(story_id: int, db: AsyncSession = Depends(get_db)):
 async def story_turn(
     story_id: int,
     req: TurnRequest,
+    owner_id: str = Depends(require_platform_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     """The core endpoint: process a child's input and stream back the AI response."""
-    story = await _get_story(story_id, db)
+    story = await _get_story(story_id, owner_id, db)
 
     if story.status != "active":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="这个故事已经结束啦！")
@@ -508,8 +541,12 @@ async def story_turn(
     )
 
 
-async def _get_story(story_id: int, db: AsyncSession) -> Story:
-    story = await db.get(Story, story_id)
+async def _get_story(story_id: int, owner_id: str, db: AsyncSession) -> Story:
+    story = (await db.execute(
+        select(Story)
+        .join(Character, Story.character_id == Character.id)
+        .where(Story.id == story_id, Character.owner_id == owner_id)
+    )).scalar_one_or_none()
     if not story:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="故事不存在")
     return story

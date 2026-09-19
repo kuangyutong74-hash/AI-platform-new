@@ -12,6 +12,8 @@ PLATFORM_DIR = BACKEND_DIR.parents[2]
 class Settings(BaseSettings):
     # Database
     database_url: str = f"sqlite+aiosqlite:///{(PROJECT_DIR / 'story_cocreate.db').as_posix()}"
+    # Local integrated platform account service (see scripts/服务工具.ps1).
+    core_internal_url: str = "http://127.0.0.1:8020"
 
     # OpenAI-compatible LLM. Generic/Zhipu names take priority; legacy DeepSeek names remain supported.
     llm_api_key: str = Field(default="", validation_alias=AliasChoices("AI_API_KEY", "ZHIPUAI_API_KEY", "ZHIPU_API_KEY", "LLM_API_KEY", "DEEPSEEK_API_KEY"))

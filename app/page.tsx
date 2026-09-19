@@ -42,7 +42,7 @@ export default function Home(){
   const isAdult=session.account.role==="adult";
   const subject=isAdult?session.selected_student:session.account;
   return <main className={`app-shell role-${session.account.role}`}>
-    {!isAdult&&<PlatformMusicPlayer/>}
+    {!isAdult&&view==="planet"&&<PlatformMusicPlayer/>}
     <Header session={session} view={view} onNavigate={navigate} onLogout={logout} onSelectStudent={selectStudent} onManageStudents={()=>setStudentManagerOpen(true)} onEditIdentity={()=>setIdentityEditorOpen(true)}/>
     {identityEditorOpen&&subject&&<div className="identity-editor-backdrop"><IdentitySetup account={subject} onSaved={next=>{setSession(next);setIdentityEditorOpen(false)}} onCancel={()=>setIdentityEditorOpen(false)}/></div>}
     {isAdult&&studentManagerOpen&&<StudentManager

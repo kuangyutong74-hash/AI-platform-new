@@ -14,17 +14,22 @@ import Loading from "../components/Shared/Loading";
 import PngIcon from "../components/Shared/PngIcon";
 import { AGE_GROUP_LABELS, useChannel, type AgeGroup } from "../contexts/ChannelContext";
 import { AGE_PROFILES } from "../data/ageProfiles";
+import { ApiError } from "../api/client";
 import "./CharacterPage.css";
 
 type AgeFilter = "all" | AgeGroup;
-type PlatformIdentity = { displayName: string; avatarId: string };
+type PlatformIdentity = { displayName: string; avatarId: string; platformOrigin?: string };
 
 function readPlatformIdentity(): PlatformIdentity | null {
   try {
     const launch = JSON.parse(window.name || "");
     const student = launch?.namespace === "ai-bole.launch-context.v1" ? launch.context?.student : null;
     if (student?.displayName) {
-      const identity = { displayName: student.displayName, avatarId: student.avatarId || "student-1" };
+      const identity = {
+        displayName: student.displayName,
+        avatarId: student.avatarId || "student-1",
+        platformOrigin: launch.context?.platformOrigin,
+      };
       sessionStorage.setItem("ai-bole.story.identity", JSON.stringify(identity));
       return identity;
     }
@@ -43,6 +48,7 @@ export default function CharacterPage() {
   const [storyTitle, setStoryTitle] = useState("");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
+  const [identityError, setIdentityError] = useState("");
   const [platformIdentity] = useState(readPlatformIdentity);
   const navigate = useNavigate();
 
@@ -58,6 +64,7 @@ export default function CharacterPage() {
   }, [selectedChar?.id]);
 
   async function loadCharacters() {
+    setIdentityError("");
     try {
       const chars = await listCharacters();
       setCharacters(chars);
@@ -70,8 +77,16 @@ export default function CharacterPage() {
           setSelectedChar(created);
         }
       }
-    } catch {
-      // Silently handle
+    } catch (err: unknown) {
+      if (platformIdentity) {
+        setIdentityError(
+          err instanceof ApiError && err.status === 401
+            ? "登录信息没有跟过来，请返回探索星球后重新进入故事共创。"
+            : "暂时没能带入你的形象，请重试。",
+        );
+      } else {
+        setError(err instanceof Error ? err.message : "角色加载失败，请重试");
+      }
     } finally {
       setLoading(false);
     }
@@ -165,8 +180,8 @@ export default function CharacterPage() {
         <div className="start-field"><label><PngIcon name="action-write" size={24} /> 故事名字（可选）</label><input type="text" value={storyTitle} onChange={(e)=>setStoryTitle(e.target.value)} placeholder="给你的故事取个名字吧" maxLength={50}/></div>
         <div className="theme-selector"><label>选择故事主题</label><div className="theme-grid">{themes.map((t)=><button key={t.value} className={`theme-option ${theme===t.value?"theme-option-selected":""}`} onClick={()=>setTheme(t.value)}><PngIcon name={t.icon} size={42}/><span>{t.label}</span></button>)}</div>{theme==="__custom__"&&<input type="text" className="custom-theme-input" value={customTheme} onChange={(e)=>setCustomTheme(e.target.value)} placeholder="输入你想创作的故事主题" maxLength={50} autoFocus/>}</div>
         {error&&<p className="start-error" role="alert">{error}</p>}
-        {!selectedChar&&<p className="identity-syncing" role="status">正在带入你的形象…</p>}
-        <Button variant="accent" size="lg" onClick={handleStartStory} disabled={starting||!selectedChar}>{starting?"准备中...":"开始创作故事"}</Button>
+        {!selectedChar&&!identityError&&<p className="identity-syncing" role="status">正在带入你的形象…</p>}
+        {identityError?<div className="identity-sync-error" role="alert"><p>{identityError}</p><div><Button variant="secondary" onClick={loadCharacters}>重试</Button><a className="btn btn-accent btn-md" href={`${platformIdentity.platformOrigin || `http://${window.location.hostname}:4173`}/?from=story-auth-error`}>返回探索星球</a></div></div>:<Button variant="accent" size="lg" onClick={handleStartStory} disabled={starting||!selectedChar}>{starting?"准备中...":"开始创作故事"}</Button>}
       </div>
     </div>
   );

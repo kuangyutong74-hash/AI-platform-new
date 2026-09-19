@@ -23,7 +23,13 @@ from services import generate_follow_up_question, build_follow_up_feedback, anal
 from auth import (
     set_db_sessionmaker, get_db, get_current_user, get_current_user_optional,
     create_user, authenticate_user, invalidate_token, generate_auth_token, claim_old_sessions,
+    get_platform_student,
 )
+
+def require_owned_session(session: Session | None, student_id: str) -> Session:
+    if not session or session.student_token != student_id:
+        raise HTTPException(404, detail="体验记录未找到")
+    return session
 
 engine = create_async_engine(DATABASE_URL, echo=DEBUG)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -131,6 +137,7 @@ async def page_workday(request: Request, career_id: str):
 async def page_login(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
+@app.get("/report/{session_id}", response_class=HTMLResponse)
 async def page_report(request: Request, session_id: str):
     return templates.TemplateResponse("report.html", {"request": request, "session_id": session_id})
 
@@ -322,10 +329,10 @@ async def api_user_mark_explored(
 
 @app.get("/api/exploration/feed")
 async def api_exploration_feed(
-    x_student_token: str = Header("", alias="X-Student-Token"),
+    platform_student: dict = Depends(get_platform_student),
 ):
     """A child-safe activity feed and repeat-experience history for the current owner only."""
-    student_token = x_student_token.strip()[:64] if len(x_student_token.strip()) >= 8 else ""
+    student_token = str(platform_student["id"])
     async with async_session() as db:
         if student_token:
             query = select(Session).where(
@@ -398,11 +405,11 @@ async def api_get_careers():
 
 @app.get("/api/sessions/latest-by-career")
 async def api_latest_sessions_by_career(
-    x_student_token: str = Header("", alias="X-Student-Token"),
+    platform_student: dict = Depends(get_platform_student),
 ):
     """Return only the current student's latest completed session for each career."""
     result_map = {}
-    student_token = x_student_token.strip()[:64] if len(x_student_token.strip()) >= 8 else ""
+    student_token = str(platform_student["id"])
     async with async_session() as db:
         if student_token:
             completed = await db.execute(
@@ -425,6 +432,7 @@ async def api_latest_sessions_by_career(
 async def api_start_session(
     student_name: str=Form(...), age: int=Form(...), career_id: str=Form(...),
     student_token: str=Form(""),
+    platform_student: dict = Depends(get_platform_student),
 ):
     if not student_name or len(student_name.strip())<1 or len(student_name.strip())>30:
         raise HTTPException(400, detail="名字长度需要在1-30个字符之间")
@@ -433,9 +441,14 @@ async def api_start_session(
     if not career: raise HTTPException(404, detail="未找到该职业")
 
     sid = str(uuid.uuid4())
-    token = (student_token or "").strip()[:64]
+    token = str(platform_student["id"])
+    platform_name = str(platform_student.get("display_name") or student_name).strip()[:30]
+    try:
+        platform_age = int(platform_student.get("age") or age)
+    except (TypeError, ValueError):
+        platform_age = age
     async with async_session() as db:
-        s = Session(id=sid, student_name=student_name.strip(), age=age,
+        s = Session(id=sid, student_name=platform_name, age=platform_age,
             career_id=career_id, career_name=career["name"],
             student_token=token if token else None)
         db.add(s); await db.commit()
@@ -444,11 +457,15 @@ async def api_start_session(
 
 # === API: SCENARIO ===
 @app.get("/api/scenario/{session_id}/{scenario_index}")
-async def api_get_scenario(session_id: str, scenario_index: int):
+async def api_get_scenario(
+    session_id: str,
+    scenario_index: int,
+    platform_student: dict = Depends(get_platform_student),
+):
     async with async_session() as db:
         try:
             session = await db.get(Session, session_id)
-            if not session: raise HTTPException(404, detail="会话未找到")
+            session = require_owned_session(session, str(platform_student["id"]))
             career_s = SCENARIOS.get(session.career_id, [])
             if scenario_index<0 or scenario_index>=len(career_s):
                 raise HTTPException(404, detail="情境未找到")
@@ -495,10 +512,10 @@ async def api_get_scenario(session_id: str, scenario_index: int):
 @app.post("/api/scenario/{session_id}/{scenario_index}/choose")
 async def api_submit_choice(session_id:str, scenario_index:int, choice_id:str=Form(...),
     choice_text:str=Form(...), choice_index:int=Form(...), decision_time_ms:int=Form(...),
-    modification_count:int=Form(0)):
+    modification_count:int=Form(0), platform_student:dict=Depends(get_platform_student)):
     async with async_session() as db:
         session = await db.get(Session, session_id)
-        if not session: raise HTTPException(404, detail="会话未找到")
+        session = require_owned_session(session, str(platform_student["id"]))
         result = await db.execute(select(ScenarioRecord).where(
             ScenarioRecord.session_id==session_id, ScenarioRecord.scenario_index==scenario_index))
         srs = result.scalars().all(); sr = srs[0] if srs else None
@@ -536,11 +553,23 @@ async def api_submit_choice(session_id:str, scenario_index:int, choice_id:str=Fo
 
 @app.post("/api/scenario/{session_id}/{scenario_index}/follow-up")
 async def api_submit_follow_up(session_id:str, scenario_index:int,
-    answer_text:str=Form(...), choice_record_id:str=Form(...)):
+    answer_text:str=Form(...), choice_record_id:str=Form(...),
+    platform_student:dict=Depends(get_platform_student)):
     async with async_session() as db:
         input_safety = assess_student_input(answer_text)
         stored_answer = answer_text if input_safety.get("store_raw", True) else ""
-        cr = await db.get(ChoiceRecord, choice_record_id)
+        session = require_owned_session(
+            await db.get(Session, session_id), str(platform_student["id"])
+        )
+        cr = (await db.execute(
+            select(ChoiceRecord)
+            .join(ScenarioRecord, ChoiceRecord.scenario_record_id == ScenarioRecord.id)
+            .where(
+                ChoiceRecord.id == choice_record_id,
+                ScenarioRecord.session_id == session_id,
+                ScenarioRecord.scenario_index == scenario_index,
+            )
+        )).scalar_one_or_none()
         if not cr: raise HTTPException(404, detail="选择记录未找到")
         result = await db.execute(select(FollowUpRecord).where(FollowUpRecord.choice_record_id==choice_record_id))
         fu = result.scalar_one_or_none()
@@ -550,7 +579,6 @@ async def api_submit_follow_up(session_id:str, scenario_index:int,
             fu.follow_up_rounds = 2
             await db.commit()
 
-        session = await db.get(Session, session_id)
         sr_result = await db.execute(select(ScenarioRecord).where(
             ScenarioRecord.session_id==session_id, ScenarioRecord.scenario_index==scenario_index))
         srs2 = sr_result.scalars().all(); sr = srs2[0] if srs2 else None
@@ -617,17 +645,12 @@ async def api_submit_follow_up(session_id:str, scenario_index:int,
 @app.get("/api/session/{session_id}/safety-status")
 async def api_get_safety_status(
     session_id: str,
-    x_student_token: str = Header("", alias="X-Student-Token"),
+    platform_student: dict = Depends(get_platform_student),
 ):
     """学生端只可查看自己的保护状态；不返回教师摘要或任何敏感原文。"""
     async with async_session() as db:
         session = await db.get(Session, session_id)
-        if not session:
-            raise HTTPException(404, detail="体验记录未找到")
-        student_token = x_student_token.strip()[:64] if len(x_student_token.strip()) >= 8 else ""
-        owned_by_browser = bool(student_token) and session.student_token == student_token
-        if not owned_by_browser:
-            raise HTTPException(404, detail="体验记录未找到")
+        session = require_owned_session(session, str(platform_student["id"]))
         result = await db.execute(select(SafetyEvent).where(SafetyEvent.session_id == session_id).order_by(SafetyEvent.created_at.desc()))
         events = result.scalars().all()
         return {
@@ -641,10 +664,10 @@ async def api_get_safety_status(
 
 @app.get("/api/observer/safety-summary")
 async def api_observer_safety_summary(
-    x_student_token: str = Header("", alias="X-Student-Token"),
+    platform_student: dict = Depends(get_platform_student),
 ):
     """观察台的最小化安全状态汇总：只返回类别和处理状态，不返回学生原始表达。"""
-    student_token = x_student_token.strip()[:64] if len(x_student_token.strip()) >= 8 else ""
+    student_token = str(platform_student["id"])
     async with async_session() as db:
         query = select(SafetyEvent, Session).join(Session, SafetyEvent.session_id == Session.id)
         if student_token:
@@ -720,12 +743,14 @@ async def api_review_teacher_safety_event(
 
 # === API: SESSION JOURNEY ===
 @app.get("/api/session/{session_id}/scenarios")
-async def api_get_session_scenarios(session_id: str):
+async def api_get_session_scenarios(
+    session_id: str,
+    platform_student: dict = Depends(get_platform_student),
+):
     """Return the completed journey data required by the report timeline."""
     async with async_session() as db:
         session = await db.get(Session, session_id)
-        if not session:
-            raise HTTPException(404, detail="会话未找到")
+        session = require_owned_session(session, str(platform_student["id"]))
 
         sr_result = await db.execute(select(ScenarioRecord).where(
             ScenarioRecord.session_id == session_id).order_by(ScenarioRecord.scenario_index))
@@ -761,7 +786,11 @@ async def api_get_session_scenarios(session_id: str):
 
         return {"scenarios": journey}
 @app.post("/api/session/{session_id}/workday-process")
-async def api_save_workday_process(session_id: str, payload: dict = Body(...)):
+async def api_save_workday_process(
+    session_id: str,
+    payload: dict = Body(...),
+    platform_student: dict = Depends(get_platform_student),
+):
     """Attach locally collected workday process data to its matching session.
 
     Only a record from the same career is accepted. The data remains auxiliary
@@ -769,8 +798,7 @@ async def api_save_workday_process(session_id: str, payload: dict = Body(...)):
     """
     async with async_session() as db:
         session = await db.get(Session, session_id)
-        if not session:
-            raise HTTPException(404, detail="会话未找到")
+        session = require_owned_session(session, str(platform_student["id"]))
         career_id = str(payload.get("careerId") or payload.get("career_id") or "")
         career_name = str(payload.get("career") or "")
         if career_id and career_id != session.career_id:
@@ -804,18 +832,14 @@ async def api_save_workday_process(session_id: str, payload: dict = Body(...)):
         return {"success": True, "message": "职业日常过程记录已保存"}
 
 # === API: REPORT ===
+@app.get("/api/report/{session_id}")
 async def api_get_report(
     session_id: str,
-    x_student_token: str = Header("", alias="X-Student-Token"),
+    platform_student: dict = Depends(get_platform_student),
 ):
     async with async_session() as db:
         session = await db.get(Session, session_id)
-        if not session: raise HTTPException(404, detail="会话未找到")
-        student_token = x_student_token.strip()[:64] if len(x_student_token.strip()) >= 8 else ""
-        owned_by_browser = bool(student_token) and session.student_token == student_token
-        if not owned_by_browser:
-            # Use 404 rather than disclosing whether another student's report exists.
-            raise HTTPException(404, detail="报告未找到")
+        session = require_owned_session(session, str(platform_student["id"]))
         result = await db.execute(select(Report).where(Report.session_id==session_id))
         existing = result.scalar_one_or_none()
 
@@ -937,7 +961,10 @@ async def api_get_report(
 
 # === API: STUDENT CROSS-CAREER SUMMARY ===
 @app.get("/api/observer/{student_token}/summary")
-async def api_student_summary(student_token: str):
+async def api_student_summary(
+    student_token: str,
+    platform_student: dict = Depends(get_platform_student),
+):
     """查询同一 student_token 关联的已完成会话，整理观察台所需数据。
 
     已知限制：student_token 存储在浏览器 localStorage 中，
@@ -947,7 +974,7 @@ async def api_student_summary(student_token: str):
     if not student_token or len(student_token.strip()) < 8:
         raise HTTPException(400, detail="学生标识无效")
 
-    token = student_token.strip()[:64]
+    token = str(platform_student["id"])
 
     async with async_session() as db:
         # 查询所有已完成的会话
@@ -1046,7 +1073,10 @@ async def api_student_summary(student_token: str):
 
 
 @app.post("/api/student/{student_token}/backfill")
-async def api_student_backfill(student_token: str):
+async def api_student_backfill(
+    student_token: str,
+    platform_student: dict = Depends(get_platform_student),
+):
     """将历史完成的旧会话关联到当前浏览器 token，使其出现在综合成长报告中。
 
     已知限制（见 student_token 字段注释）：此轻量方案假设同一浏览器
