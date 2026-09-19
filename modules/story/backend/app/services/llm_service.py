@@ -457,6 +457,18 @@ def _try_parse_json_line(line: str) -> dict | None:
     return None
 
 
+def _is_markdown_code_fence(line: str) -> bool:
+    """Return whether a provider line is only a Markdown code fence.
+
+    Some OpenAI-compatible providers wrap the requested JSON Lines in a
+    ```json block even when the prompt asks for raw JSON.  A fence is protocol
+    decoration, not story content, so it must never enter the plain-text
+    fallback.
+    """
+    normalized = line.strip().lstrip("\ufeff").lower()
+    return normalized in {"```", "```json", "```jsonl", "```ndjson"}
+
+
 def _fix_json_quotes(text: str) -> str:
     """Replace Chinese double quotes inside JSON string values with corner brackets."""
     import re
@@ -671,6 +683,12 @@ class LLMService:
                         if not line:
                             continue
 
+                        # Providers may wrap JSON Lines in a Markdown code
+                        # block.  Ignore the wrapper instead of presenting
+                        # strings such as "```json。" as story text.
+                        if _is_markdown_code_fence(line):
+                            continue
+
                         # ── Try to parse as JSON (with basic error recovery) ──
                         parsed = _try_parse_json_line(line)
                         if parsed is not None:
@@ -692,7 +710,10 @@ class LLMService:
 
                 # ── Stream ended ──
                 if buffer.strip():
-                    parsed = _try_parse_json_line(buffer.strip())
+                    final_line = buffer.strip()
+                    if _is_markdown_code_fence(final_line):
+                        final_line = ""
+                    parsed = _try_parse_json_line(final_line)
                     if parsed is not None:
                         seen_valid_json = True
                         if pending_plain.strip():

@@ -103,6 +103,22 @@ class StoryPresentationRegressionTests(unittest.TestCase):
 
 
 class StoryStreamRegressionTests(unittest.IsolatedAsyncioTestCase):
+    async def test_markdown_json_fences_are_not_emitted_as_story_text(self):
+        service = _llm_with_stream([
+            '```json\n',
+            '{"type":"narrative","text":"小船终于靠岸了。"}\n',
+            '{"type":"question","text":"你觉得岸边有什么呢？"}\n',
+            '{"type":"done"}\n',
+            '```',
+        ])
+        events = [event async for event in service.generate_turn([])]
+        self.assertEqual(events, [
+            {"type": "narrative_chunk", "text": "小船终于靠岸了。"},
+            {"type": "question", "text": "你觉得岸边有什么呢？"},
+            {"type": "done"},
+        ])
+        self.assertNotIn("```json", "".join(str(event) for event in events))
+
     async def test_final_json_line_without_newline_is_not_dropped(self):
         service = _llm_with_stream([
             '{"type":"narrative","text":"小船终于靠岸了。"}'
