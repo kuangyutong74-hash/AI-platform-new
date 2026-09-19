@@ -21,7 +21,7 @@ test("server renders AI伯乐探索星球", async () => {
   assert.match(html, /<title>AI伯乐 · 探索星球<\/title>/i);
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /欢迎回到探索星球/);
-  assert.match(page, /创建探索账号/);
+  assert.match(page, /创建你的探索账号/);
   assert.match(page, /\/api\/account\/register/);
   assert.match(page, /\/api\/account\/password\/reset/);
   assert.match(page, /我是学生/);
@@ -132,7 +132,12 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
   assert.doesNotMatch(works, /all-works-shelf/);
   assert.match(works, /温暖点评/);
   assert.match(works, /这些作品来源于四座大陆/);
-  assert.match(works, /添加我的作品/);
+  assert.match(works, /从探索反馈中添加作品/);
+  assert.match(works, /选择一次探索反馈/);
+  assert.match(works, /作品名称<select/);
+  assert.match(works, /作品内容<select/);
+  assert.doesNotMatch(works, /<input name="title"/);
+  assert.doesNotMatch(works, /<textarea name="description"/);
   assert.match(works, /\/api\/explorer\/works/);
   assert.match(works, /metricValue/);
   assert.match(styles, /\.sticker-picture[\s\S]*background:\s*transparent/);
@@ -147,6 +152,10 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
   assert.match(growth, /今晚可以这样聊/);
   assert.match(growth, /下一站建议/);
   assert.match(growth, /完成节奏、过程变化/);
+  assert.match(growth, /今天与长期以来/);
+  assert.match(growth, /今天的足迹/);
+  assert.match(growth, /长期以来的线索/);
+  assert.match(growth, /不是固定标签/);
   assert.match(growth, /作品内容会在作品展柜里单独收藏/);
   assert.match(growth, /看看高光作品/);
   assert.doesNotMatch(growth, /再次去探索/);

@@ -5,7 +5,6 @@ import StoryReader from '../components/Gallery/StoryReader';
 import Button from '../components/Shared/Button';
 import Loading from '../components/Shared/Loading';
 import Modal from '../components/Shared/Modal';
-import PinyinText from '../components/Story/PinyinText';
 import PngIcon from '../components/Shared/PngIcon';
 import './TalentPage.css';
 
@@ -224,7 +223,7 @@ export default function TalentPage({ parentView = false }: { parentView?: boolea
           <h2>精彩瞬间</h2>
           <div className="talent-quotes">
             {profile.highlights.map((quote, index) => (
-              <blockquote key={index}>“<PinyinText text={quote} enabled />”</blockquote>
+              <blockquote key={index}>“{quote}”</blockquote>
             ))}
           </div>
         </section>
@@ -258,14 +257,14 @@ export default function TalentPage({ parentView = false }: { parentView?: boolea
               <section className="talent-card talent-kids-card talent-strength-card" role="tabpanel">
                 <h2>我的亮点</h2>
                 <ul>{profile.strengths.map((item, index) => (
-                  <li key={index}><PinyinText text={item} enabled /></li>
+                  <li key={index}>{item}</li>
                 ))}</ul>
               </section>
             ) : (
               <section className="talent-card talent-kids-card talent-challenge-card" role="tabpanel">
                 <h2>下一步建议</h2>
                 <ul>{profile.suggestions.map((item, index) => (
-                  <li key={index}><PinyinText text={item} enabled /></li>
+                  <li key={index}>{item}</li>
                 ))}</ul>
               </section>
             )}
@@ -274,7 +273,7 @@ export default function TalentPage({ parentView = false }: { parentView?: boolea
           <section className="talent-card talent-kids-card talent-challenge-card">
             <h2>下一步建议</h2>
             <ul>{profile.suggestions.map((item, index) => (
-              <li key={index}><PinyinText text={item} enabled /></li>
+              <li key={index}>{item}</li>
             ))}</ul>
           </section>
         )}

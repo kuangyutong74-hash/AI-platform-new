@@ -511,6 +511,12 @@ def construct_dimension_map() -> dict[str, str]:
     return {item["key"]: item["reportDimension"] for item in registry["constructs"]}
 
 
+@lru_cache(maxsize=1)
+def construct_display_name_map() -> dict[str, str]:
+    registry = json.loads((REPO_ROOT / "config" / "construct-registry.v1.json").read_text(encoding="utf-8"))
+    return {item["key"]: item["displayName"] for item in registry["constructs"]}
+
+
 def evidence_report_dimensions(row: sqlite3.Row, dimensions: dict[str, str]) -> list[str]:
     """Map standard constructs to report dimensions, including level-specific game evidence."""
     try:
@@ -1638,7 +1644,8 @@ def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
                            WHERE s.child_profile_id=? AND s.status='completed'
                            ORDER BY COALESCE(s.ended_at,s.started_at,s.created_at) DESC""", (profile["id"],)).fetchall()
         observation_rows = db.execute(
-            """SELECT s.module_id,er.behavior_summary,se.occurred_at
+            """SELECT s.id AS session_id,s.module_id,er.constructs_json,
+                      er.behavior_summary,se.occurred_at
                FROM evidence_records er JOIN source_events se ON se.id=er.source_event_id
                JOIN assessment_sessions s ON s.id=se.session_id
                WHERE s.child_profile_id=? AND s.status='completed' AND TRIM(er.behavior_summary)<>''
@@ -1660,11 +1667,39 @@ def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
             "caption": timeline_session_caption(row["module_id"], summary, row["evidence_count"]),
         })
     module_observations: dict[str, list[str]] = {}
+    session_observations: dict[str, list[str]] = {}
+    signal_stats: dict[str, dict] = {}
+    construct_names = construct_display_name_map()
     for row in observation_rows:
         text = re.sub(r"\s+", " ", row["behavior_summary"] or "").strip()
         items = module_observations.setdefault(row["module_id"], [])
         if text and text not in items and len(items) < 3:
             items.append(text)
+        session_items = session_observations.setdefault(row["session_id"], [])
+        if text and text not in session_items and len(session_items) < 3:
+            session_items.append(text)
+        try:
+            constructs = json.loads(row["constructs_json"] or "[]")
+        except (TypeError, json.JSONDecodeError):
+            constructs = []
+        for key in constructs:
+            if key not in construct_names:
+                continue
+            signal = signal_stats.setdefault(key, {
+                "key": key,
+                "label": construct_names[key],
+                "evidenceCount": 0,
+                "modules": set(),
+                "firstSeenAt": row["occurred_at"],
+                "lastSeenAt": row["occurred_at"],
+                "observation": text,
+            })
+            signal["evidenceCount"] += 1
+            signal["modules"].add(row["module_id"])
+            signal["firstSeenAt"] = min(signal["firstSeenAt"], row["occurred_at"])
+            signal["lastSeenAt"] = max(signal["lastSeenAt"], row["occurred_at"])
+    for session in sessions:
+        session["observations"] = session_observations.get(session["id"], [])
     grouped: dict[str, list[dict]] = {}
     for session in sessions:
         grouped.setdefault(session["moduleId"], []).append(session)
@@ -1672,7 +1707,33 @@ def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     for module_id, items in grouped.items():
         ordered = sorted(items, key=lambda item: item["endedAt"] or item["startedAt"] or "")
         module_summaries.append({"moduleId": module_id, "completedCount": len(items), "firstUsedAt": ordered[0]["startedAt"] or ordered[0]["endedAt"], "lastUsedAt": ordered[-1]["endedAt"] or ordered[-1]["startedAt"], "activeSeconds": sum(item["activeSeconds"] for item in items), "evidenceCount": sum(item["evidenceCount"] for item in items), "artifactCount": sum(item["artifactCount"] for item in items), "observations": module_observations.get(module_id, []), "recentSessions": list(reversed(ordered))[:3]})
-    return {"sessions": sessions, "moduleSummaries": module_summaries}
+    long_term_signals = []
+    for signal in signal_stats.values():
+        modules = sorted(signal.pop("modules"))
+        module_count = len(modules)
+        evidence_count = signal["evidenceCount"]
+        status = (
+            "跨情境出现"
+            if module_count >= 2
+            else "反复出现"
+            if evidence_count >= 3
+            else "正在积累"
+        )
+        long_term_signals.append({
+            **signal,
+            "modules": modules,
+            "moduleCount": module_count,
+            "status": status,
+        })
+    long_term_signals.sort(
+        key=lambda item: (item["moduleCount"], item["evidenceCount"], item["lastSeenAt"]),
+        reverse=True,
+    )
+    return {
+        "sessions": sessions,
+        "moduleSummaries": module_summaries,
+        "longTermSignals": long_term_signals[:6],
+    }
 
 
 @app.get("/api/v1/assessment-sessions/{session_id}")

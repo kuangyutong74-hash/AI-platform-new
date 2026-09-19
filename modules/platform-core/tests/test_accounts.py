@@ -431,6 +431,14 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(timeline["moduleSummaries"][0]["completedCount"], 1)
         self.assertEqual(timeline["moduleSummaries"][0]["recentSessions"][0]["id"], context["sessionId"])
         self.assertTrue(timeline["moduleSummaries"][0]["observations"])
+        self.assertTrue(timeline["sessions"][0]["observations"])
+        planning_signal = next(
+            signal for signal in timeline["longTermSignals"]
+            if signal["key"] == "problem_solving.planning"
+        )
+        self.assertEqual(planning_signal["label"], "规划")
+        self.assertEqual(planning_signal["evidenceCount"], 1)
+        self.assertEqual(planning_signal["modules"], ["career"])
         self.assertTrue(timeline["moduleSummaries"][0]["firstUsedAt"])
         self.assertEqual(timeline["moduleSummaries"][0]["lastUsedAt"], main.read_assessment_session(context["sessionId"], cookie)["endedAt"])
         self.assertEqual(

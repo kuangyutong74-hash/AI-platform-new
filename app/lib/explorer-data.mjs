@@ -238,6 +238,8 @@ function normalizeItem(item, index, kind) {
     tone: meta.tone,
     isHighlight: item?.is_highlight === true || item?.isHighlight === true || itemKind === "highlight",
     snapshotUrl: cleanText(item?.snapshot_url ?? item?.snapshotUrl),
+    sourceResourceId: cleanText(item?.source_resource_id ?? item?.sourceResourceId),
+    sourceSessionId: cleanText(item?.source_session_id ?? item?.sourceSessionId),
     comments: Array.isArray(item?.comments) ? item.comments.map((comment, commentIndex) => ({
       id: cleanText(comment?.id, `comment-${index}-${commentIndex}`),
       body: cleanText(comment?.body),
@@ -245,6 +247,64 @@ function normalizeItem(item, index, kind) {
       authorKind: cleanText(comment?.author_kind ?? comment?.authorKind),
       createdAt: cleanText(comment?.created_at ?? comment?.createdAt),
     })).filter(comment => comment.body) : [],
+  };
+}
+
+function normalizeGrowthSession(session, index) {
+  const moduleKey = canonicalExplorerModule(session?.module ?? session?.moduleId);
+  if (!moduleKey) return null;
+  return {
+    id: cleanText(session?.id, `growth-session-${index}`),
+    module: moduleKey,
+    occurredAt: cleanText(session?.occurred_at ?? session?.occurredAt),
+    durationSeconds: Number(session?.duration_seconds ?? session?.durationSeconds) || 0,
+    caption: cleanText(session?.caption, `完成一次${MODULE_META[moduleKey].name}探索`),
+    evidenceCount: Number(session?.evidence_count ?? session?.evidenceCount) || 0,
+    artifactCount: Number(session?.artifact_count ?? session?.artifactCount) || 0,
+    observations: Array.isArray(session?.observations)
+      ? session.observations.map(value => cleanText(value)).filter(Boolean).slice(0, 3)
+      : [],
+  };
+}
+
+function normalizeGrowthOverview(value = {}) {
+  const sessions = Array.isArray(value?.sessions)
+    ? value.sessions.map(normalizeGrowthSession).filter(Boolean)
+    : [];
+  const todaySessions = Array.isArray(value?.today_sessions ?? value?.todaySessions)
+    ? (value.today_sessions ?? value.todaySessions).map(normalizeGrowthSession).filter(Boolean)
+    : [];
+  const longTermSignals = Array.isArray(value?.long_term_signals ?? value?.longTermSignals)
+    ? (value.long_term_signals ?? value.longTermSignals).map((signal, index) => ({
+        key: cleanText(signal?.key, `growth-signal-${index}`),
+        label: cleanText(signal?.label, "成长线索"),
+        evidenceCount: Number(signal?.evidence_count ?? signal?.evidenceCount) || 0,
+        moduleCount: Number(signal?.module_count ?? signal?.moduleCount) || 0,
+        modules: Array.isArray(signal?.modules)
+          ? signal.modules.map(module => canonicalExplorerModule(module)).filter(Boolean)
+          : [],
+        firstSeenAt: cleanText(signal?.first_seen_at ?? signal?.firstSeenAt),
+        lastSeenAt: cleanText(signal?.last_seen_at ?? signal?.lastSeenAt),
+        observation: cleanText(signal?.observation, "这条线索正在从多次探索中慢慢积累。"),
+        status: cleanText(signal?.status, "正在积累"),
+      })).slice(0, 6)
+    : [];
+  return {
+    sessions,
+    todaySessions,
+    todayCompletedCount: Number(value?.today_completed_count ?? value?.todayCompletedCount) || 0,
+    todayDurationSeconds: Number(value?.today_duration_seconds ?? value?.todayDurationSeconds) || 0,
+    todayEvidenceCount: Number(value?.today_evidence_count ?? value?.todayEvidenceCount) || 0,
+    todayModules: Array.isArray(value?.today_modules ?? value?.todayModules)
+      ? (value.today_modules ?? value.todayModules).map(module => canonicalExplorerModule(module)).filter(Boolean)
+      : [],
+    totalCompletedCount: Number(value?.total_completed_count ?? value?.totalCompletedCount) || sessions.length,
+    totalDurationSeconds: Number(value?.total_duration_seconds ?? value?.totalDurationSeconds) || 0,
+    activeDays: Number(value?.active_days ?? value?.activeDays) || 0,
+    exploredModuleCount: Number(value?.explored_module_count ?? value?.exploredModuleCount) || 0,
+    firstCompletedAt: cleanText(value?.first_completed_at ?? value?.firstCompletedAt),
+    lastCompletedAt: cleanText(value?.last_completed_at ?? value?.lastCompletedAt),
+    longTermSignals,
   };
 }
 
@@ -258,10 +318,38 @@ export function createDemoCollection(account = {}) {
     index,
     "milestone",
   ));
+  const now = new Date();
+  const demoSessions = milestones
+    .filter(item => item.module !== "registration")
+    .flatMap(item => item.recentSessions.map(session => ({...session, module: item.module})))
+    .map((session, index) => index < 2
+      ? {...session, occurredAt: new Date(now.getTime() - (index + 1) * 3600000).toISOString()}
+      : session);
+  const todaySessions = demoSessions.slice(0, 2);
+  const growthOverview = normalizeGrowthOverview({
+    sessions: demoSessions,
+    todaySessions,
+    todayCompletedCount: todaySessions.length,
+    todayDurationSeconds: todaySessions.reduce((sum, item) => sum + item.durationSeconds, 0),
+    todayEvidenceCount: 5,
+    todayModules: todaySessions.map(item => item.module),
+    totalCompletedCount: demoSessions.length,
+    totalDurationSeconds: demoSessions.reduce((sum, item) => sum + item.durationSeconds, 0),
+    activeDays: 8,
+    exploredModuleCount: 4,
+    firstCompletedAt: milestones[1]?.firstUsedAt || milestones[1]?.occurredAt,
+    lastCompletedAt: todaySessions[0]?.occurredAt,
+    longTermSignals: [
+      {key:"problem_solving.planning",label:"规划",evidenceCount:6,moduleCount:2,modules:["deep_sea","career"],firstSeenAt:milestones[2]?.occurredAt,lastSeenAt:todaySessions[0]?.occurredAt,observation:"在基地重建和职业任务中，都能先想办法再行动。",status:"跨情境出现"},
+      {key:"creativity.narrative_expression",label:"叙事表达",evidenceCount:4,moduleCount:1,modules:["story"],firstSeenAt:milestones[1]?.occurredAt,lastSeenAt:todaySessions[0]?.occurredAt,observation:"多次继续补充情节，让故事从想法走向完整。",status:"反复出现"},
+      {key:"self_reflection.interest_expression",label:"兴趣表达",evidenceCount:3,moduleCount:1,modules:["chat"],firstSeenAt:milestones[4]?.occurredAt,lastSeenAt:milestones[4]?.occurredAt,observation:"愿意说出喜欢什么，也会补充自己的原因。",status:"反复出现"},
+    ],
+  });
   return {
     account: {displayName, age, createdAt},
     works,
     milestones,
+    growthOverview,
     isDemo: true,
     worksAreDemo: true,
     timelineIsDemo: true,
@@ -292,6 +380,9 @@ export function normalizeCollectionResponse(payload) {
   const timelineIsDemo = realMilestones.length === 0;
   const works = worksAreDemo ? demo.works : realWorks;
   const milestones = timelineIsDemo ? demo.milestones : realMilestones;
+  const growthOverview = timelineIsDemo
+    ? demo.growthOverview
+    : normalizeGrowthOverview(payload?.growth_overview ?? payload?.growthOverview);
   const worksNotice = worksAreDemo
     ? "还没有作品，这里先展示四座大陆的示例。你可以自行探索，也可以自己添加第一件作品。"
     : "这里展示着探索星球时留下的作品，也珍藏着学生自己添加的创作。";
@@ -302,6 +393,7 @@ export function normalizeCollectionResponse(payload) {
     account,
     works,
     milestones,
+    growthOverview,
     isDemo: worksAreDemo && timelineIsDemo,
     worksAreDemo,
     timelineIsDemo,

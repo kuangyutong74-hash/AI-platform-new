@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ExplorerIcon from "./ExplorerIcon";
 import useExplorerCollection from "../hooks/useExplorerCollection";
-import type { ExplorerItem } from "../lib/explorer-types";
+import type { ExplorerGrowthOverview, ExplorerItem, ExplorerModule } from "../lib/explorer-types";
 
 type Account = { display_name: string; age: number; created_at?: string };
 type NavigationView = "planet" | "works" | "timeline" | "report";
@@ -196,6 +196,106 @@ function TrailLine() {
         <em />
       </span>
     </div>
+  );
+}
+
+const growthModuleNames: Record<Exclude<ExplorerModule, "registration">, string> = {
+  story: "想象之洲",
+  deep_sea: "创造之洲",
+  career: "未来之洲",
+  chat: "倾听之洲",
+};
+
+function GrowthOverviewPanel({
+  overview,
+  adult,
+  isDemo,
+}: {
+  overview: ExplorerGrowthOverview;
+  adult: boolean;
+  isDemo: boolean;
+}) {
+  const todayLabel = new Intl.DateTimeFormat("zh-CN", {
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  }).format(new Date());
+  const person = adult ? "孩子" : "你";
+  return (
+    <section className="growth-overview" aria-labelledby="growth-overview-title">
+      <header>
+        <div>
+          <p>{isDemo ? "示例观察面板" : "真实探索证据"}</p>
+          <h2 id="growth-overview-title">今天与长期以来</h2>
+        </div>
+        <span>把一次表现和反复出现的线索分开看</span>
+      </header>
+      <div className="growth-overview-grid">
+        <article className="growth-today-card">
+          <div className="growth-card-heading">
+            <span className="growth-card-icon"><ExplorerIcon name="spark" /></span>
+            <div><small>{todayLabel}</small><h3>今天的足迹</h3></div>
+          </div>
+          {overview.todayCompletedCount > 0 ? (
+            <>
+              <div className="growth-stat-row">
+                <span><b>{overview.todayCompletedCount}</b><small>次完成</small></span>
+                <span><b>{overview.todayModules.length}</b><small>座大陆</small></span>
+                <span><b>{formatDuration(overview.todayDurationSeconds)}</b><small>今日投入</small></span>
+              </div>
+              <ol className="growth-today-list">
+                {overview.todaySessions.slice(0, 3).map((session) => (
+                  <li key={session.id}>
+                    <i />
+                    <span><b>{growthModuleNames[session.module!]}</b>{session.caption}</span>
+                    {session.evidenceCount ? <small>{session.evidenceCount} 条过程记录</small> : null}
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : (
+            <div className="growth-overview-empty">
+              <ExplorerIcon name="compass" />
+              <p>今天还没有新的完成记录。下一次认真尝试，也会成为一枚新的脚印。</p>
+            </div>
+          )}
+        </article>
+
+        <article className="growth-long-card">
+          <div className="growth-card-heading">
+            <span className="growth-card-icon"><ExplorerIcon name="compass" /></span>
+            <div><small>{overview.firstCompletedAt ? `从 ${formatDate(overview.firstCompletedAt)} 开始` : "从第一次探索开始"}</small><h3>长期以来的线索</h3></div>
+          </div>
+          <div className="growth-stat-row">
+            <span><b>{overview.totalCompletedCount}</b><small>次完整探索</small></span>
+            <span><b>{overview.activeDays}</b><small>个探索日</small></span>
+            <span><b>{overview.exploredModuleCount}</b><small>类不同情境</small></span>
+          </div>
+          {overview.longTermSignals.length ? (
+            <div className="growth-signal-list">
+              {overview.longTermSignals.slice(0, 4).map((signal) => (
+                <div key={signal.key} className="growth-signal">
+                  <span><b>{signal.label}</b><em>{signal.status}</em></span>
+                  <p>{signal.observation}</p>
+                  <small>
+                    来自 {signal.evidenceCount} 条证据
+                    {signal.modules.length ? ` · ${signal.modules.map(module => growthModuleNames[module]).join("、")}` : ""}
+                  </small>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="growth-overview-empty compact">
+              <p>再完成几次不同情境的探索，反复出现的做法会在这里慢慢连成线。</p>
+            </div>
+          )}
+        </article>
+      </div>
+      <p className="growth-evidence-note">
+        <ExplorerIcon name="spark" size={15} />
+        这里呈现的是{person}在不同任务里的过程证据和变化，不是一次测验，也不是固定标签。
+      </p>
+    </section>
   );
 }
 
@@ -472,6 +572,11 @@ export default function GrowthTrailPage({
         <span>{data.timelineNotice}</span>
         {error && <button onClick={retry}>再试一次</button>}
       </div>
+      <GrowthOverviewPanel
+        overview={data.growthOverview}
+        adult={adult}
+        isDemo={data.timelineIsDemo}
+      />
       <section
         className="growth-trail"
         aria-label={`${data.account.displayName}的成长星路`}

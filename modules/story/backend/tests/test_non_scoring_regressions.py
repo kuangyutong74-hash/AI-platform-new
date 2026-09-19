@@ -53,10 +53,37 @@ class ContentGuardRegressionTests(unittest.TestCase):
             "我家住幸福小区8栋",
             "我的电话是13812345678",
             "我在三年级2班",
+            "我的学校是南开日新学校",
+            "我的登录密码是abc12345",
         )
         for text in samples:
             with self.subTest(text=text):
                 self.assertTrue(guard_child_input(text).blocked)
+
+    def test_age_and_general_location_are_allowed(self):
+        for text in (
+            "我今年10岁",
+            "我住在天津市",
+            "我来自河北省石家庄市",
+        ):
+            with self.subTest(text=text):
+                result = guard_child_input(text)
+                self.assertFalse(result.blocked)
+                self.assertFalse(result.has_privacy)
+
+    def test_story_language_is_left_to_the_director(self):
+        samples = (
+            "我准备让桥下冒出一个会打喷嚏的小水泡，噗地炸开吓小星一跳。",
+            "恶龙挥着刀冲过来，勇士打败了它。",
+            "反派气得骂了一句，转身跑进恐怖森林。",
+        )
+        for text in samples:
+            with self.subTest(text=text):
+                self.assertFalse(guard_child_input(text).blocked)
+
+    def test_agent_story_language_is_not_mechanically_rewritten(self):
+        story_text = "恶龙举起刀，水泡突然炸开，吓得它转身逃跑。"
+        self.assertEqual(sanitize_agent_output(story_text), story_text)
 
 
 class EmpathyRecognitionRegressionTests(unittest.TestCase):
