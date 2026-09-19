@@ -134,6 +134,25 @@ const DEMO_TIMELINE = [
     status: "模块已点亮",
     metricLabel: "累计完成",
     metricValue: `${item.usageCount} 次探索${index === 0 ? " · 累计 38分钟" : ""}`,
+    evidenceCount: [12, 9, 8, 14][index],
+    artifactCount: 1,
+    observations: {
+      story: ["愿意连续补充情节，让故事从开头走到结尾。", "遇到不满意的表达时，会换一种说法继续创作。"],
+      deep_sea: ["会根据检查结果回头定位问题，再调整原来的方案。", "在生态配对、线路布局和角色协商中使用了不同办法。"],
+      career: ["能够跟着职业情境完成连续任务，并说明自己的选择。", "获得新信息后，愿意重新比较并调整做法。"],
+      chat: ["愿意把感受和原因说得更具体，让对话继续展开。", "能回应追问，也会补充生活里的真实例子。"],
+    }[item.module],
+    recentSessions: [0, 1, 2].slice(0, Math.min(3, item.usageCount)).map((offset) => ({
+      id: `demo-${item.module}-session-${offset}`,
+      occurredAt: new Date(new Date(item.occurredAt).getTime() - offset * 4 * 86400000).toISOString(),
+      durationSeconds: item.module === "story" ? 760 + offset * 110 : 480 + offset * 80,
+      caption: {
+        story: offset === 0 ? "完成一次完整故事共创，并为结尾补充了自己的想法" : "从一个新点子出发，把故事继续讲了下去",
+        deep_sea: offset === 0 ? "完成三处基地任务，并根据检查结果调整方案" : "尝试生态配对与线路布局，留下解决问题的过程",
+        career: offset === 0 ? "完成小医生的一天，在关键选择后说明了理由" : "体验一个新的职业情境，完成连续任务",
+        chat: offset === 0 ? "围绕雨天的心情完成一次连续对话" : "从生活小事出发，把感受慢慢说清楚",
+      }[item.module],
+    })),
   })),
 ];
 
@@ -199,6 +218,19 @@ function normalizeItem(item, index, kind) {
     lastUsedAt: cleanText(item?.last_used_at ?? item?.lastUsedAt),
     durationSeconds: Number(item?.duration_seconds ?? item?.durationSeconds) || 0,
     durationCoverage: Math.max(0, Math.min(1, Number(item?.duration_coverage ?? item?.durationCoverage) || 0)),
+    evidenceCount: Number(item?.evidence_count ?? item?.evidenceCount) || 0,
+    artifactCount: Number(item?.artifact_count ?? item?.artifactCount) || 0,
+    observations: Array.isArray(item?.observations)
+      ? item.observations.map(value => cleanText(value)).filter(Boolean).slice(0, 3)
+      : [],
+    recentSessions: Array.isArray(item?.recent_sessions ?? item?.recentSessions)
+      ? (item.recent_sessions ?? item.recentSessions).map((session, sessionIndex) => ({
+          id: cleanText(session?.id, `${moduleKey}-session-${sessionIndex}`),
+          occurredAt: cleanText(session?.occurred_at ?? session?.occurredAt),
+          durationSeconds: Number(session?.duration_seconds ?? session?.durationSeconds) || 0,
+          caption: cleanText(session?.caption, `完成一次${meta.name || "探索"}`),
+        })).slice(0, 3)
+      : [],
     island: meta.island,
     collection: meta.collection,
     scene: meta.scene,
@@ -265,7 +297,7 @@ export function normalizeCollectionResponse(payload) {
     : "这里展示着探索星球时留下的作品，也珍藏着学生自己添加的创作。";
   const timelineNotice = timelineIsDemo
     ? "还没有收到账号使用历程，这里先展示清楚标注的示例。"
-    : "这条星路从注册日开始，记录四个模块的首次完成、最近完成和累计次数。";
+    : "这条星路从注册日开始，按真实会话整理完成节奏、过程观察和可继续尝试的方向。";
   return {
     account,
     works,

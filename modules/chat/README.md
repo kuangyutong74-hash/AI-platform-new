@@ -2,7 +2,10 @@
 
 基于 DeepSeek 大语言模型的儿童自然语言聊天应用。孩子与 AI 伙伴"小新"自由对话，对话结束后系统自动生成**潜能画像分析**（写入对话历史，可在历史对话页查看）。
 
-**单机本地版**：无账号体系、无登录/注册、无教师端。所有数据保存在本地 `data/` 目录，单用户（guest）直接使用。
+**数据归属**：所有数据保存在本地 `data/` 目录。
+
+- **从整合平台进入**（Portal → 探索星球）时，模块会读取统一账号 Cookie，按账号隔离历史对话、手账本与收藏，孩子只看得到自己的记录。
+- **直接打开模块**（`http://localhost:3000/`，没有统一账号会话）时，以 `guest` 身份运行，用于模块自身的功能验收。
 
 ---
 
@@ -71,6 +74,29 @@ npm run fetch-vosk-model
 | `DATA_DIR` | `./data` | 数据存储目录（相对路径基于项目根目录） |
 | `TRUST_PROXY` | `false` | 反向代理信任级别，可选 `1`/`2`/`3`/`loopback`/`linklocal`/`uniquelocal`。禁止设为 `true` |
 
+### 账号隔离（选填）
+
+聊天模块通过统一账号 Cookie 解析出稳定的 `userId`（`acct:<账号id>`），避免所有账号共用同一份 `history.json`。
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `AI_BOLE_CORE_URL` | `http://localhost:8020` | Core API 地址，用于把会话 Cookie 换成账号。兼容别名 `CORE_API_URL` |
+| `AI_BOLE_SESSION_COOKIE` | `ai_bole_session` | 统一账号会话 Cookie 名 |
+| `AI_BOLE_IDENTITY_TTL_MS` | `60000` | 账号解析结果的内存缓存时长（毫秒） |
+| `AI_BOLE_IDENTITY_TIMEOUT_MS` | `1500` | 单次账号解析超时（毫秒），超时即回退 guest |
+| `AI_BOLE_CHAT_ACCOUNT_ISOLATION` | `1` | 设为 `0`/`false`/`no`/`off` 可关闭隔离，回到单一 guest 行为 |
+
+> ⚠️ **部署要点**：Cookie 不带 `Domain`，只绑定主机名，因此 Portal、Core、聊天模块必须**同一主机**（端口可以不同）。
+> 如果它们被拆到不同域名/子域，聊天模块拿不到会话 Cookie，会自动退回 `guest`，所有账号又会看到同一份历史。
+> 账号服务不可用时同样回退 `guest`，不会阻塞聊天主链路。
+
+历史遗留的 `guest` 数据可以一次性认领给某个账号（先停服务）：
+
+```bash
+node scripts/assign-legacy-guest-data.js --account <Core 账号id> --dry-run
+node scripts/assign-legacy-guest-data.js --account <Core 账号id> --confirm
+```
+
 > ⚠️ **安全注意**：平台根目录 `.env` 含 API 密钥、`data/` 含对话数据，均已被 `.gitignore` 忽略。
 > **切勿将 `.env` 或 `data/` 中的文件上传到公开仓库**。
 
@@ -82,7 +108,7 @@ npm run fetch-vosk-model
 
 - `npm run init-data` 会验证并安全复制模板到 `data/`，**不会覆盖已有文件**，可安全重复运行；手动方式为 `cp -r data.example/* data/`
 - 初始化后 `data/` 共 5 个文件：`history.json`、`journal.json`、`chat-log.jsonl`、`tips.json`、`tip-favorites.json`
-- 无账号体系：所有数据均归属单机 guest 用户
+- 每条记录都带 `userId`：从 Portal 进入时为 `acct:<Core 账号id>`，直接打开模块时为 `guest`
 - 不要把生产数据复制回 `data.example/`；部署时建议用 `DATA_DIR` 环境变量指定独立持久化目录
 
 ---
@@ -167,7 +193,7 @@ Server is running on http://localhost:3000
 npm test
 ```
 
-24 个测试文件全部运行，应全绿通过。
+全部测试文件应全绿通过（`node:test`）。
 
 ---
 
@@ -259,15 +285,14 @@ node scripts/reanalyze-all.js
 
 ## 已知限制
 
-### 1. 平台集成功能已移除
+### 1. 平台集成
 
-这是从更大平台剥离出的独立版本，以下功能不在本项目中：
-- 登录/注册/教师端（账号体系、学生绑定、报告审阅）
+模块已接回整合平台的统一账号：通过 `ai_bole_session` Cookie 识别当前账号并隔离数据（见上文"账号身份与数据隔离"），对话结束后通过 Module SDK 上报证据与作品。
+
+以下功能仍不在本模块内：
+- 注册/登录/教师端页面（账号体系、学生绑定、报告审阅由 Portal 与 Core 提供）
 - iframe 嵌入模式（父页面通信、高度自适应）
 - SSO 单点登录（第三方 Cookie、共享会话）
-- 跨域 Cookie / CORS 平台级中间件
-
-本版本仅用于**模块本身的功能验收**，不涉及与外部平台的对接。
 
 ### 2. 无内置 HTTPS 支持
 

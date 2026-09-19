@@ -1,7 +1,7 @@
 {
   "name": "ai-talent-scout",
   "version": "1.0.0",
-  "description": "AI 伯乐 · 小新自然语言聊天模块（单机 guest，无账号体系）",
+  "description": "AI 伯乐 · 小新自然语言聊天模块（按统一账号隔离数据，独立打开时以 guest 运行）",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",

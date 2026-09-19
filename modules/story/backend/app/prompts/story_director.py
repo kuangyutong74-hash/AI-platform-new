@@ -16,6 +16,18 @@ AVATAR_LABELS = {
     "mermaid": "美人鱼",
 }
 
+
+def should_ask_director_question(
+    story_id: int,
+    turn_number: int,
+    *,
+    force_ending: bool = False,
+) -> bool:
+    """Return a retry-stable, varied question decision for one story turn."""
+    if force_ending:
+        return False
+    return (story_id * 31 + turn_number * 17) % 100 < 68
+
 BASE_PROMPT = """你是儿童故事导演，负责和孩子共同创作故事。
 
 {age_instruction}
@@ -24,7 +36,7 @@ BASE_PROMPT = """你是儿童故事导演，负责和孩子共同创作故事。
 
 1. 非首轮先用一句话肯定孩子的创意，但不要复述、概括或纠正孩子的话。
 2. 用1-2段新情节继续故事；每段2-3句，必须带来新行动、发现或转折。
-3. 用一个适龄问题邀请孩子继续创作。
+3. {question_instruction}
 4. 不让孩子感觉自己正在被测试。
 
 {first_turn_note}
@@ -49,9 +61,9 @@ BASE_PROMPT = """你是儿童故事导演，负责和孩子共同创作故事。
 
 只输出 JSON Lines：每行一个完整 JSON，不要 Markdown、前后缀或解释。
 
-普通轮次必须依次输出：
+普通轮次按以下顺序输出（标记为禁止的项目直接跳过）：
 {"type":"narrative","text":"<新情节>"}
-{"type":"question","text":"<一个问题>"}
+{question_protocol}
 {"type":"done"}
 
 插图提示由后端根据完整故事段落统一生成。禁止输出 image_prompt。
@@ -69,12 +81,12 @@ BASE_PROMPT = """你是儿童故事导演，负责和孩子共同创作故事。
 
 AGE_INSTRUCTION_4_7 = """## 年龄通道：4-7岁
 
-使用简单口语和颜色、声音、动作等具体词汇，每段约30-50字。孩子表达简短或跳跃时，保留原意并扩展成画面。问题要短且具体，可提供两个选择，但允许自由回答。
+使用简单口语和颜色、声音、动作等具体词汇，每段约30-50字。孩子表达简短或跳跃时，保留原意并扩展成画面。需要提问时，问题要短且具体，可提供两个选择，但允许自由回答。
 """
 
 AGE_INSTRUCTION_8_12 = """## 年龄通道：8-12岁
 
-使用清晰而有表现力的语言，引导形成“起因—冲突—解决—结局”的结构。可加入角色对话、心理活动和适量修辞；提出开放式问题，鼓励说明选择与原因。
+使用清晰而有表现力的语言，引导形成“起因—冲突—解决—结局”的结构。可加入角色对话、心理活动和适量修辞；需要提问时使用开放式问题，鼓励说明选择与原因。
 """
 
 
@@ -85,6 +97,7 @@ def build_system_prompt(
     theme: str = "",
     is_first_turn: bool = False,
     age_group: str = "8-12",
+    ask_question: bool = True,
 ) -> str:
     """Build the system prompt with dynamic character, personality and theme context."""
 
@@ -127,7 +140,7 @@ def build_system_prompt(
     if is_first_turn:
         first_turn_note = """## 本轮是开场
 
-简单问候后立即用具体场景引入主角、世界和事件，不询问孩子想听什么故事。开场仍须输出一个 question。
+简单问候后立即用具体场景引入主角、世界和事件，不询问孩子想听什么故事。
 """
     else:
         first_turn_note = ""
@@ -145,4 +158,16 @@ def build_system_prompt(
     prompt = prompt.replace("{personality_section}", personality_section)
     prompt = prompt.replace("{theme_section}", theme_section)
     prompt = prompt.replace("{first_turn_note}", first_turn_note)
+    prompt = prompt.replace(
+        "{question_instruction}",
+        "故事段落结束后，用一个简短、切题的问题邀请孩子决定下一步。"
+        if ask_question else
+        "本轮不要提问，让故事停在一个可继续发挥的动作或发现上。",
+    )
+    prompt = prompt.replace(
+        "{question_protocol}",
+        '{"type":"question","text":"<一个切题问题>"}'
+        if ask_question else
+        "（本轮禁止输出 question）",
+    )
     return prompt

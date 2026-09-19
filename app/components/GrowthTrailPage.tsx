@@ -19,6 +19,43 @@ function formatDate(value: string) {
   }).format(date);
 }
 
+function formatDuration(seconds: number) {
+  if (!seconds) return "尚未记录时长";
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  if (minutes < 60) return `${minutes} 分钟`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours} 小时 ${rest} 分钟` : `${hours} 小时`;
+}
+
+const reviewCopy = {
+  registration: {
+    observations: ["从这一天开始，之后每一次完整探索都会成为一枚可回看的脚印。"],
+    question: "还记得第一次来到探索星球时，最想去哪里看看吗？",
+    next: "选一座还没点亮的大陆，完成第一次探索。",
+  },
+  story: {
+    observations: ["愿意沿着一个想法继续补充，让故事慢慢完整起来。", "在创作中会作出自己的选择，而不只是接受现成答案。"],
+    question: "哪一个情节最像你的想法？如果再写一次，你最想改哪里？",
+    next: "下次换一个角色或结局，留意自己会不会用新的讲法。",
+  },
+  deep_sea: {
+    observations: ["会把大任务拆成配对、布局和协商等不同问题。", "看到结果不理想时，愿意回头检查并调整方案。"],
+    question: "哪一次调整最有用？你是怎么发现原来的办法需要改变的？",
+    next: "下次先说出计划再动手，完成后对照计划看看哪里发生了变化。",
+  },
+  career: {
+    observations: ["能够跟随职业情境完成连续任务，并在关键节点作出选择。", "体验不同角色时，开始留意自己更投入的任务类型。"],
+    question: "哪个任务让你最投入？是因为它有挑战，还是因为能帮助别人？",
+    next: "换一种职业再体验一次，比较自己在哪类任务里更愿意坚持。",
+  },
+  chat: {
+    observations: ["愿意从生活里的小事出发，把感受和原因慢慢说清楚。", "在被追问时能够继续补充，让表达变得更具体。"],
+    question: "那次对话里，你最希望别人听懂的是哪一句？现在有没有新的想法？",
+    next: "下次试着多说一个‘因为’，看看能不能把想法讲得更完整。",
+  },
+} as const;
+
 function speak(text: string) {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
@@ -165,11 +202,13 @@ function TrailLine() {
 function TrailDialog({
   item,
   isDemo,
+  adult,
   onClose,
   onNavigate,
 }: {
   item: ExplorerItem;
   isDemo: boolean;
+  adult: boolean;
   onClose: () => void;
   onNavigate: (view: NavigationView) => void;
 }) {
@@ -206,6 +245,14 @@ function TrailDialog({
       document.body.classList.remove("dialog-open");
     };
   }, [onClose]);
+  const copy = reviewCopy[item.module];
+  const observations = item.observations.length ? item.observations : [...copy.observations];
+  const spokenReview = [
+    item.title,
+    ...observations,
+    `可以一起聊聊：${copy.question}`,
+    `下一站建议：${copy.next}`,
+  ].join("。");
   return (
     <div
       className="trail-dialog-backdrop"
@@ -228,12 +275,20 @@ function TrailDialog({
           <ExplorerIcon name="close" />
         </button>
         <div className="memory-picture">
-          <p>{item.island}</p>
+          <p>{item.island} · 成长回顾</p>
           <img src={item.milestoneImage} alt="" />
-          <span>{item.status}</span>
-          {item.quote && (
-            <blockquote>“{item.quote.replace(/[“”]/g, "")}”</blockquote>
+          {item.kind === "registration" ? (
+            <span>{item.status}</span>
+          ) : (
+            <div className="memory-snapshot-stats" aria-label="这一站的探索概况">
+              <span><b>{item.usageCount}</b>次完成</span>
+              <span><b>{formatDuration(item.durationSeconds)}</b>累计投入</span>
+              <span><b>{item.evidenceCount}</b>条过程记录</span>
+            </div>
           )}
+          <p className="memory-boundary">
+            这里回顾的是探索过程与变化；作品内容会在作品展柜里单独收藏。
+          </p>
         </div>
         <div className="memory-seam" aria-hidden="true" />
         <article>
@@ -248,20 +303,52 @@ function TrailDialog({
               <span><b>最近一次完成</b>{formatDate(item.lastUsedAt || item.occurredAt)}</span>
             </div>
           )}
-          <p className="memory-heading">这一站的完成小结</p>
-          <p className="memory-note">{item.detail}</p>
+          <section className="memory-section memory-observations">
+            <p className="memory-heading">从过程中看见</p>
+            <ul>
+              {observations.map((observation) => <li key={observation}>{observation}</li>)}
+            </ul>
+          </section>
+          {item.recentSessions.length > 0 && (
+            <section className="memory-section memory-footprints">
+              <p className="memory-heading">最近的探索脚印</p>
+              <ol>
+                {item.recentSessions.map((session) => (
+                  <li key={session.id}>
+                    <time>{formatDate(session.occurredAt)}</time>
+                    <span>{session.caption}</span>
+                    {session.durationSeconds > 0 && <small>{formatDuration(session.durationSeconds)}</small>}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+          <div className="memory-family-card">
+            <span>{adult ? "今晚可以这样聊" : "可以和家人聊聊"}</span>
+            <p>{copy.question}</p>
+          </div>
+          <div className="memory-next-step">
+            <ExplorerIcon name="spark" size={16} />
+            <p><b>下一站建议</b>{copy.next}</p>
+          </div>
           <button
             className="memory-listen"
-            onClick={() => speak(`${item.title}。${item.detail}`)}
+            onClick={() => speak(spokenReview)}
           >
             <ExplorerIcon name="headphones" />
-            听小纸条
+            听完整回顾
           </button>
           <div className="memory-actions">
-            <button className="gold-button" onClick={() => onNavigate("works")}>
-              <ExplorerIcon name="book" />
-              看看高光作品
+            <button className="gold-button" onClick={onClose}>
+              <ExplorerIcon name="spark" />
+              收好这页回顾
             </button>
+            {item.artifactCount > 0 && (
+              <button className="memory-work-link" onClick={() => onNavigate("works")}>
+                <ExplorerIcon name="book" />
+                查看关联作品（{item.artifactCount}）
+              </button>
+            )}
           </div>
         </article>
       </section>
@@ -392,7 +479,7 @@ export default function GrowthTrailPage({
         <div className="growth-intro">
           <ExplorerIcon name="spark" />
           <p>
-            第一站，是{adult ? "孩子" : "你"}来到探索星球的那一天。往后每一站，都记录在一座大陆完成了多少次探索。
+            第一站，是{adult ? "孩子" : "你"}来到探索星球的那一天。往后每一站，都整理完成节奏、过程变化和下一次可以尝试的方向。
           </p>
         </div>
         <TrailLine />
@@ -471,8 +558,8 @@ export default function GrowthTrailPage({
         <div>
           <h2>从第一颗星到今天，每一次完成都有自己的位置</h2>
           <p>
-            这里从注册日开始，整理了 {usedModuleCount} 座已点亮大陆的完成次数和时间。
-            新的探索会继续补进这本历程手账。
+            这里从注册日开始，整理了 {usedModuleCount} 座已点亮大陆的完成节奏和过程变化。
+            新的探索会继续补进这本成长手账。
           </p>
           <div>
             <button className="gold-button" onClick={() => onNavigate("works")}>
@@ -493,6 +580,7 @@ export default function GrowthTrailPage({
         <TrailDialog
           item={selected}
           isDemo={data.timelineIsDemo}
+          adult={adult}
           onClose={closeDialog}
           onNavigate={onNavigate}
         />

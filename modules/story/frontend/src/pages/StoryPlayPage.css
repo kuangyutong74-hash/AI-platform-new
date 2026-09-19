@@ -81,13 +81,40 @@
 .story-start-hint h2 { font-size: var(--font-size-lg); color: var(--color-primary); margin-bottom: 8px; }
 .story-start-hint p { font-size: var(--font-size-sm); color: var(--color-text-light); line-height: 1.6; }
 
-.story-play-bottom {
+.story-play-page .story-play-bottom {
   position:relative;
   width:100%;
-  background:rgba(248,245,255,.91);
-  border-top:1px solid rgba(255,226,160,.46);
-  box-shadow:0 -12px 34px rgba(15,10,47,.2);
-  backdrop-filter:blur(16px);
+  overflow:visible;
+  background:transparent;
+  border-top:0;
+  box-shadow:none;
+  backdrop-filter:none;
+}
+
+.story-compose-row {
+  position:relative;
+  z-index:20;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  align-items:end;
+  gap:10px;
+  width:min(1240px,calc(100% - 24px));
+  margin:0 auto;
+  padding-top:10px;
+}
+
+.story-compose-row.has-toolbox {
+  grid-template-columns:136px minmax(0,1fr);
+}
+
+.story-play-page .story-compose-row .story-input-wrapper {
+  min-width:0;
+  padding:0 0 12px;
+}
+
+.story-play-page .story-compose-row .story-input-hint {
+  color:rgba(255,248,226,.86);
+  text-shadow:0 1px 5px rgba(8,5,30,.9);
 }
 
 /* Ended card */
@@ -139,6 +166,19 @@
 .end-child-submit { padding: 8px 24px; border-radius: 999px; background: linear-gradient(135deg,var(--color-primary),var(--pink)); color: white; font-size: var(--font-size-sm); font-family: var(--font-body); font-weight: 700; box-shadow: 0 6px 16px rgba(139,124,246,.2); transition: all 0.2s ease; }
 .end-child-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(139,124,246,.3); }
 .end-modal-close { margin-top: 10px; background: none; color: #999; font-size: var(--font-size-xs); }
+
+@media(max-width:760px){
+  .story-compose-row,
+  .story-compose-row.has-toolbox{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:0;
+    width:calc(100% - 16px);
+    padding-top:6px;
+  }
+  .story-play-page .story-compose-row .story-input-wrapper{padding:0 0 7px}
+}
 
 @media(max-width:600px){
   .story-play-page{width:100%;height:100dvh}

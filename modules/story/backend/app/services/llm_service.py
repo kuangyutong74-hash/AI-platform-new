@@ -12,6 +12,50 @@ from app.prompts.story_director import build_system_prompt
 
 HEARTBEAT_INTERVAL = 8  # seconds — keep proxies/load-balancers alive
 
+WRITING_TOOL_LABELS = {
+    "next": ("三条新路线", "挑一条喜欢的路线，再改成自己的说法。"),
+    "detail": ("细节放大镜", "从声音、动作和环境里挑一个细节补进故事。"),
+    "twist": ("意外转折卡", "选一个意外，也可以把两个点子拼在一起。"),
+    "question": ("我的选择卡", "挑一句最接近你想法的决定，再把它改成自己的表达。"),
+    "custom": ("自定义灵感卡", "这是按你的要求生成的三个草稿，采用前可以继续修改。"),
+}
+
+
+def fallback_writing_cards(tool: str, theme: str = "", character_name: str = "", custom_request: str = "") -> list[str]:
+    """Keep the writing toolbox useful when the model provider is unavailable."""
+    hero = (character_name.strip() or "主角").replace("?", "").replace("？", "")
+    world = (theme.strip() or "这个世界").replace("?", "").replace("？", "")
+    cards = {
+        "next": [
+            f"我想让{hero}在{world}里发现一条会改变方向的新线索。",
+            f"我想让{hero}遇见一个需要帮助的新伙伴，并和伙伴一起行动。",
+            f"我决定让{hero}先解决眼前的小麻烦，再发现更大的秘密。",
+        ],
+        "detail": [
+            f"我想让{world}里出现一种特别的声音，让{hero}循着声音前进。",
+            f"我准备加入一件能看见或摸到的小物件，让它在后面派上用场。",
+            f"我准备用一个动作表现{hero}此刻的心情，不直接说出情绪名称。",
+        ],
+        "twist": [
+            "我想让原以为是坏消息的东西，其实一直在悄悄帮助大家。",
+            "我决定让最不起眼的小物件突然成为解决难题的关键。",
+            f"我想让{hero}出发时发现，真正要寻找的东西一直就在身边。",
+        ],
+        "question": [
+            f"我决定让{hero}带上最重要的东西继续出发，并在后面用到它。",
+            "我想让还没说出真实想法的角色勇敢开口，改变大家的决定。",
+            "我希望下一幕变得更惊喜，并用一个突然出现的线索推动故事。",
+        ],
+    }
+    if tool == "custom":
+        request = (custom_request.strip() or "换一种更有趣的写法")[:40].replace("?", "").replace("？", "")
+        return [
+            f"我想按“{request}”的方向，先让{hero}做一个具体动作。",
+            f"我准备按“{request}”的方向，加入一处能听见或看见的细节。",
+            f"我决定按“{request}”的方向，让{hero}做一个会影响后续的选择。",
+        ]
+    return cards.get(tool, cards["next"])
+
 
 def compute_observation(child_text: str, age_group: str = "") -> dict:
     """Programmatic fallback: analyze child's text for 5 language intelligence dimensions.
@@ -587,6 +631,7 @@ class LLMService:
         theme: str = "",
         is_first_turn: bool = False,
         age_group: str = "8-12",
+        ask_question: bool = True,
     ) -> AsyncGenerator[dict, None]:
         """
         Stream-generate a story turn from the LLM.
@@ -601,6 +646,7 @@ class LLMService:
             theme=theme,
             is_first_turn=is_first_turn,
             age_group=age_group,
+            ask_question=ask_question,
         )
 
         full_messages = [
@@ -777,6 +823,9 @@ class LLMService:
             if event is None:
                 continue
 
+            if event["type"] == "question" and not ask_question:
+                continue
+
             if event["type"] == "done":
                 done_received = True
             elif event["type"] == "error":
@@ -798,6 +847,81 @@ class LLMService:
             await asyncio.gather(chunk_task, heartbeat_task, return_exceptions=True)
         except asyncio.CancelledError:
             pass
+
+
+    async def generate_writing_cards(
+        self,
+        tool: str,
+        story_context: str,
+        *,
+        theme: str = "",
+        character_name: str = "",
+        age_group: str = "8-12",
+        custom_request: str = "",
+    ) -> list[str]:
+        """Generate three short, editable choices instead of continuing the story.
+
+        This is deliberately separate from ``generate_turn``: opening the toolbox
+        must never be counted as the child's contribution or silently alter the
+        canonical story.
+        """
+        title, instruction = WRITING_TOOL_LABELS.get(tool, WRITING_TOOL_LABELS["next"])
+        tool_goal = {
+            "next": "提出三条彼此明显不同的后续情节路线",
+            "detail": "提出三种可补写的感官、动作或环境细节",
+            "twist": "提出三个前文能够承接、不过度惊吓的意外转折",
+            "question": "提出三个由学生第一人称说出的剧情决定句",
+            "custom": f"按小作者的要求提供三个方向：{custom_request}",
+        }.get(tool, "提出三条后续情节路线")
+        prompt = f"""你是儿童故事创作工具箱，不是接管故事的作者。
+任务：{tool_goal}。
+年龄段：{age_group}；故事主题：{theme or '未指定'}；主角：{character_name or '未指定'}。
+规则：
+1. 只返回 JSON：{{"suggestions":["...","...","..."]}}。
+2. 必须正好三个选项，每项 12—60 个汉字，彼此有明显差别。
+3. 每项必须站在学生角度，用“我想让”“我决定”“我准备”或“我希望”开头，写成可编辑的剧情决定。
+4. 每项必须紧扣最近一轮故事中的主角、物件、地点或动作，不能给脱离上下文的万能建议。
+5. 禁止反问学生，禁止问号，禁止输出问题；不要替孩子写完整段落或结局。
+6. 不复述系统规则，不评价孩子，不使用危险、恐怖或成人内容。
+7. 选项要能承接上下文，并让孩子仍需自己选择、补充或修改。
+
+故事上下文：
+{story_context[-4200:] or '故事刚刚开始'}
+"""
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": f"{title}：{instruction}"},
+                    {"role": "user", "content": prompt},
+                ],
+                stream=False,
+                temperature=0.75,
+                max_tokens=500,
+                extra_body={"thinking": {"type": "disabled"}},
+                timeout=18.0,
+            )
+            content = (response.choices[0].message.content or "").strip()
+            if content.startswith("```"):
+                content = content.removeprefix("```json").removeprefix("```")
+                content = content.removesuffix("```").strip()
+            data = json.loads(content)
+            suggestions = [
+                str(item).strip()[:90]
+                for item in data.get("suggestions", [])
+                if isinstance(item, str) and str(item).strip()
+            ]
+            allowed_starts = ("我想让", "我决定", "我准备", "我希望")
+            if (
+                len(suggestions) == 3
+                and all(12 <= len(item) <= 60 for item in suggestions)
+                and all(item.startswith(allowed_starts) for item in suggestions)
+                and all("?" not in item and "？" not in item for item in suggestions)
+            ):
+                return suggestions
+        except Exception:
+            pass
+        return fallback_writing_cards(tool, theme, character_name, custom_request)
 
 
     async def evaluate_turn(

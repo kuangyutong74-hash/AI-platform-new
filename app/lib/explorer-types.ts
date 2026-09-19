@@ -1,5 +1,12 @@
 export type ExplorerModule="registration"|"story"|"deep_sea"|"career"|"chat";
 
+export type ExplorerSessionMoment={
+  id:string;
+  occurredAt:string;
+  durationSeconds:number;
+  caption:string;
+};
+
 export type ExplorerItem={
   id:string;
   module:ExplorerModule;
@@ -19,6 +26,10 @@ export type ExplorerItem={
   lastUsedAt:string;
   durationSeconds:number;
   durationCoverage:number;
+  evidenceCount:number;
+  artifactCount:number;
+  observations:string[];
+  recentSessions:ExplorerSessionMoment[];
   island:string;
   collection:string;
   scene:string;

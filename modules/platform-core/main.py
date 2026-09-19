@@ -284,6 +284,7 @@ def initialize_database() -> None:
               id TEXT PRIMARY KEY,
               student_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
               module TEXT NOT NULL,
+              work_type TEXT NOT NULL DEFAULT '',
               title TEXT NOT NULL,
               description TEXT NOT NULL,
               source_id TEXT NOT NULL DEFAULT '',
@@ -325,6 +326,8 @@ def initialize_database() -> None:
         }
         if "source_id" not in manual_work_columns:
             db.execute("ALTER TABLE manual_works ADD COLUMN source_id TEXT NOT NULL DEFAULT ''")
+        if "work_type" not in manual_work_columns:
+            db.execute("ALTER TABLE manual_works ADD COLUMN work_type TEXT NOT NULL DEFAULT ''")
         db.execute(
             """CREATE UNIQUE INDEX IF NOT EXISTS idx_manual_works_student_source
                ON manual_works(student_account_id, module, source_id)
@@ -701,6 +704,7 @@ class WorkCommentIn(BaseModel):
 
 class ManualWorkIn(BaseModel):
     module: Literal["story", "deep_sea", "career", "chat"]
+    work_type: str = Field(default="", max_length=40)
     title: str = Field(min_length=1, max_length=60)
     description: str = Field(default="", max_length=20000)
     source_id: str = Field(default="", max_length=160)
@@ -721,6 +725,11 @@ class ManualWorkIn(BaseModel):
     @field_validator("source_id")
     @classmethod
     def normalize_manual_work_source(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("work_type")
+    @classmethod
+    def normalize_manual_work_type(cls, value: str) -> str:
         return value.strip()
 
 
@@ -1443,10 +1452,6 @@ def list_artifacts_v1(ai_bole_session: str | None = Cookie(default=None)) -> dic
             "id": row["id"], "body": row["body"], "authorName": row["author_name"],
             "authorKind": row["author_kind"], "createdAt": row["created_at"],
         })
-    manually_collected_sources = {
-        (row["module"], row["source_id"])
-        for row in manual_rows if row["source_id"]
-    }
     session_evidence: dict[str, dict[str, list]] = {}
     for row in evidence_rows:
         context = session_evidence.setdefault(row["session_id"], {"payloads": [], "summaries": []})
@@ -1466,14 +1471,19 @@ def list_artifacts_v1(ai_bole_session: str | None = Cookie(default=None)) -> dic
         ),
         "previewResourceId": row["preview_resource_id"], "sourceResourceId": row["source_resource_id"],
         "createdAt": row["created_at"], "comments": comments.get(row["id"], []),
-    } for row in rows if (row["module_id"], row["source_resource_id"]) not in manually_collected_sources]
+    } for row in rows]
+    artifact_sources = {
+        (row["module_id"], row["source_resource_id"])
+        for row in rows if row["source_resource_id"]
+    }
     artifacts.extend({
         "id": f"manual-{row['id']}", "sessionId": None, "moduleId": row["module"],
         "moduleVersion": None, "type": "manual", "kind": "manual_work", "title": row["title"],
         "summary": manual_work_summary(row), "detail": row["description"] or "这件作品由我自己添加到作品册。",
+        "workType": manual_work_type_key(row),
         "previewResourceId": None, "sourceResourceId": row["source_id"] or None, "createdAt": row["created_at"],
         "comments": comments.get(f"manual-{row['id']}", []),
-    } for row in manual_rows)
+    } for row in manual_rows if (row["module"], row["source_id"]) not in artifact_sources)
     artifacts.sort(key=lambda item: item["createdAt"], reverse=True)
     return {"account": public_account(account), "viewer": public_account(viewer), "artifacts": artifacts}
 
@@ -1583,26 +1593,85 @@ def create_talent_stories_v1(ai_bole_session: str | None = Cookie(default=None))
     }
 
 
+def timeline_session_caption(module_id: str, summary: dict, evidence_count: int) -> str:
+    """把一次会话压缩成家长能读懂的过程事实，不复述作品内容。"""
+    if module_id == "chat":
+        turns = _nonnegative_int(summary.get("turnCount"))
+        long_turns = _nonnegative_int(summary.get("longTurnCount"))
+        if turns:
+            extra = f"，其中有 {long_turns} 次较完整表达" if long_turns else ""
+            return f"完成 {turns} 轮连续对话{extra}"
+    if module_id == "story":
+        title = _short_highlight_quote(summary.get("storyTitle"), 28)
+        ideas = summary.get("childIdeas", [])
+        idea_count = len(ideas) if isinstance(ideas, list) else 0
+        subject = f"《{title}》" if title else "一次故事"
+        extra = f"，主动贡献了 {idea_count} 个想法" if idea_count else ""
+        return f"完成{subject}的共创{extra}"
+    if module_id == "deep_sea":
+        completed = _nonnegative_int(summary.get("completedLevels"))
+        if completed:
+            return f"完成 {completed} 处基地任务，留下配对、布局与协商的解决过程"
+    if module_id == "career":
+        career_name = _short_highlight_quote(summary.get("careerName"), 20)
+        completed = _nonnegative_int(summary.get("completedStages"), summary.get("stages"))
+        total = _nonnegative_int(summary.get("stageCount"))
+        subject = f"“{career_name}”体验" if career_name else "一次职业体验"
+        if completed:
+            stages = f"{completed}/{total} 个阶段" if total else f"{completed} 个阶段"
+            return f"完成{subject}的 {stages}"
+    if evidence_count:
+        return f"完成一次探索，留下 {evidence_count} 条可回看的过程记录"
+    return "完成一次探索，为成长星路添上一个新脚印"
+
+
 @app.get("/api/v1/timeline")
 def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     viewer = require_account(ai_bole_session)
     account = resolve_subject(viewer, ai_bole_session)
     with connect() as db:
         profile = profile_for_account(db, account["id"])
-        rows = db.execute("""SELECT s.id,s.module_id,s.module_version,s.status,s.started_at,s.ended_at,s.active_seconds,
+        rows = db.execute("""SELECT s.id,s.module_id,s.module_version,s.status,s.started_at,s.ended_at,s.active_seconds,s.summary_json,
                            (SELECT COUNT(*) FROM source_events e WHERE e.session_id=s.id) AS evidence_count,
                            (SELECT COUNT(*) FROM artifacts a WHERE a.session_id=s.id) AS artifact_count
                            FROM assessment_sessions s
                            WHERE s.child_profile_id=? AND s.status='completed'
                            ORDER BY COALESCE(s.ended_at,s.started_at,s.created_at) DESC""", (profile["id"],)).fetchall()
-    sessions = [{"id": row["id"], "moduleId": row["module_id"], "moduleVersion": row["module_version"], "status": row["status"], "startedAt": row["started_at"], "endedAt": row["ended_at"], "activeSeconds": row["active_seconds"], "evidenceCount": row["evidence_count"], "artifactCount": row["artifact_count"]} for row in rows]
+        observation_rows = db.execute(
+            """SELECT s.module_id,er.behavior_summary,se.occurred_at
+               FROM evidence_records er JOIN source_events se ON se.id=er.source_event_id
+               JOIN assessment_sessions s ON s.id=se.session_id
+               WHERE s.child_profile_id=? AND s.status='completed' AND TRIM(er.behavior_summary)<>''
+               ORDER BY se.occurred_at DESC""",
+            (profile["id"],),
+        ).fetchall()
+    sessions = []
+    for row in rows:
+        try:
+            summary = json.loads(row["summary_json"] or "{}")
+        except json.JSONDecodeError:
+            logger.warning("成长足迹跳过了无效会话摘要：%s", row["id"])
+            summary = {}
+        sessions.append({
+            "id": row["id"], "moduleId": row["module_id"], "moduleVersion": row["module_version"],
+            "status": row["status"], "startedAt": row["started_at"], "endedAt": row["ended_at"],
+            "activeSeconds": row["active_seconds"] or 0, "evidenceCount": row["evidence_count"],
+            "artifactCount": row["artifact_count"],
+            "caption": timeline_session_caption(row["module_id"], summary, row["evidence_count"]),
+        })
+    module_observations: dict[str, list[str]] = {}
+    for row in observation_rows:
+        text = re.sub(r"\s+", " ", row["behavior_summary"] or "").strip()
+        items = module_observations.setdefault(row["module_id"], [])
+        if text and text not in items and len(items) < 3:
+            items.append(text)
     grouped: dict[str, list[dict]] = {}
     for session in sessions:
         grouped.setdefault(session["moduleId"], []).append(session)
     module_summaries = []
     for module_id, items in grouped.items():
         ordered = sorted(items, key=lambda item: item["endedAt"] or item["startedAt"] or "")
-        module_summaries.append({"moduleId": module_id, "completedCount": len(items), "firstUsedAt": ordered[0]["startedAt"] or ordered[0]["endedAt"], "lastUsedAt": ordered[-1]["endedAt"] or ordered[-1]["startedAt"], "activeSeconds": sum(item["activeSeconds"] for item in items), "evidenceCount": sum(item["evidenceCount"] for item in items), "artifactCount": sum(item["artifactCount"] for item in items)})
+        module_summaries.append({"moduleId": module_id, "completedCount": len(items), "firstUsedAt": ordered[0]["startedAt"] or ordered[0]["endedAt"], "lastUsedAt": ordered[-1]["endedAt"] or ordered[-1]["startedAt"], "activeSeconds": sum(item["activeSeconds"] for item in items), "evidenceCount": sum(item["evidenceCount"] for item in items), "artifactCount": sum(item["artifactCount"] for item in items), "observations": module_observations.get(module_id, []), "recentSessions": list(reversed(ordered))[:3]})
     return {"sessions": sessions, "moduleSummaries": module_summaries}
 
 
@@ -2330,6 +2399,39 @@ def manual_work_summary(row: sqlite3.Row) -> str:
     return text if len(text) <= 180 else f"{text[:179].rstrip()}…"
 
 
+MANUAL_WORK_TYPES: dict[str, dict[str, str]] = {
+    "story": {
+        "full_story": "完整故事", "story_fragment": "故事片段",
+        "character_profile": "角色设定", "story_illustration": "故事插画", "other": "其他创作",
+    },
+    "deep_sea": {
+        "base_design": "基地设计", "mission_record": "闯关记录",
+        "solution_sketch": "方案草图", "observation_note": "观察笔记", "other": "其他创作",
+    },
+    "career": {
+        "career_card": "职业体验卡", "mission_plan": "任务方案",
+        "role_diary": "角色日记", "career_research": "职业小调查", "other": "其他创作",
+    },
+    "chat": {
+        "mood_note": "心情小记", "opinion": "观点表达",
+        "conversation_inspiration": "聊天启发", "life_observation": "生活观察", "other": "其他创作",
+    },
+}
+
+
+def manual_work_type_key(row: sqlite3.Row) -> str:
+    if row["work_type"]:
+        return row["work_type"]
+    if row["module"] == "story" and str(row["source_id"] or "").startswith("story:"):
+        return "full_story"
+    return "other"
+
+
+def manual_work_type_label(row: sqlite3.Row) -> str:
+    work_type = manual_work_type_key(row)
+    return MANUAL_WORK_TYPES.get(row["module"], {}).get(work_type, "其他创作")
+
+
 def manual_work_item(row: sqlite3.Row) -> dict:
     return {
         "id": f"manual-{row['id']}",
@@ -2340,14 +2442,14 @@ def manual_work_item(row: sqlite3.Row) -> dict:
         "detail": row["description"] or "这件作品由我自己添加到作品册。",
         "quote": "",
         "occurred_at": row["created_at"],
-        "status": "我添加的作品",
+        "status": manual_work_type_label(row),
         "unlocked": True,
         "event_type": "manual_work_added",
         "kind": "manual_work",
         "is_highlight": False,
         "snapshot_url": "",
-        "metric_label": "作品来源",
-        "metric_value": "自主添加",
+        "metric_label": "作品类型",
+        "metric_value": manual_work_type_label(row),
         "usage_count": 1,
     }
 
@@ -2355,6 +2457,10 @@ def manual_work_item(row: sqlite3.Row) -> dict:
 @app.post("/api/explorer/works", status_code=201)
 def create_manual_work(payload: ManualWorkIn, ai_bole_session: str | None = Cookie(default=None)) -> dict:
     student = require_student_viewer(ai_bole_session)
+    allowed_types = MANUAL_WORK_TYPES[payload.module]
+    work_type = payload.work_type or "other"
+    if work_type not in allowed_types:
+        raise HTTPException(422, "请选择与所属大陆匹配的作品类型")
     created_at = now_iso()
     with connect() as db:
         existing = None
@@ -2367,17 +2473,17 @@ def create_manual_work(payload: ManualWorkIn, ai_bole_session: str | None = Cook
         if existing:
             work_id = existing["id"]
             db.execute(
-                "UPDATE manual_works SET title=?, description=? WHERE id=?",
-                (payload.title, payload.description, work_id),
+                "UPDATE manual_works SET work_type=?, title=?, description=? WHERE id=?",
+                (work_type, payload.title, payload.description, work_id),
             )
         else:
             work_id = str(uuid.uuid4())
             db.execute(
                 """INSERT INTO manual_works
-                   (id,student_account_id,module,title,description,source_id,created_at)
-                   VALUES (?,?,?,?,?,?,?)""",
+                   (id,student_account_id,module,work_type,title,description,source_id,created_at)
+                   VALUES (?,?,?,?,?,?,?,?)""",
                 (
-                    work_id, student["id"], payload.module, payload.title,
+                    work_id, student["id"], payload.module, work_type, payload.title,
                     payload.description, payload.source_id, created_at,
                 ),
             )

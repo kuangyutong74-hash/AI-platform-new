@@ -30,6 +30,7 @@ export const PLATFORM_MODULES: PlatformModule[] = [
 ];
 
 type ModuleManifest = {id:string;name:string;description?:string;entryUrl:string;healthUrl?:string};
+export type ExplorationRelay = {fromModule:string;sourceTitle:string;prompt:string};
 
 export function canonicalModuleId(id: string) {
   return id === "build" ? "deep_sea" : id;
@@ -48,7 +49,7 @@ export async function loadPlatformModules(signal?: AbortSignal): Promise<Platfor
   });
 }
 
-export async function launchPlatformModule(item: PlatformModule) {
+export async function launchPlatformModule(item: PlatformModule, relay?: ExplorationRelay) {
   const response = await fetch(`${CORE_API_URL}/api/v1/assessment-sessions`, {method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({module_id:canonicalModuleId(item.id)})});
   if (!response.ok) throw new Error("探索记录暂时无法创建");
   const context = await response.json();
@@ -58,9 +59,17 @@ export async function launchPlatformModule(item: PlatformModule) {
   if (["localhost", "127.0.0.1"].includes(destination.hostname)) {
     destination.hostname = new URL(CORE_API_URL).hostname;
   }
+  const nextContext = relay ? {...context,relay} : context;
   window.name = JSON.stringify({
     namespace:"ai-bole.launch-context.v1",
-    context:{...context,platformOrigin:window.location.origin,coreApiUrl:CORE_API_URL},
+    context:{...nextContext,platformOrigin:window.location.origin,coreApiUrl:CORE_API_URL},
   });
+  if(relay){
+    if(canonicalModuleId(item.id)==="story")destination.pathname="/story-create/characters";
+    if(canonicalModuleId(item.id)==="career")destination.pathname="/careers";
+    destination.searchParams.set("relayFrom",relay.fromModule);
+    destination.searchParams.set("relayTitle",relay.sourceTitle);
+    destination.searchParams.set("relayPrompt",relay.prompt);
+  }
   window.location.assign(destination.toString());
 }

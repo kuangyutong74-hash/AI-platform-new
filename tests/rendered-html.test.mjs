@@ -75,7 +75,8 @@ test("keeps four modules equal and preserves personal exploration nodes", async 
   assert.match(planet, /launchPlatformModule/);
   assert.match(moduleConfig, /\/api\/v1\/assessment-sessions/);
   assert.match(moduleConfig, /ai-bole\.launch-context\.v1/);
-  assert.match(moduleConfig, /window\.location\.assign\(item\.url\)/);
+  assert.match(moduleConfig, /window\.location\.assign\(destination\.toString\(\)\)/);
+  assert.match(moduleConfig, /relayPrompt/);
   assert.match(planet, /<ThreeGlobe modules=\{catalog\} onLaunch=\{launchModule\}/);
   assert.doesNotMatch(globe, /PLATFORM_MODULES/);
   assert.match(globe, /onLaunch\(globeModules\[pixel\]\)/);
@@ -127,7 +128,8 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
   for (const moduleName of ["story", "ocean", "career", "listening"]) {
     assert.match(data, new RegExp(`highlight-${moduleName}-sticker-v1\\.webp`));
   }
-  assert.match(works, /全部作品/);
+  assert.match(works, /点击书中贴纸查看作品列表/);
+  assert.doesNotMatch(works, /all-works-shelf/);
   assert.match(works, /温暖点评/);
   assert.match(works, /这些作品来源于四座大陆/);
   assert.match(works, /添加我的作品/);
@@ -140,6 +142,12 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
   assert.match(growth, /item\.metricValue/);
   assert.match(growth, /item\.firstUsedAt/);
   assert.match(growth, /最近一次完成/);
+  assert.match(growth, /从过程中看见/);
+  assert.match(growth, /最近的探索脚印/);
+  assert.match(growth, /今晚可以这样聊/);
+  assert.match(growth, /下一站建议/);
+  assert.match(growth, /完成节奏、过程变化/);
+  assert.match(growth, /作品内容会在作品展柜里单独收藏/);
   assert.match(growth, /看看高光作品/);
   assert.doesNotMatch(growth, /再次去探索/);
   assert.match(collectionHook, /explorerModuleName\(summary\.moduleId\)/);

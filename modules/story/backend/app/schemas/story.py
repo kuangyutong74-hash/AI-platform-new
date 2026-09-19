@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class StoryCreate(BaseModel):
@@ -46,3 +47,20 @@ class TurnRequest(BaseModel):
 
 class StoryCompleteRequest(BaseModel):
     ending_text: str
+
+
+class WritingAssistRequest(BaseModel):
+    tool: Literal["next", "detail", "twist", "question", "custom"]
+    custom_request: str = Field(default="", max_length=240)
+
+    @field_validator("custom_request")
+    @classmethod
+    def normalize_custom_request(cls, value: str) -> str:
+        return value.strip()
+
+
+class WritingAssistOut(BaseModel):
+    tool: str
+    title: str
+    instruction: str
+    suggestions: list[str]

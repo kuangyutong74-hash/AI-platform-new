@@ -171,16 +171,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 }
 @media(max-width:560px){.brand strong{display:none}.brand-logo{width:43px;height:43px}.brand-logo img{width:41px;height:41px}.top-actions{gap:4px}.top-button{width:36px;min-height:36px}.top-button img{width:20px;height:20px}.message-avatar{width:42px;height:42px}.message-avatar img{width:52px;height:52px}.message-avatar.student{width:46px;height:46px}.message-avatar.student img{width:42px;height:49px}.message-bubble{padding:13px 14px;border-radius:18px 18px 18px 6px}.message-bubble .bubble-text{font-size:13px}.message-row.user .message-bubble{border-radius:18px 18px 6px 18px}.mood-grid{grid-template-columns:1fr 1fr}.modal-card{padding-inline:20px}.entry-grid,.task-options{grid-template-columns:1fr}.entry-option{min-height:88px}.entry-card,.storybook-task{max-height:calc(100vh - 28px);overflow-y:auto}.task-option{min-height:92px;display:grid;grid-template-columns:100px 1fr;align-items:center;gap:10px}.watercolor-scene{height:64px;margin:0}.task-actions{flex-direction:column}.task-actions button{width:100%}}
   </style>
-  <style>
-    .platform-return {
-      position: fixed; top: 18px; left: 18px; z-index: 10000;
-      padding: 10px 16px; border: 1px solid rgba(255,255,255,.7);
-      border-radius: 999px; color: #443566; background: rgba(255,255,255,.88);
-      box-shadow: 0 8px 24px rgba(55,43,89,.14); backdrop-filter: blur(12px);
-      font: 600 14px/1.2 system-ui, sans-serif; text-decoration: none;
-    }
-    .platform-return:hover { transform: translateY(-1px); background: #fff; }
-  </style>
   <style id="treehouse-theme">
     :root{--night:#14233f;--night2:#263c5d;--honey:#f5b85b;--honey2:#dd8b37;--parchment:#fff8e8;--glass:rgba(19,31,54,.72);--glass-line:rgba(255,237,191,.32)}
     body{color:#fff5df;background:#101d36}
@@ -236,9 +226,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
     .task-canvas{background:rgba(6,16,32,.22)}.task-option[aria-pressed="true"]{border-color:#f5bd68;background:rgba(245,184,91,.17);outline-color:rgba(245,184,91,.22)}
     .completion-lead{color:#f5e6c9}.completion-box textarea{border-color:rgba(255,235,188,.28);color:#fff;background:rgba(6,16,32,.36)}
     .task-submit{color:#342517;background:linear-gradient(135deg,#ffd482,#e99b43)}.task-later{border-color:rgba(255,235,188,.3);background:rgba(255,255,255,.06)}
-    .platform-return{top:auto;left:22px;bottom:108px;border-color:rgba(255,232,177,.34);color:#fff0cd;background:rgba(15,29,52,.78);box-shadow:0 10px 28px rgba(4,11,24,.3)}
     @media(max-width:1180px){.mood-grid{grid-template-columns:repeat(4,1fr)}.workspace{grid-template-columns:minmax(380px,1fr) 270px}.messages,.composer-wrap{padding-inline:24px}.compass-panel{padding:18px 14px}.compass-rose{width:128px;height:128px}.compass-directions{grid-template-columns:1fr}.compass-action{min-height:58px}.compass-action small{display:none}}
-    @media(max-width:900px){.topbar{margin:0;border-width:0 0 1px;border-radius:0;background:rgba(14,28,51,.84)}.workspace{min-height:calc(100vh - 68px)}.main-panel{min-height:calc(100vh - 68px)}.messages{padding:24px 16px 235px}.composer-wrap{padding:0 14px 14px}.roadmap-panel.compass-panel{display:block;position:fixed;z-index:18;left:14px;right:14px;bottom:92px;width:auto;height:auto;margin:0;padding:10px 12px;border-radius:16px}.compass-head,.compass-rose,.compass-directions,.compass-suggestions-title{display:none}.compass-suggestions{margin:0;padding:0;border:0}.compass-prompts{display:flex;gap:8px;padding:0;overflow-x:auto}.compass-prompts button{width:auto;min-width:150px;flex:1 0 150px;padding:9px 11px}.modal-backdrop{padding:12px}.modal-card{max-height:calc(100vh - 24px);padding:32px 20px 24px;border-radius:28px}.mood-grid{grid-template-columns:repeat(2,1fr)}.mood-grid button{min-height:70px;border-radius:22px}.platform-return{display:none}}
+    @media(max-width:900px){.topbar{margin:0;border-width:0 0 1px;border-radius:0;background:rgba(14,28,51,.84)}.workspace{min-height:calc(100vh - 68px)}.main-panel{min-height:calc(100vh - 68px)}.messages{padding:24px 16px 235px}.composer-wrap{padding:0 14px 14px}.roadmap-panel.compass-panel{display:block;position:fixed;z-index:18;left:14px;right:14px;bottom:92px;width:auto;height:auto;margin:0;padding:10px 12px;border-radius:16px}.compass-head,.compass-rose,.compass-directions,.compass-suggestions-title{display:none}.compass-suggestions{margin:0;padding:0;border:0}.compass-prompts{display:flex;gap:8px;padding:0;overflow-x:auto}.compass-prompts button{width:auto;min-width:150px;flex:1 0 150px;padding:9px 11px}.modal-backdrop{padding:12px}.modal-card{max-height:calc(100vh - 24px);padding:32px 20px 24px;border-radius:28px}.mood-grid{grid-template-columns:repeat(2,1fr)}.mood-grid button{min-height:70px;border-radius:22px}}
     @media(max-width:560px){.topbar{padding:8px 10px}.top-actions{padding:0}.message-bubble{max-width:calc(100% - 56px)}.composer{border-radius:22px}.entry-grid,.task-options{grid-template-columns:1fr}.modal-card h2{font-size:24px}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
   </style>
@@ -262,6 +251,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 	        <span class="weather-badge" id="weatherBadge" title="心情气象站"></span>
 	      </div>
 	      <nav class="top-actions">
+	        <button class="top-button" id="btnReturnPlanet" type="button" title="返回探索星球"><span>返回星球</span></button>
 	        <button class="top-button" id="btnPinyin" type="button"><span>拼</span></button>
 	        <button class="top-button" id="moodButton" type="button">
 	          <img src="assets/icons/mood.svg" alt=""><span>选择心情</span>
@@ -402,6 +392,8 @@ var sessionId='sess-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
 sessionStorage.setItem(SESSION_KEY,sessionId);
 var urlParams=new URLSearchParams(location.search);
 var resumingConvId=urlParams.get('convId')||null;
+var relayPrompt=urlParams.get('relayPrompt')||'';
+var relayTitle=urlParams.get('relayTitle')||'上一件作品';
 var XIAOXIN_SESSION_FINALIZED_KEY='xiaoxin_session_finalized';
 var XIAOXIN_ACTIVE_SESSION_KEY='xiaoxin_active_session_id';
 // 注意：旧会话数据（备份、天气标记等）的清理由下面的初始化 IIFE 统一管理，
@@ -456,7 +448,7 @@ var ENTRY_CONFIG={story:{welcome:'我们把今天的一件小事变成故事吧�
 function escapeHTML(s){if(s==null)return'';var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
 // ===== DOM =====
-var chatMessages=document.getElementById('chatMessages'),messageList=document.getElementById('messageList'),msgInput=document.getElementById('msgInput'),btnSend=document.getElementById('btnSend'),btnEnd=document.getElementById('btnEnd'),btnMic=document.getElementById('btnMic'),quickReplies=document.getElementById('quickReplies'),weatherBadge=document.getElementById('weatherBadge'),weatherOverlay=document.getElementById('weatherOverlay'),weatherOptions=document.getElementById('weatherOptions'),btnWeatherClose=document.getElementById('btnWeatherClose'),entryOverlay=document.getElementById('entryOverlay'),entryMoodHint=document.getElementById('entryMoodHint'),btnEntrySkip=document.getElementById('btnEntrySkip'),taskOverlay=document.getElementById('taskOverlay'),taskTitle=document.getElementById('taskTitle'),taskIntro=document.getElementById('taskIntro'),taskCanvas=document.getElementById('taskCanvas'),btnTaskLater=document.getElementById('btnTaskLater'),btnTaskSubmit=document.getElementById('btnTaskSubmit'),exploreMap=document.getElementById('exploreMap'),moodButton=document.getElementById('moodButton'),btnPinyin=document.getElementById('btnPinyin'),charCount=document.getElementById('charCount'),brandLogoImg=document.getElementById('brandLogoImg');
+var chatMessages=document.getElementById('chatMessages'),messageList=document.getElementById('messageList'),msgInput=document.getElementById('msgInput'),btnSend=document.getElementById('btnSend'),btnEnd=document.getElementById('btnEnd'),btnMic=document.getElementById('btnMic'),quickReplies=document.getElementById('quickReplies'),weatherBadge=document.getElementById('weatherBadge'),weatherOverlay=document.getElementById('weatherOverlay'),weatherOptions=document.getElementById('weatherOptions'),btnWeatherClose=document.getElementById('btnWeatherClose'),entryOverlay=document.getElementById('entryOverlay'),entryMoodHint=document.getElementById('entryMoodHint'),btnEntrySkip=document.getElementById('btnEntrySkip'),taskOverlay=document.getElementById('taskOverlay'),taskTitle=document.getElementById('taskTitle'),taskIntro=document.getElementById('taskIntro'),taskCanvas=document.getElementById('taskCanvas'),btnTaskLater=document.getElementById('btnTaskLater'),btnTaskSubmit=document.getElementById('btnTaskSubmit'),exploreMap=document.getElementById('exploreMap'),moodButton=document.getElementById('moodButton'),btnPinyin=document.getElementById('btnPinyin'),btnReturnPlanet=document.getElementById('btnReturnPlanet'),charCount=document.getElementById('charCount'),brandLogoImg=document.getElementById('brandLogoImg');
 
 // ===== Init brand logo =====
 if(brandLogoImg&&window.getXiaoxinLogo){brandLogoImg.src=window.getXiaoxinLogo();brandLogoImg.onerror=function(){brandLogoImg.src='assets/characters/xiaoxin-logo.png'}}
@@ -647,10 +639,12 @@ function applyWeather(w,l){
   if(t)t.classList.add('selected');
   weatherBadge.innerHTML=makeBadgeSVG(icon);
   weatherOverlay.classList.add('hidden');
+  if(openRelayConversation())return;
   entryMoodHint.textContent=WEATHER_ACK_MAP[w]||WEATHER_ACK_MAP.custom;
   entryOverlay.classList.remove('hidden');
 }
-function skipWeather(){selectedWeather='custom';weatherLabel='未选择';weatherOverlay.classList.add('hidden');markWeatherChosen();entryMoodHint.textContent=WEATHER_ACK_MAP.custom;entryOverlay.classList.remove('hidden')}
+function openRelayConversation(){if(!relayPrompt)return false;entrySource='relay';entryOverlay.classList.add('hidden');var welcome='我看到你从《'+relayTitle+'》带来了一颗灵感种子。你可以先改一改输入框里的话，再发给我，我们沿着它继续聊。';if(messages.length===0){addBubble('assistant',welcome);messages.push({role:'assistant',content:welcome});autoSave()}msgInput.value=relayPrompt;updateCharCount();autoResizeTextarea();msgInput.focus();return true}
+function skipWeather(){selectedWeather='custom';weatherLabel='未选择';weatherOverlay.classList.add('hidden');markWeatherChosen();if(openRelayConversation())return;entryMoodHint.textContent=WEATHER_ACK_MAP.custom;entryOverlay.classList.remove('hidden')}
 function openConversationFromEntry(key,openingText){var config=ENTRY_CONFIG[key]||ENTRY_CONFIG.free;showQuickReplies(config.chips);if(openingText){msgInput.value=openingText;sendMessage()}else{var welcome=(WEATHER_ACK_MAP[selectedWeather]||WEATHER_ACK_MAP.custom)+' '+config.welcome;addBubble('assistant',welcome);messages.push({role:'assistant',content:welcome});autoSave();msgInput.focus()}}
 function beginFromEntry(key){entrySource=key;sessionStorage.setItem('xiaoxin_entry_source',key);entryOverlay.classList.add('hidden');if(key==='free')openConversationFromEntry(key,'');else startPreChatFlow(key)}
 document.querySelectorAll('.entry-option').forEach(function(option){option.addEventListener('click',function(){beginFromEntry(this.dataset.entry)})});
@@ -1199,6 +1193,7 @@ btnEnd.addEventListener('click',async function(){
 function leaveChat(url){
   if(turnCount>0&&!finalized){finalizeConversation().then(function(){location.href=url}).catch(function(){location.href=url})}else{location.href=url}
 }
+btnReturnPlanet.addEventListener('click',function(){leaveChat('http://localhost:4173/?from=chat')});
 var homeLinks=document.querySelectorAll('a[href="/home.html"]');
 homeLinks.forEach(function(homeLink){homeLink.addEventListener('click',function(e){if(turnCount>0&&!finalized){e.preventDefault();leaveChat('/home.html')}})});
 btnPinyin.addEventListener('click',function(){this.classList.toggle('on')});

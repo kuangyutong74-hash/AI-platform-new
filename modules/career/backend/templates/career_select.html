@@ -3,6 +3,7 @@
 <div class="careers-container">
 <header class="careers-header"><a href="/" class="back-link" aria-label="返回职业模拟器首页"><span class="back-arrow">&#8592;</span> 返回首页</a>
 <div id="platform-student-identity" class="platform-student-identity" hidden><img alt=""><b></b></div><h1 class="careers-title">选择一座职业小岛</h1><p class="careers-subtitle">每一座小岛都藏着一段职业故事，选一座出发吧！</p></header>
+<aside id="exploration-relay" class="exploration-relay" hidden><b></b><span></span></aside>
 <div class="careers-grid">{% for career in careers %}
 <button type="button" class="career-card island-card" onclick="selectCareer('{{ career.id }}')" style="--career-color: {{ career.color }}" aria-label="选择{{ career.name }}职业体验">
 <div class="card-bg" style="background: {{ career.bg_gradient }}"></div>
@@ -45,7 +46,10 @@ try{
   const launch=JSON.parse(window.name||'');
   const student=launch&&launch.namespace==='ai-bole.launch-context.v1'&&launch.context&&launch.context.student;
   if(student&&student.displayName){const badge=document.getElementById('platform-student-identity');badge.hidden=false;badge.querySelector('img').src=student.avatarUrl||'';badge.querySelector('b').textContent=student.displayName;}
+  const relay=launch&&launch.namespace==='ai-bole.launch-context.v1'&&launch.context&&launch.context.relay;
+  if(relay&&relay.prompt){const banner=document.getElementById('exploration-relay');banner.hidden=false;banner.querySelector('b').textContent='✨ 探索接力 · 来自《'+(relay.sourceTitle||'上一件作品')+'》';banner.querySelector('span').textContent=relay.prompt;}
 }catch(_){/* 直接打开时保持原页面 */}
+if(document.getElementById('exploration-relay').hidden){const params=new URLSearchParams(location.search),prompt=params.get('relayPrompt');if(prompt){const banner=document.getElementById('exploration-relay');banner.hidden=false;banner.querySelector('b').textContent='✨ 探索接力 · 来自《'+(params.get('relayTitle')||'上一件作品')+'》';banner.querySelector('span').textContent=prompt;}}
 // 不在职业选择页提前兑换一次性启动码。职业体验会跨多个完整页面跳转，
 // 提前兑换会清空 window.name 中的启动上下文，使最终完成页无法写回作品和进度。
 // 完成页统一连接 SDK、写入证据和作品并结束平台会话。

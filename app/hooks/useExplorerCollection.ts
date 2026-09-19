@@ -7,8 +7,9 @@ import {CORE_API_URL} from "../config/modules";
 
 type Account={display_name:string;age:number;created_at?:string};
 type V1Comment={id:string;body:string;authorName:string;authorKind:string|null;createdAt:string};
-type V1Artifact={id:string;moduleId:string;type:string;title:string;summary:string;previewResourceId?:string|null;sourceResourceId?:string|null;createdAt:string;kind?:string;detail?:string;highlightReason?:string;comments?:V1Comment[]};
-type V1ModuleSummary={moduleId:string;completedCount:number;firstUsedAt:string;lastUsedAt:string;activeSeconds:number;evidenceCount:number;artifactCount:number};
+type V1Artifact={id:string;moduleId:string;type:string;title:string;summary:string;previewResourceId?:string|null;sourceResourceId?:string|null;createdAt:string;kind?:string;workType?:string;detail?:string;highlightReason?:string;comments?:V1Comment[]};
+type V1Session={id:string;moduleId:string;endedAt?:string;startedAt?:string;activeSeconds?:number;caption?:string};
+type V1ModuleSummary={moduleId:string;completedCount:number;firstUsedAt:string;lastUsedAt:string;activeSeconds:number;evidenceCount:number;artifactCount:number;observations?:string[];recentSessions?:V1Session[]};
 
 const number=(value:unknown)=>Number(value)||0;
 const artifactPresentation:Record<string,{status:string;metric_label:string;metric_value:string}>={
@@ -17,9 +18,10 @@ const artifactPresentation:Record<string,{status:string;metric_label:string;metr
   deep_sea:{status:"重建已完成",metric_label:"作品类型",metric_value:"深海基地重建"},
   career:{status:"体验已完成",metric_label:"作品类型",metric_value:"职业模拟"},
 };
+const manualWorkTypeNames:Record<string,string>={full_story:"完整故事",story_fragment:"故事片段",character_profile:"角色设定",story_illustration:"故事插画",base_design:"基地设计",mission_record:"闯关记录",solution_sketch:"方案草图",observation_note:"观察笔记",career_card:"职业体验卡",mission_plan:"任务方案",role_diary:"角色日记",career_research:"职业小调查",mood_note:"心情小记",opinion:"观点表达",conversation_inspiration:"聊天启发",life_observation:"生活观察",other:"其他创作"};
 
 function presentationFor(artifact:V1Artifact){
-  if(artifact.kind==="manual_work")return {status:"我添加的作品",metric_label:"作品来源",metric_value:"自主添加"};
+  if(artifact.kind==="manual_work"){const label=manualWorkTypeNames[artifact.workType||"other"]||"其他创作";return {status:label,metric_label:"作品类型",metric_value:label};}
   const moduleId=canonicalExplorerModule(artifact.moduleId);
   return artifactPresentation[moduleId]||{status:"已收藏",metric_label:"作品类型",metric_value:artifact.type};
 }
@@ -73,6 +75,15 @@ function collectionFromV1(account:Account,artifacts:V1Artifact[],summaries:V1Mod
         last_used_at:summary.lastUsedAt,
         duration_seconds:summary.activeSeconds||0,
         duration_coverage:1,
+        evidence_count:summary.evidenceCount,
+        artifact_count:summary.artifactCount,
+        observations:summary.observations||[],
+        recent_sessions:(summary.recentSessions||[]).map(session=>({
+          id:session.id,
+          occurred_at:session.endedAt||session.startedAt,
+          duration_seconds:session.activeSeconds||0,
+          caption:session.caption||`完成一次${explorerModuleName(summary.moduleId)}探索`,
+        })),
       })),
     ],
   };

@@ -193,6 +193,21 @@ ECS_PUBLIC_ORIGIN=http://你的公网IP bash /opt/ai-bole/scripts/deploy-ecs-upd
 
 默认拉取 `master` 分支。私有仓库需先为服务器配置只读 Deploy Key；也可通过 `AI_BOLE_REPO_URL` 和 `AI_BOLE_DEPLOY_BRANCH` 覆盖仓库与分支。部署期间服务会短暂停止，生产数据和 `.env` 不应提交到 Git。
 
+#### 部署时务必确认数据目录被保留
+
+Core 的账号、会话、证据、作品、报告全部存放在 `modules/platform-core/data/ai_bole_core_v1.db`，而这个文件**不在 Git 里**（`.gitignore` 忽略 `*.db`）。`deploy-ecs-update.sh` 靠 `copy_if_present` 把它从旧目录搬到新目录——这一步没命中，就会以一份空库上线，表现为「测试账号数据丢失」。
+
+部署后请立即核对：
+
+```bash
+ls -l /opt/ai-bole/modules/platform-core/data/
+sqlite3 /opt/ai-bole/modules/platform-core/data/ai_bole_core_v1.db \
+  "select username,role,created_at from accounts; select count(*) from evidence_records;"
+grep -E "AI_BOLE_(DB_PATH|SEED_TEST_ACCOUNTS|TEST_ACCOUNT_PASSWORD)" /opt/ai-bole/.env
+```
+
+注意仓库里还跟踪着一个**遗留的 V0 数据库** `modules/platform-core/data/ai_bole_core.db`（含 `evidence_events` 表）。不要在服务器上把 `AI_BOLE_DB_PATH` 指向它，否则 Core 启动时会直接抛「检测到已废弃的 V0 测试数据库」并拒绝服务。
+
 如果 ECS 访问 GitHub 不稳定，可在本地用 `git archive` 生成仅含已提交文件的归档并上传，再指定 `AI_BOLE_SOURCE_ARCHIVE` 部署；其余备份、构建、健康检查与回滚流程不变。
 
 重建仅用于开发的 Core 测试数据：

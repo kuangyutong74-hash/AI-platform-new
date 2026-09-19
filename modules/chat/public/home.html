@@ -431,6 +431,16 @@
         transition-duration: .001ms !important;
       }
     }
+    .exploration-relay {
+      position: absolute; z-index: 18; top: 70px; left: 50%; transform: translateX(-50%);
+      width: min(620px, calc(100% - 32px)); padding: 10px 16px;
+      border: 1px solid rgba(255, 201, 91, .68); border-radius: 14px;
+      background: rgba(255, 250, 226, .95); color: #563d62;
+      box-shadow: 0 12px 28px rgba(25, 31, 54, .22);
+    }
+    .exploration-relay b, .exploration-relay span { display: block; }
+    .exploration-relay span { margin-top: 3px; color: #765f79; font-size: 13px; }
+    .exploration-relay[hidden] { display: none; }
   </style>
   <style id="cinematic-cover-v1">
     .page{position:relative;min-height:100dvh;height:100dvh;justify-content:flex-start;overflow:hidden;background:#071f35}
@@ -466,6 +476,7 @@
         </button>
       </nav>
     </header>
+    <aside id="explorationRelay" class="exploration-relay" hidden><b></b><span></span></aside>
 
     <section class="hero" aria-labelledby="welcome-title">
       <div class="mascot-wrap" aria-hidden="true">
@@ -516,6 +527,18 @@
     <div id="avatarModal" hidden><div class="avatar-carousel-track"><div id="avSlides"></div></div><div id="avDots"></div><div id="avCollLabel"></div><button id="avArrowLeft"></button><button id="avArrowRight"></button><button id="btnModalClose"></button></div>
 
   </main>
+
+  <script>
+    (function(){
+      var relay=null;
+      try{var launch=JSON.parse(window.name||'');relay=launch&&launch.namespace==='ai-bole.launch-context.v1'&&launch.context&&launch.context.relay;}catch(_){ }
+      var params=new URLSearchParams(location.search),prompt=relay&&relay.prompt||params.get('relayPrompt');
+      if(!prompt)return;
+      var title=relay&&relay.sourceTitle||params.get('relayTitle')||'上一件作品',banner=document.getElementById('explorationRelay');
+      banner.hidden=false;banner.querySelector('b').textContent='✨ 探索接力 · 来自《'+title+'》';banner.querySelector('span').textContent=prompt;
+      var start=document.querySelector('.primary-button');if(start){var url=new URL(start.href,location.href);url.searchParams.set('relayPrompt',prompt);url.searchParams.set('relayTitle',title);start.href=url.pathname+url.search;}
+    })();
+  </script>
 
   <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.27.0/dist/index.js"></script>
   <script src="/js/global-pinyin.js"></script>

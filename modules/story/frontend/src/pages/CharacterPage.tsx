@@ -18,11 +18,12 @@ import { ApiError } from "../api/client";
 import "./CharacterPage.css";
 
 type AgeFilter = "all" | AgeGroup;
-type PlatformIdentity = { displayName: string; avatarId: string; platformOrigin?: string };
+type PlatformIdentity = { displayName: string; avatarId: string; ageGroup?: AgeGroup; platformOrigin?: string };
+const PLATFORM_CORE_URL = import.meta.env.VITE_PLATFORM_CORE_URL || "http://localhost:8020";
 
 function readPlatformIdentity(): PlatformIdentity | null {
   try {
-    const launch = JSON.parse(window.name || "");
+    const launch = window.name ? JSON.parse(window.name) : null;
     const student = launch?.namespace === "ai-bole.launch-context.v1" ? launch.context?.student : null;
     if (student?.displayName) {
       const identity = {
@@ -33,23 +34,51 @@ function readPlatformIdentity(): PlatformIdentity | null {
       sessionStorage.setItem("ai-bole.story.identity", JSON.stringify(identity));
       return identity;
     }
+  } catch { /* a module may use window.name for unrelated state */ }
+  try {
     return JSON.parse(sessionStorage.getItem("ai-bole.story.identity") || "null");
-  } catch { return null; }
+  } catch {
+    return null;
+  }
+}
+
+async function resolvePlatformIdentity(): Promise<PlatformIdentity | null> {
+  const localIdentity = readPlatformIdentity();
+  if (localIdentity) return localIdentity;
+  try {
+    const response = await fetch(`${PLATFORM_CORE_URL}/api/account/me`, { credentials: "include" });
+    if (!response.ok) return null;
+    const session = await response.json();
+    const subject = session?.selected_student
+      ?? (session?.account?.role === "student" ? session.account : null);
+    if (!subject?.display_name) return null;
+    const identity: PlatformIdentity = {
+      displayName: subject.display_name,
+      avatarId: subject.avatar_id || "student-1",
+      ageGroup: Number(subject.age) <= 7 ? "4-7" : "8-12",
+    };
+    sessionStorage.setItem("ai-bole.story.identity", JSON.stringify(identity));
+    return identity;
+  } catch {
+    return null;
+  }
 }
 
 export default function CharacterPage() {
   const { ageGroup: channelAgeGroup } = useChannel();
+  const relayPrompt = useMemo(() => new URLSearchParams(window.location.search).get("relayPrompt") || "", []);
+  const relayTitle = useMemo(() => new URLSearchParams(window.location.search).get("relayTitle") || "", []);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedChar, setSelectedChar] = useState<Character | null>(null);
   const [ageFilter, setAgeFilter] = useState<AgeFilter>("all");
-  const [theme, setTheme] = useState("");
-  const [customTheme, setCustomTheme] = useState("");
+  const [theme, setTheme] = useState(relayPrompt ? "__custom__" : "");
+  const [customTheme, setCustomTheme] = useState(relayPrompt);
   const [storyTitle, setStoryTitle] = useState("");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
   const [identityError, setIdentityError] = useState("");
-  const [platformIdentity] = useState(readPlatformIdentity);
+  const [platformIdentity, setPlatformIdentity] = useState<PlatformIdentity | null>(readPlatformIdentity);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,21 +87,25 @@ export default function CharacterPage() {
 
   // 选中角色切换时，重置故事主题选择
   useEffect(() => {
-    setTheme("");
-    setCustomTheme("");
+    setTheme(relayPrompt ? "__custom__" : "");
+    setCustomTheme(relayPrompt);
     setError("");
-  }, [selectedChar?.id]);
+  }, [selectedChar?.id, relayPrompt]);
 
   async function loadCharacters() {
     setIdentityError("");
     try {
-      const chars = await listCharacters();
+      const [chars, resolvedIdentity] = await Promise.all([
+        listCharacters(),
+        resolvePlatformIdentity(),
+      ]);
       setCharacters(chars);
-      if (platformIdentity && channelAgeGroup) {
-        const existing = chars.find((char) => char.nickname === platformIdentity.displayName && char.avatar_type === platformIdentity.avatarId);
+      setPlatformIdentity(resolvedIdentity);
+      if (resolvedIdentity && channelAgeGroup) {
+        const existing = chars.find((char) => char.nickname === resolvedIdentity.displayName && char.avatar_type === resolvedIdentity.avatarId);
         if (existing) setSelectedChar(existing);
         else {
-          const created = await createCharacter({nickname:platformIdentity.displayName,avatar_type:platformIdentity.avatarId,avatar_color:"#f0cb70",personality:"以我自己的方式去探索和创造",age_group:channelAgeGroup});
+          const created = await createCharacter({nickname:resolvedIdentity.displayName,avatar_type:resolvedIdentity.avatarId,avatar_color:"#f0cb70",personality:"以我自己的方式去探索和创造",age_group:resolvedIdentity.ageGroup || channelAgeGroup});
           setCharacters((previous) => [...previous, created]);
           setSelectedChar(created);
         }
@@ -176,6 +209,7 @@ export default function CharacterPage() {
         <img src={`http://localhost:3000/assets/avatars/student/${platformIdentity.avatarId}.png`} alt="" />
         <div><h2>{platformIdentity.displayName}，今天想创作什么故事？</h2><p>故事会直接使用你在探索星球选好的昵称和形象。</p></div>
       </section>
+      {relayPrompt&&<aside className="story-relay-banner"><b>✨ 探索接力：从《{relayTitle||"上一件作品"}》出发</b><span>{relayPrompt}</span></aside>}
       <div className="start-story-card unified-story-card">
         <div className="start-field"><label><PngIcon name="action-write" size={24} /> 故事名字（可选）</label><input type="text" value={storyTitle} onChange={(e)=>setStoryTitle(e.target.value)} placeholder="给你的故事取个名字吧" maxLength={50}/></div>
         <div className="theme-selector"><label>选择故事主题</label><div className="theme-grid">{themes.map((t)=><button key={t.value} className={`theme-option ${theme===t.value?"theme-option-selected":""}`} onClick={()=>setTheme(t.value)}><PngIcon name={t.icon} size={42}/><span>{t.label}</span></button>)}</div>{theme==="__custom__"&&<input type="text" className="custom-theme-input" value={customTheme} onChange={(e)=>setCustomTheme(e.target.value)} placeholder="输入你想创作的故事主题" maxLength={50} autoFocus/>}</div>

@@ -16,8 +16,12 @@ from app.auth import require_platform_student_id
 from app.models.character import Character
 from app.models.message import StoryMessage
 from app.models.story import Story
+from app.prompts.story_director import should_ask_director_question
 from app.schemas.message import StoryMessageOut
-from app.schemas.story import StoryCompleteRequest, StoryCreate, StoryOut, StoryUpdate, TurnRequest
+from app.schemas.story import (
+    StoryCompleteRequest, StoryCreate, StoryOut, StoryUpdate, TurnRequest,
+    WritingAssistOut, WritingAssistRequest,
+)
 from app.services import observation_service, story_service
 from app.services.content_guard import (
     EMPTY_AFTER_CLEAN_MESSAGE,
@@ -30,7 +34,9 @@ from app.services.content_guard import (
     redact_privacy,
     sanitize_agent_output,
 )
-from app.services.llm_service import LLMServiceError, get_llm_service
+from app.services.llm_service import (
+    LLMServiceError, WRITING_TOOL_LABELS, fallback_writing_cards, get_llm_service,
+)
 
 router = APIRouter(prefix="/stories", tags=["stories"])
 
@@ -243,6 +249,59 @@ async def get_story_messages(
     return safe_messages
 
 
+@router.post("/{story_id}/assist", response_model=WritingAssistOut)
+async def create_writing_cards(
+    story_id: int,
+    req: WritingAssistRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return editable inspiration cards without changing story history."""
+    story = await _get_story(story_id, db)
+    if story.status != "active":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="这个故事已经结束啦！")
+    if req.tool == "custom" and not req.custom_request:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="先写下你想请工具箱帮什么忙吧！")
+
+    custom_request = req.custom_request
+    if custom_request:
+        guard = guard_child_input(custom_request)
+        if guard.blocked:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=guard.message)
+        custom_request = guard.sanitized_text
+
+    char = await db.get(Character, story.character_id)
+    history = await story_service.get_story_messages(db, story_id)
+    context = "\n".join(
+        f"{'孩子' if item.get('role') == 'user' else '故事导演'}：{item.get('content', '')}"
+        for item in history[-12:]
+    )
+    tool_title, instruction = WRITING_TOOL_LABELS[req.tool]
+    fallback = fallback_writing_cards(
+        req.tool, story.theme or "", char.nickname if char else "", custom_request,
+    )
+    try:
+        llm = get_llm_service()
+        suggestions = await llm.generate_writing_cards(
+            req.tool,
+            context,
+            theme=redact_privacy(story.theme or "")[0],
+            character_name=redact_privacy(char.nickname)[0] if char else "",
+            age_group=char.age_group if char and char.age_group else "8-12",
+            custom_request=custom_request,
+        )
+    except LLMServiceError:
+        suggestions = fallback
+    safe_suggestions = [sanitize_agent_output(item).strip()[:90] for item in suggestions]
+    if len(safe_suggestions) != 3 or any(not item for item in safe_suggestions):
+        safe_suggestions = fallback
+    return WritingAssistOut(
+        tool=req.tool,
+        title=tool_title,
+        instruction=instruction,
+        suggestions=safe_suggestions,
+    )
+
+
 @router.post("/{story_id}/turn")
 async def story_turn(
     story_id: int,
@@ -306,6 +365,12 @@ async def story_turn(
         story.safety_violation_count = 0
 
     turn_number = story.turn_count + 1
+    # The director occasionally pauses on an evocative beat instead of asking
+    # a question every time. Keep the choice deterministic per story/turn so
+    # retries cannot produce a different interaction shape.
+    ask_director_question = should_ask_director_question(
+        story_id, turn_number, force_ending=req.force_ending,
+    )
 
     # Get character info for prompt (eager load, not via lazy relationship)
     char = await db.get(Character, story.character_id)
@@ -383,6 +448,7 @@ async def story_turn(
                 theme=redact_privacy(story.theme or "")[0],
                 is_first_turn=is_first_turn,
                 age_group=char_age_group,
+                ask_question=ask_director_question,
             ):
                 if chunk["type"] == "narrative_chunk":
                     safe_text = sanitize_agent_output(chunk["text"])
@@ -400,6 +466,8 @@ async def story_turn(
                     yield f"event: ending\ndata: {json.dumps({'text': safe_text}, ensure_ascii=False)}\n\n"
 
                 elif chunk["type"] == "question":
+                    if not ask_director_question:
+                        continue
                     question_text = sanitize_agent_output(chunk["text"])
                     # Streaming/LLM output occasionally puts the closing quote from
                     # the preceding dialogue at the beginning of the question. Move

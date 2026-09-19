@@ -93,6 +93,37 @@ test("creates an honestly labelled child-friendly demo collection when no eviden
   assert.match(result.worksNotice, /示例/);
   assert.equal(new Set(result.works.map((item) => item.module)).size, 4);
   assert.equal(result.milestones[0].kind, "registration");
+  const moduleReview = result.milestones.find((item) => item.module === "career");
+  assert.ok(moduleReview.observations.length > 0);
+  assert.ok(moduleReview.recentSessions.length > 0);
+});
+
+test("normalizes process observations and recent sessions for growth reviews", () => {
+  const result = normalizeCollectionResponse({
+    account: { display_name: "小满", age: 9 },
+    works: [],
+    milestones: [{
+      id: "career-summary",
+      module: "career",
+      kind: "module_summary",
+      title: "职业模拟器的完成小结",
+      observations: ["完成职业任务并留下过程记录"],
+      evidence_count: 3,
+      artifact_count: 1,
+      recent_sessions: [{
+        id: "career-session",
+        occurred_at: "2026-09-01T08:00:00Z",
+        duration_seconds: 420,
+        caption: "完成小医生体验的 3/3 个阶段",
+      }],
+    }],
+  });
+  const review = result.milestones[0];
+  assert.equal(review.evidenceCount, 3);
+  assert.equal(review.artifactCount, 1);
+  assert.deepEqual(review.observations, ["完成职业任务并留下过程记录"]);
+  assert.equal(review.recentSessions[0].durationSeconds, 420);
+  assert.match(review.recentSessions[0].caption, /3\/3/);
 });
 
 test("falls back to the labelled demo collection for an empty backend response", () => {

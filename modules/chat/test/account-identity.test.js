@@ -56,7 +56,7 @@ test('没有选中学生时回退到 account.id', async function () {
   assert.equal(userId, 'student-2');
 });
 
-test('无效会话或 Core 异常时安全回退 guest', async function () {
+test('无效会话或 Core 异常时返回不可解析状态', async function () {
   const unauthorized = await resolveRequestUserId(
     'ai_bole_session=expired',
     async function () { return { ok: false }; }
@@ -66,8 +66,8 @@ test('无效会话或 Core 异常时安全回退 guest', async function () {
     async function () { throw new Error('Core unavailable'); }
   );
 
-  assert.equal(unauthorized, 'guest');
-  assert.equal(unavailable, 'guest');
+  assert.equal(unauthorized, null);
+  assert.equal(unavailable, null);
 });
 
 test('相同 sessionId 在不同账号下使用不同内存键', function () {
