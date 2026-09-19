@@ -169,13 +169,14 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(forbidden.exception.status_code, 403)
 
     def test_password_reset_uses_username_and_invalidates_old_password(self):
+        student_response = Response()
         main.register_account(main.AccountRegistrationIn(
             username="reset_star", display_name="小重", age=7, password="before88",
             role="student",
-        ), Response())
+        ), student_response)
         main.reset_password(main.PasswordResetIn(
             username="reset_star", new_password="after888",
-        ))
+        ), session_cookie(student_response))
         with self.assertRaises(HTTPException):
             main.create_session(main.AccountCredentialsIn(username="reset_star", password="before88"), Response())
         logged_in = main.create_session(
@@ -185,10 +186,11 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(logged_in["account"]["display_name"], "小重")
 
     def test_generated_account_typo_is_corrected_for_login_reset_and_binding(self):
+        padded_response = Response()
         padded = main.register_account(main.AccountRegistrationIn(
             username="S2026007", display_name="小七", age=8, password="before77",
             role="student",
-        ), Response())["account"]
+        ), padded_response)["account"]
         self.assertEqual(padded["username"], "s20260007")
         logged_in = main.create_session(
             main.AccountCredentialsIn(username="S2026007", password="before77", expected_role="student"),
@@ -196,7 +198,10 @@ class AccountTests(unittest.TestCase):
         )
         self.assertEqual(logged_in["account"]["id"], padded["id"])
 
-        reset = main.reset_password(main.PasswordResetIn(username="S2026-007", new_password="after777"))
+        reset = main.reset_password(
+            main.PasswordResetIn(username="S2026-007", new_password="after777"),
+            session_cookie(padded_response),
+        )
         self.assertEqual(reset["username"], "s20260007")
         main.create_session(
             main.AccountCredentialsIn(username="s2026007", password="after777", expected_role="student"),

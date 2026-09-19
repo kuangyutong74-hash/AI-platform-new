@@ -2215,9 +2215,6 @@ def reset_password(
     # 必须已登录：密码重置是敏感操作，绝不允许仅凭用户名任意重置他人密码。
     # 学生忘记密码应联系家长/教师走账号后台流程，或在已登录态下通过此接口改密。
     viewer = require_account(ai_bole_session)
-    viewer_username = str(viewer["username"] or "")
-    if viewer_username != payload.username.strip().lower():
-        raise HTTPException(403, "只能修改当前登录账号的密码")
     with connect() as db:
         account = find_account_by_username(db, payload.username)
         if not account or account["id"] != viewer["id"]:
