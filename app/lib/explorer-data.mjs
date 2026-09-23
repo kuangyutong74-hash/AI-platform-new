@@ -206,6 +206,13 @@ function normalizeItem(item, index, kind) {
     tone: meta.tone,
     isHighlight: item?.is_highlight === true || item?.isHighlight === true || itemKind === "highlight",
     snapshotUrl: cleanText(item?.snapshot_url ?? item?.snapshotUrl),
+    archive: {
+      title: cleanText(item?.archive?.title, "这一次的体验档案"),
+      steps: Array.isArray(item?.archive?.steps) ? item.archive.steps.map((step) => ({
+        title: cleanText(step?.title, "过程记录"), text: cleanText(step?.text),
+      })).filter((step) => step.text) : [],
+      quote: cleanText(item?.archive?.quote),
+    },
     comments: Array.isArray(item?.comments) ? item.comments.map((comment, commentIndex) => ({
       id: cleanText(comment?.id, `comment-${index}-${commentIndex}`),
       body: cleanText(comment?.body),

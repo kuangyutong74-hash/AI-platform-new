@@ -4494,15 +4494,32 @@ html {
 @media(max-width:620px){.platform-music{right:12px;bottom:12px}.platform-music-toggle span{display:none}.platform-music-toggle{width:48px;padding:8px}.platform-music-settings{width:40px;height:40px}.platform-music-panel{width:min(260px,calc(100vw - 24px))}}
 @media(prefers-reduced-motion:reduce){.platform-music-toggle.is-playing svg{animation:none}}
 
-/* 星光唱片音乐控制器：独立入口，不遮挡内容。 */
-.platform-music{right:24px;bottom:24px;grid-template-columns:auto 40px;gap:8px;align-items:end}
-.platform-music-toggle,.role-student .platform-music-toggle{position:relative;display:flex;align-items:center;gap:10px;width:auto;height:auto;min-height:68px;padding:7px 17px 7px 8px;border:2px solid #ffd66f;border-radius:24px;background:linear-gradient(145deg,#2d5b83 0%,#39366f 58%,#262751 100%);color:#fff3d1;box-shadow:inset 0 2px 0 rgba(255,255,255,.2),inset 0 -7px 0 rgba(7,24,50,.22),0 8px 0 #17233f,0 17px 34px rgba(0,14,29,.44);backdrop-filter:none;overflow:visible;transition:transform .2s ease,box-shadow .2s ease}
-.platform-music-toggle:before{content:"";position:absolute;left:58px;top:7px;width:8px;height:8px;border-radius:50%;background:#fff1a7;box-shadow:0 0 13px #ffd56e}.platform-music-toggle:hover{transform:translateY(-4px) rotate(-1deg)}
-.platform-music-mascot{position:relative;width:54px;height:54px;display:grid;place-items:center;flex:0 0 auto;border:3px solid #ffe28d;border-radius:50%;background:linear-gradient(145deg,#ffd870,#f29b58);box-shadow:inset 0 2px 0 rgba(255,255,255,.48),inset 0 -5px 0 rgba(170,77,61,.16),0 0 0 5px rgba(100,83,167,.38),0 7px 15px rgba(2,15,30,.34)}.platform-music-mascot:after{content:"";position:absolute;right:-1px;top:-4px;width:13px;height:13px;border-radius:50%;background:#fff1ad;box-shadow:0 0 12px #ffd875}.platform-music-eye{position:absolute;top:18px;width:6px;height:9px;border-radius:50%;background:#3d3157;box-shadow:inset 0 2px 0 rgba(255,255,255,.5)}.platform-music-eye.eye-left{left:15px}.platform-music-eye.eye-right{right:15px}.platform-music-smile{position:absolute;left:50%;top:30px;width:16px;height:8px;border-bottom:3px solid #734558;border-radius:0 0 12px 12px;transform:translateX(-50%)}.platform-music-mascot em{position:absolute;right:-9px;top:-14px;color:#fff4b5;font:900 22px/1 system-ui;text-shadow:0 0 9px #ffd66f;transform:rotate(10deg)}
-.platform-music-copy{display:grid;min-width:86px;text-align:left}.platform-music-copy b{font-size:.82rem;line-height:1.2;color:#fff4cf}.platform-music-copy small{margin-top:2px;color:#bdefff;font-size:.65rem;line-height:1.2}
-.platform-music-toggle.is-playing{box-shadow:inset 0 2px 0 rgba(255,255,255,.2),inset 0 -7px 0 rgba(7,24,50,.22),0 8px 0 #17233f,0 17px 34px rgba(0,14,29,.44)}.platform-music-toggle.is-playing .platform-music-mascot{animation:musicMascotBounce 1.8s ease-in-out infinite}.platform-music-toggle.is-playing .platform-music-eye{height:3px;top:22px}.platform-music-toggle.is-playing .platform-music-mascot em{animation:musicNoteFloat 1.4s ease-in-out infinite}
-.platform-music-settings,.role-student .platform-music-settings{width:40px;height:40px;border:2px solid rgba(255,216,128,.68);border-radius:14px;background:linear-gradient(145deg,#315c81,#363469);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 7px 0 #17233f,0 13px 24px rgba(0,15,30,.35);backdrop-filter:none}.platform-music-settings:hover{border-color:#ffd77b;transform:translateY(-2px)}.platform-music-settings svg{width:19px;stroke:#ffe7b1}
-.platform-music-panel{right:0;bottom:76px;width:272px;padding:17px 18px;border:1px solid rgba(255,214,130,.48);border-radius:16px;background:linear-gradient(145deg,#302550,#1f1d45);color:#fff3d5;box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 20px 44px rgba(17,11,39,.42)}.platform-music-panel label{color:#ffe3a4}.platform-music-panel input{accent-color:#f4b94f}.platform-music-panel small{color:rgba(255,241,211,.68)}
-@keyframes musicMascotBounce{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(3deg)}}@keyframes musicNoteFloat{0%,100%{transform:translate(0,0) rotate(10deg);opacity:.7}50%{transform:translate(4px,-7px) rotate(18deg);opacity:1}}
-@media(max-width:620px){.platform-music{right:12px;bottom:12px;grid-template-columns:62px 34px}.platform-music-toggle,.role-student .platform-music-toggle{width:62px;height:62px;min-height:62px;padding:4px;border-radius:21px}.platform-music-mascot{width:48px;height:48px}.platform-music-eye{top:15px}.platform-music-toggle.is-playing .platform-music-eye{top:19px}.platform-music-smile{top:27px}.platform-music-copy{display:none}.platform-music-settings,.role-student .platform-music-settings{width:34px;height:34px}.platform-music-panel{bottom:68px;width:min(272px,calc(100vw - 24px))}}
-@media(prefers-reduced-motion:reduce){.platform-music-toggle.is-playing .platform-music-mascot,.platform-music-toggle.is-playing .platform-music-mascot em{animation:none}}
+/* 星星唱机可拖拽：抓手样式 + 拖拽中的过渡关闭，避免点击闪吞。 */
+.platform-music{cursor:grab;touch-action:none;transition:box-shadow .2s ease}
+.platform-music.is-dragging{cursor:grabbing;transition:none;box-shadow:0 18px 36px rgba(15,8,40,.45)}
+.platform-music.is-dragging *{pointer-events:none}
+@media(max-width:620px){.platform-music{cursor:grab}.platform-music:active{cursor:grabbing}}
+
+/* 星星唱机 · 皮克斯风金色小星星 + 夜空名牌 */
+.platform-music{right:24px;bottom:24px;display:flex;align-items:center;gap:9px;z-index:230}
+.platform-music-toggle,.role-student .platform-music-toggle{position:relative;display:flex;align-items:center;gap:10px;width:auto;height:auto;min-height:0;padding:0;border:0;border-radius:0;background:transparent;color:inherit;box-shadow:none;backdrop-filter:none;overflow:visible;transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+.platform-music-toggle:before{display:none}
+.platform-music-toggle:hover{transform:translateY(-3px) rotate(-3deg) scale(1.04)}
+.platform-music-toggle:active{transform:scale(.94)}
+.platform-music-star{position:relative;display:block;width:78px;height:78px}
+.platform-music-star:before{content:"";position:absolute;inset:-10px;border-radius:50%;background:radial-gradient(circle,rgba(255,214,110,.55),rgba(255,214,110,0) 68%);opacity:0;pointer-events:none;transition:opacity .3s ease}
+.platform-music-star img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 12px rgba(20,13,48,.5));animation:starIdle 3.4s ease-in-out infinite}
+.platform-music-toggle.is-playing .platform-music-star img{animation:starSwing 1.7s ease-in-out infinite;transform-origin:50% 64%}
+.platform-music-toggle.is-playing .platform-music-star:before{opacity:1;animation:starGlow 2s ease-in-out infinite}
+.platform-music-copy{display:grid;min-width:88px;text-align:left;padding:9px 14px;border:2px solid rgba(255,214,110,.55);border-radius:16px;background:linear-gradient(160deg,rgba(45,41,100,.94),rgba(26,24,64,.94));box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 9px 20px rgba(12,8,34,.45)}
+.platform-music-copy b{font-size:.85rem;line-height:1.25;color:#ffedbd}
+.platform-music-copy small{margin-top:2px;color:#a9d9ff;font-size:.66rem;line-height:1.25}
+.platform-music-settings,.role-student .platform-music-settings{width:38px;height:38px;display:grid;place-items:center;border:2px solid rgba(255,214,110,.45);border-radius:50%;background:linear-gradient(160deg,#2d2964,#1a1840);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 7px 16px rgba(12,8,34,.45);backdrop-filter:none}
+.platform-music-settings:hover{border-color:#ffd77b;transform:translateY(-2px)}
+.platform-music-settings svg{width:18px;stroke:#ffe7b1}
+.platform-music-panel{right:0;bottom:88px;width:272px;padding:17px 18px;border:1px solid rgba(255,214,130,.5);border-radius:18px;background:linear-gradient(160deg,#302b66,#1b1946);color:#fff3d5;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 22px 46px rgba(10,7,30,.5)}.platform-music-panel label{color:#ffe3a4}.platform-music-panel input{accent-color:#f4b94f}.platform-music-panel small{color:rgba(255,241,211,.7)}
+@keyframes starSwing{0%,100%{transform:rotate(-9deg) scale(1)}50%{transform:rotate(9deg) scale(1.06)}}
+@keyframes starIdle{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-5px) rotate(1.5deg)}}
+@keyframes starGlow{0%,100%{opacity:.42;transform:scale(1)}50%{opacity:.92;transform:scale(1.14)}}
+@media(max-width:620px){.platform-music{right:12px;bottom:12px;gap:7px}.platform-music-toggle span,.role-student .platform-music-toggle span{display:block}.platform-music-copy{display:none}.platform-music-star{width:62px;height:62px}.platform-music-settings,.role-student .platform-music-settings{width:36px;height:36px}.platform-music-panel{bottom:76px;width:min(272px,calc(100vw - 24px))}}
+@media(prefers-reduced-motion:reduce){.platform-music-toggle.is-playing .platform-music-star img,.platform-music-star img,.platform-music-toggle.is-playing .platform-music-star:before{animation:none}}

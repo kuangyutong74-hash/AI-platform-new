@@ -34,6 +34,7 @@ export default function Home(){
   useEffect(()=>{loadSession().then(setSession).catch(()=>setSession(null));},[]);
   useEffect(()=>{if(!role)return;const sync=()=>setView(getViewFromUrl(window.location.href,role) as View);sync();window.addEventListener("popstate",sync);return()=>window.removeEventListener("popstate",sync);},[role]);
   const navigate=(next:View)=>{setView(next);window.history.pushState({view:next},"",urlForView(next,session?.account.role));window.scrollTo({top:0,behavior:"smooth"});};
+  useEffect(()=>{const openWorks=(event:MessageEvent)=>{if(event.origin!==REPORT_URL||event.data?.namespace!=="ai-bole"||event.data?.action!=="navigate"||event.data?.view!=="works")return;navigate("works");};window.addEventListener("message",openWorks);return()=>window.removeEventListener("message",openWorks);},[session?.account.role]);
   const logout=async()=>{await fetch(`${CORE_URL}/api/account/session`,{method:"DELETE",credentials:"include"}).catch(()=>undefined);setStudentManagerOpen(false);setSession(null);};
   const selectStudent=async(studentId:string)=>{const response=await fetch(`${CORE_URL}/api/account/context`,{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({student_id:studentId})});if(response.ok){setSession(await loadSession());setView("report");window.history.replaceState({view:"report"},"",urlForView("report","adult"));}};
   if(session===undefined)return <main className="session-loading" aria-label="正在确认登录状态"/>;
@@ -69,7 +70,7 @@ function IdentitySetup({account,onSaved,onLogout,onCancel}:{account:Account;onSa
 }
 
 function PersonalLoading({text}:{text:string}){return <section className="personal-loading"><h1>{text}</h1></section>}
-function ReportFrame({mode,student}:{mode:"child"|"adult";student:Account}){return <section className="report-frame-shell" aria-label={mode==="child"?"天赋藏宝图":"天赋报告"}><iframe key={`${mode}-${student.id}`} title={`${student.display_name}的${mode==="child"?"天赋藏宝图":"天赋报告"}`} src={`${REPORT_URL}/?view=${mode}&embedded=1&student=${encodeURIComponent(student.id)}`} allow="clipboard-write"/></section>}
+function ReportFrame({mode,student}:{mode:"child"|"adult";student:Account}){return <section className="report-frame-shell" aria-label={mode==="child"?"天赋藏宝图":"天赋报告"}><iframe key={`${mode}-${student.id}`} title={`${student.display_name}的${mode==="child"?"天赋藏宝图":"天赋报告"}`} src={`${REPORT_URL}/?view=${mode}&embedded=1&student=${encodeURIComponent(student.id)}`} allow="clipboard-write; microphone"/></section>}
 
 function apiErrorMessage(payload:unknown,fallback:string){if(payload&&typeof payload==="object"&&"detail" in payload){const detail=(payload as {detail?:unknown}).detail;if(typeof detail==="string")return detail;if(Array.isArray(detail)&&typeof detail[0]?.msg==="string")return detail[0].msg.replace(/^Value error,\s*/,"");}return fallback;}
 

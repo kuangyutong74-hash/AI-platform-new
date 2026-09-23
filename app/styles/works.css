@@ -746,6 +746,54 @@
   font-size: 1.05rem;
   line-height: 1.9;
 }
+.experience-archive {
+  margin: 28px 0 20px;
+  padding: 20px 0 4px;
+  border-top: 1px solid rgba(112, 85, 88, 0.2);
+}
+.experience-archive h3 {
+  margin: 0 0 15px;
+  color: #684855;
+  font-family: var(--child-report-font);
+  font-size: 1.35rem;
+}
+.experience-archive ol {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: archive;
+}
+.experience-archive li {
+  position: relative;
+  min-height: 48px;
+  padding: 4px 0 4px 48px;
+  counter-increment: archive;
+}
+.experience-archive li::before {
+  content: counter(archive);
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #5b4050;
+  background: #f4d987;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+.experience-archive b,
+.experience-archive span {
+  display: block;
+}
+.experience-archive b { color: #624451; font-size: 0.9rem; }
+.experience-archive span { margin-top: 3px; color: #6d616e; line-height: 1.65; }
+.experience-archive > p { margin: 0; color: #706371; line-height: 1.7; }
+.experience-archive blockquote { margin: 18px 0 0; }
 .highlight-metric {
   width: fit-content;
   max-width: 100%;

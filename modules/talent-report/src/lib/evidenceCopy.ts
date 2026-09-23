@@ -179,7 +179,8 @@ export function dimensionSummary(key: string, event: CoreEvidenceRecord, fallbac
       const pairs = Array.isArray(raw.matchedRelationships) ? raw.matchedRelationships.map(item => String(item).trim()).filter(Boolean) : [];
       const successful = Number(event.payload.successfulPairs || 0), total = Number(event.payload.totalPairs || 0);
       const result = successful && total ? `，成功配对 ${successful}/${total} 组` : "";
-      if (key === "naturalistic") return pairs.length ? `在第一关“珊瑚公寓”里，孩子依据栖息地和共生关系完成生态配对：${pairs.join("、")}${result}。` : `在第一关“珊瑚公寓”里，孩子比较生物特征、栖息地和共生关系后完成配对${result}。`;
+      const distinctPairs = [...new Set(pairs)];
+      if (key === "naturalistic") return distinctPairs.length ? `在第一关“珊瑚公寓”里，孩子依据栖息地和共生关系完成生态配对：${distinctPairs.join("、")}${result}。` : `在第一关“珊瑚公寓”里，孩子比较生物特征、栖息地和共生关系后完成配对${result}。`;
       if (key === "logical") return `在第一关“珊瑚公寓”里，孩子先比较生物与住处的匹配条件，再检查配对结果是否正确${result}。`;
       if (key === "spatial") return `在第一关“珊瑚公寓”里，孩子按生物的栖息位置摆放卡片、检查每一组是否放对${result}。`;
     }
@@ -236,10 +237,22 @@ export function deduplicateEvidence(items: Evidence[]): Evidence[] {
   return kept;
 }
 
-function deepSeaGroupBehavior(level: number, ordered: Evidence[], totalRounds: number): string {
-  const content = clip(ordered[ordered.length - 1].behavior, 150);
-  if (totalRounds <= 1) return content;
-  return `第 ${level} 关“${DEEP_SEA_LEVEL_NAMES[level]}”共 ${totalRounds} 次挑战。最近一次：${content}`;
+function deepSeaGroupBehavior(level: number, ordered: Evidence[], totalRounds: number, events: CoreEvidenceRecord[]): string {
+  const evidenceEvents = ordered.map(round => events.find(event => event.id === round.id)).filter((event): event is CoreEvidenceRecord => Boolean(event));
+  if (level === 1 && ordered.length > 1) {
+    const pairs = [...new Set(evidenceEvents.flatMap(event => {
+      const review = coerceRecord(event.sessionSummary?.levelOneReview);
+      return Array.isArray(review.matchedRelationships) ? review.matchedRelationships.map(pair => String(pair).trim()).filter(Boolean) : [];
+    }))];
+    if (pairs.length) return `第 1 关“${DEEP_SEA_LEVEL_NAMES[level]}”共 ${totalRounds} 次挑战，配对内容去重后为：${pairs.join("、")}。`;
+  }
+  const unique = ordered.filter((round, index) => !ordered.slice(0, index).some(previous => isNearDuplicate(
+    normalizeForCompare(previous.behavior), normalizeForCompare(round.behavior),
+  )));
+  const content = unique.map(round => clip(round.behavior, 150));
+  if (totalRounds <= 1) return content[0] || "";
+  if (content.length <= 1) return `第 ${level} 关“${DEEP_SEA_LEVEL_NAMES[level]}”体验 ${totalRounds} 次，记录到的内容相同：${content[0] || ""}`;
+  return `第 ${level} 关“${DEEP_SEA_LEVEL_NAMES[level]}”体验 ${totalRounds} 次，记录到 ${content.length} 项不同表现：${content.join("；")}`;
 }
 
 /** 深海基地按关卡聚合成一条，并保留该关的真实内容而不是“共留下 N 轮记录”。 */
@@ -265,12 +278,19 @@ export function groupDeepSeaRounds(items: Evidence[], events: CoreEvidenceRecord
     const complete = ordered.some(round => completedSessions.has(eventById.get(round.id)?.sessionId || ""));
     result.push({
       ...latest, id: `deep-sea-level-${level}-${latest.id}`,
-      behavior: deepSeaGroupBehavior(level, ordered, totalRounds),
+      behavior: deepSeaGroupBehavior(level, ordered, totalRounds, events),
       time: ordered.length > 1 ? `${ordered[0].time.slice(5)} — ${latest.time.slice(5)}` : latest.time,
       level: complete ? "strong" : latest.level,
       logTitle: `深海基地第 ${level} 关“${DEEP_SEA_LEVEL_NAMES[level]}”`,
       logSummary: totalRounds > 1 ? `同一关卡共有 ${totalRounds} 次真实挑战，可按时间对照。` : "这一次挑战留下的过程记录如下。",
-      logDetails: ordered.map(round => `${round.time}｜${round.behavior}`),
+      logDetails: level === 1 && ordered.length > 1 && ordered.some(round => {
+        const review = coerceRecord(eventById.get(round.id)?.sessionSummary?.levelOneReview);
+        return Array.isArray(review.matchedRelationships) && review.matchedRelationships.length > 0;
+      })
+        ? [`多次体验共完成 ${new Set(ordered.flatMap(round => { const review=coerceRecord(eventById.get(round.id)?.sessionSummary?.levelOneReview); return Array.isArray(review.matchedRelationships)?review.matchedRelationships.map(pair=>String(pair).trim()).filter(Boolean):[]; })).size} 种不同配对。`]
+        : ordered.filter((round, index) => !ordered.slice(0, index).some(previous => isNearDuplicate(
+          normalizeForCompare(previous.behavior), normalizeForCompare(round.behavior),
+        ))).map(round => `${round.time}｜${round.behavior}`),
       rounds: ordered,
     });
   });

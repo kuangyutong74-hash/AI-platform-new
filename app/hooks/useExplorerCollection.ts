@@ -7,7 +7,7 @@ import {CORE_API_URL} from "../config/modules";
 
 type Account={display_name:string;age:number;created_at?:string};
 type V1Comment={id:string;body:string;authorName:string;authorKind:string|null;createdAt:string};
-type V1Artifact={id:string;moduleId:string;type:string;title:string;summary:string;previewResourceId?:string|null;sourceResourceId?:string|null;createdAt:string;kind?:string;detail?:string;highlightReason?:string;comments?:V1Comment[]};
+type V1Artifact={id:string;moduleId:string;type:string;title:string;summary:string;previewResourceId?:string|null;sourceResourceId?:string|null;createdAt:string;kind?:string;detail?:string;highlightReason?:string;archive?:{title?:string;steps?:Array<{title?:string;text?:string}>;quote?:string};comments?:V1Comment[]};
 type V1ModuleSummary={moduleId:string;completedCount:number;firstUsedAt:string;lastUsedAt:string;activeSeconds:number;evidenceCount:number;artifactCount:number};
 
 const number=(value:unknown)=>Number(value)||0;
@@ -34,6 +34,7 @@ function collectionFromV1(account:Account,artifacts:V1Artifact[],summaries:V1Mod
       title:artifact.title,
       summary:artifact.summary,
       detail:artifact.detail||artifact.summary,
+      archive:{title:artifact.archive?.title||"这一次的体验档案",steps:(artifact.archive?.steps||[]).map(step=>({title:step.title||"过程记录",text:step.text||""})).filter(step=>step.text),quote:artifact.archive?.quote||""},
       highlight_reason:artifact.highlightReason,
       quote:"",
       occurred_at:artifact.createdAt,

@@ -88,9 +88,21 @@ class CoreFallbackReportCopyTests(unittest.TestCase):
         ]
         insights = generate_internal_report("小雨", events)["cross_insights"]
         text = "".join(item["text"] for item in insights)
-        self.assertIn("17 次", text)
+        self.assertNotIn("17 次", text)
         self.assertIn("4 组生态配对", text)
         self.assertTrue(all(item["evidence_refs"] for item in insights))
+
+    def test_many_pipeline_rotations_describe_difficulty_not_strength(self):
+        event = {
+            "id": "rotate-many", "module": "deep_sea", "event_type": "deep-sea.spatial-task-completed.v1",
+            "evidence_level": "reference", "behavior_summary": "完成深海基地建造任务",
+            "intelligence_candidates": ["logical", "spatial"], "raw_evidence": {"level": 2, "adjustmentCount": 20},
+            "context": {"sessionSummary": {"levelTwoReview": {"rotateCount": 20, "connected": True}}},
+        }
+        text = "".join(item["text"] for item in generate_internal_report("小雨", [event])["cross_insights"])
+        self.assertIn("过程较为费力", text)
+        self.assertIn("不作为逻辑或空间优势的依据", text)
+        self.assertNotIn("表现突出", text)
 
     def test_story_summaries_are_not_identical_across_sessions(self):
         def story_event(event_id: str, title: str) -> dict:

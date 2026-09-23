@@ -24,6 +24,17 @@ CAREER_STAGE_TITLES = {
 }
 CHAT_ACTIVITY_NAMES = {"picture_choice": "图片选择", "sequence_order": "顺序整理", "sentence_completion": "补句创作"}
 
+# 六个维度的儿童口吻反馈，挂在 child_story 末尾，告诉孩子"你在XX方面真棒"。
+# 用短句、口语词，避免书面化用词；每条都点到一个具体能力点，孩子看得懂。
+CHILD_FEEDBACK_BY_DIMENSION: dict[str, str] = {
+    "linguistic": "小星星悄悄话：你的小嘴巴会讲故事，词语一个接一个跳出来，越来越像一个小作家啦！",
+    "logical": "小星星悄悄话：你爱动脑筋，谜题在你手里都能被解开，是个会想办法的小朋友！",
+    "spatial": "小星星悄悄话：你好像心里先搭好了一幅图，搭积木、拼管道都难不倒你！",
+    "interpersonal": "小星星悄悄话：你会留意别人在想什么，会让大家开心起来，是小伙伴里的小太阳！",
+    "intrapersonal": "小星星悄悄话：你懂得自己的心情，也知道什么时候需要抱抱自己，真的很了不起！",
+    "naturalistic": "小星星悄悄话：你有一双会发现的眼睛，自然里的小秘密都逃不过你！",
+}
+
 
 def _chat_activity_details(raw: dict[str, Any]) -> list[str]:
     activities = raw.get("interactionActivities", []) if isinstance(raw.get("interactionActivities"), list) else []
@@ -150,11 +161,18 @@ def _dedupe_sentences(candidates: list[str], limit: int = 3) -> list[str]:
     return kept
 
 
-def _cumulative_child_story(items: list[dict[str, Any]]) -> str:
+def _cumulative_child_story(items: list[dict[str, Any]], dimension: str = "") -> str:
+    feedback = CHILD_FEEDBACK_BY_DIMENSION.get(dimension, "")
+
+    def _with_feedback(text: str) -> str:
+        return f"{text}\n\n{feedback}" if feedback and text else (feedback or text)
+
     if not items:
-        return "还没有可回看的探索记录。完成一次相关探索后，我会把你的真实表现写在这里。"
-    if len(items) == 1:
-        item = items[0]
+        base = "你还没有做过这一路的游戏。玩一次回来，就能在这里看到自己的高光时刻啦！"
+        return _with_feedback(base)
+
+    def _event_line(item: dict[str, Any]) -> str:
+        """把一条真实游戏记录写成给孩子看的具体句子；多事件时也复用这段。"""
         raw = item.get("raw_evidence", {}) if isinstance(item.get("raw_evidence"), dict) else {}
         context = item.get("context", {}) if isinstance(item.get("context"), dict) else {}
         summary = context.get("sessionSummary", {}) if isinstance(context.get("sessionSummary"), dict) else {}
@@ -163,76 +181,159 @@ def _cumulative_child_story(items: list[dict[str, Any]]) -> str:
             title = str(summary.get("storyTitle", "")).strip() or str(raw.get("storyTitle", "")).strip() or "这次故事"
             outline = str(summary.get("storySynopsis", "") or summary.get("storyOutline", "")).strip()
             highlight = str(summary.get("childHighlight", "")).strip()
-            highlight_text = f" 精彩的一句是：{_quote_child(highlight[:70])}。" if highlight else ""
-            return f"你和伙伴共创了《{title}》。故事梗概：{outline[:120].rstrip('。')}。{highlight_text}" if outline else f"你完成了《{title}》的共创，并写下了 {raw.get('contributionCount', 0)} 个故事片段。"
+            highlight_text = f" 写得最棒的一句是：{_quote_child(_clip_phrase(highlight, 70))}。" if highlight else ""
+            if outline:
+                return f"你和伙伴一起写了《{title}》这个小故事：{_clip_phrase(outline, 110)}。{highlight_text}".strip()
+            count = max(0, int(raw.get('contributionCount', 0) or 0))
+            if count:
+                return f"你和伙伴一起写了《{title}》，一共写了 {count} 个小片段。{highlight_text}".strip()
+            return f"你和伙伴一起把《{title}》这个小故事写完啦！{highlight_text}".strip()
         if module == "chat":
             turns = raw.get("childTurns", []) if isinstance(raw.get("childTurns"), list) else []
             excerpts = [_clean_words(turn.get("text", "")) for turn in turns if isinstance(turn, dict) and _clean_words(turn.get("text", ""))]
             topic = str(raw.get("topicKey", "")).strip()
             words = _clean_words(summary.get("childWords", ""))
-            if words:
-                people = [name for name in ("同学", "朋友", "老师", "爸爸", "妈妈", "家人", "伙伴") if name in words]
-                relation = f"你还说清了自己对{'、'.join(people)}的关注和期待。" if people else "你把自己的感受和在意的事情说得很清楚。"
+            picked = words or (excerpts[-1] if excerpts else "")
+            if picked:
+                people = [name for name in ("同学", "朋友", "老师", "爸爸", "妈妈", "家人", "伙伴") if name in picked]
+                relation = f"你还会想到{'、'.join(people)}，心里装着大家呢！" if people else "你把自己的小感受说得清清楚楚，真的很勇敢！"
                 activity = _chat_activity_source(raw)
-                source = f" 你还通过{activity}留下了更具体的想法。" if activity else ""
-                return f"这次聊天中，你说：{_quote_child(words[:90])}。{relation}{source}"
-            if excerpts:
-                words = excerpts[-1]
-                people = [name for name in ("同学", "朋友", "老师", "爸爸", "妈妈", "家人", "伙伴") if name in words]
-                relation = f"你还说清了自己对{'、'.join(people)}的关注和期待。" if people else "你把自己的感受和在意的事情说得很清楚。"
-                activity = _chat_activity_source(raw)
-                source = f" 你还通过{activity}留下了更具体的想法。" if activity else ""
-                return f"这次聊天中，你说：{_quote_child(words[:90])}。{relation}{source}"
-            return f"这次聊天里，你围绕“{topic}”留下了自己的想法。"
+                source = f" 你还玩了“{activity}”这些小任务，自己的想法都留下来啦。" if activity else ""
+                return f"这次聊天里，你告诉我们：{_quote_child(_clip_phrase(picked, 90))}。{relation}{source}"
+            return f"这次聊天，你聊了“{topic}”里的小想法。"
         if module == "deep_sea":
             level = int(raw.get("level", 0) or 0)
             if level == 1:
                 review = summary.get("levelOneReview", {}) if isinstance(summary.get("levelOneReview"), dict) else {}
                 pairs = [str(value).strip() for value in review.get("matchedRelationships", []) if str(value).strip()] if isinstance(review.get("matchedRelationships"), list) else []
-                return f"在第一关“珊瑚公寓”里，你根据栖息地和共生关系，为{'、'.join(pairs)}找到了合适的位置。" if pairs else "在第一关“珊瑚公寓”里，你观察生物的栖息地和共生关系，为它们安排了合适的住处。"
+                successful, total = int(raw.get("successfulPairs", 0) or 0), int(raw.get("totalPairs", 0) or 0)
+                checks = raw.get("checkAttempts")
+                if pairs:
+                    head = f"你玩了「珊瑚公寓」这一关：仔细看每个小动物住哪、和谁是邻居，再给{'、'.join(pairs)}找到了自己的家。"
+                else:
+                    head = "你玩了「珊瑚公寓」这一关：认真看小动物住的地方、它们和谁做朋友，给每对生物都安排了合适的家。"
+                progress_bits = []
+                if successful and total:
+                    progress_bits.append(f"一共对了 {successful}/{total} 组")
+                if checks is not None:
+                    progress_bits.append(f"自己检查了 {checks} 次")
+                if progress_bits:
+                    head = f"{head}这一次{'，'.join(progress_bits)}，真稳！"
+                return head
             if level == 2:
-                return f"在第二关“洋流电网”里，你摆放并旋转管件，检查方向，经过 {raw.get('adjustmentCount', 0)} 次调整尝试接通线路。"
+                adjustments = max(0, int(raw.get("adjustmentCount", 0) or 0))
+                pipes = max(0, int(raw.get("pipesUsed", raw.get("pipeCount", 0)) or 0))
+                rotate_review = summary.get("levelTwoReview", {}) if isinstance(summary.get("levelTwoReview"), dict) else {}
+                rotate_count = int(rotate_review.get("rotateCount", adjustments) if rotate_review else adjustments)
+                connected = rotate_review.get("connected") if isinstance(rotate_review, dict) else None
+                head = f"你挑战「洋流电网」：把管子一根根摆好、转一转方向，再看看水流能不能通过，调了 {rotate_count} 次都没放弃"
+                if pipes:
+                    head = f"{head}（一共用了 {pipes} 根管子）"
+                if connected is True:
+                    return f"{head}，最后真的接通啦，水哗哗流过去的样子一定很棒！"
+                if connected is False:
+                    return f"{head}，差一点就成功了，下次再来一定更顺！"
+                return f"{head}。"
             if level == 3:
                 review = summary.get("levelThreeReview", {}) if isinstance(summary.get("levelThreeReview"), dict) else {}
                 solution = str(review.get("solutionSummary", "")).strip()
-                return f"在第三关“海洋议事厅”里，你听取双方需要并提出协调办法：{solution[:120].rstrip('。')}。" if solution else "在第三关“海洋议事厅”里，你听取不同角色的需要并尝试协调分歧。"
-        if str(item.get("module")) == "career":
+                utterances = [str(value).strip() for value in (review.get("childUtterances", []) if isinstance(review.get("childUtterances"), list) else []) if str(value).strip()]
+                if solution:
+                    return f"你来到「海洋议事厅」：先听两边的小动物说话，再帮他们想一个两边都开心的办法——{_clip_phrase(solution, 110)}。能想到别人，真的很贴心。"
+                if utterances:
+                    return f"你来到「海洋议事厅」：认真听两边的声音，最后说：{_quote_child(_clip_phrase(utterances[-1], 90))}。"
+                return "你来到「海洋议事厅」：听两边的小动物说话，再帮他们想一个大家都开心的办法。"
+            completed = int(raw.get("completedLevels", 0) or 0)
+            adjustments = max(0, int(raw.get("adjustmentCount", 0) or 0))
+            if completed:
+                return f"你把深海基地的 {completed} 个关卡都走完啦：珊瑚公寓、洋流电网、海洋议事厅，一共调整了 {adjustments} 次。"
+            return "你完成了深海基地的一次新探索，小动物们都住进了新家。"
+        if module == "career":
             task_key = str(raw.get("taskKey", ""))
             career_name = str(summary.get("careerName", "")).strip() or CAREER_NAMES.get(task_key, "这次职业")
             stages = summary.get("stageTitles", []) if isinstance(summary.get("stageTitles"), list) else []
             stages = [str(stage).strip() for stage in stages if str(stage).strip()] or CAREER_STAGE_TITLES.get(task_key, [])
-            return f"在“{career_name}”体验里，你完成了{'、'.join(stages)}，走完了这个职业一天里的几项真实任务。" if stages else f"你完成了一次“{career_name}”职业体验。"
-        return f"你在{MODULE_NAMES.get(str(item.get('module')), '探索活动')}里留下了一次真实的小发现：{str(item.get('behavior_summary', '')).rstrip('。')}。"
+            attempts = max(0, int(raw.get("attemptCount", 0) or 0))
+            hints = max(0, int(raw.get("hintCount", 0) or 0))
+            extra_bits = [f"动手做了 {attempts} 次" if attempts else "", f"看了 {hints} 次小提示" if hints else ""]
+            extra = "，".join(bit for bit in extra_bits if bit)
+            if stages:
+                return f"你当了一回「{career_name}」，走完了 {'、'.join(stages)}{f'，{extra}' if extra else ''}——这是这个职业一天里真正要做的事！"
+            return f"你当了一回「{career_name}」，体验了这个职业一天里的小任务。"
+        behavior = str(item.get("behavior_summary", "")).rstrip("。")
+        return f"你在「{MODULE_NAMES.get(str(item.get('module')), '探索活动')}」里留下了真实的小发现：{behavior}。"
+
+    if len(items) == 1:
+        return _with_feedback(_event_line(items[0]))
     module = str(items[0].get("module", ""))
     raw_items = [item.get("raw_evidence", {}) if isinstance(item.get("raw_evidence"), dict) else {} for item in items]
     if any(str(item.get("module")) == "deep_sea" for item in items) and all(str(item.get("module")) == "chat" or (str(item.get("module")) == "deep_sea" and int((item.get("raw_evidence") or {}).get("level", 0) or 0) == 3) for item in items):
         chats = sum(str(item.get("module")) == "chat" for item in items)
         negotiations = len(items) - chats
-        return f"你留下了 {chats} 次聊天交流和 {negotiations} 次议事厅协商记录。你在交流中表达自己的感受，也在角色分歧中尝试理解双方需要并提出协调办法。"
+        return _with_feedback(f"你一共留下了 {chats} 次聊天和 {negotiations} 次议事厅的小记录。你会说出自己的感受，也会在两边有分歧时帮他们想一个两边都开心的办法——这就是会交朋友的小本事！")
     if module == "story":
         contributions = sum(max(0, int(raw.get("contributionCount", 0) or 0)) for raw in raw_items)
         outlines = [str(item.get("context", {}).get("sessionSummary", {}).get("storySynopsis", "") or item.get("context", {}).get("sessionSummary", {}).get("storyOutline", "")).strip() for item in items if isinstance(item.get("context"), dict) and isinstance(item.get("context", {}).get("sessionSummary"), dict)]
         outlines = [text for text in outlines if text]
-        review = f"最近的故事讲到：{'；'.join(_clip(text, 70) for text in outlines[-2:])}" if outlines else ""
+        review = f"最近的一个故事讲：{_clip_phrase(outlines[-1], 70)}。" if outlines else ""
         highlights = [str(item.get("context", {}).get("sessionSummary", {}).get("childHighlight", "")).strip() for item in items if isinstance(item.get("context"), dict) and isinstance(item.get("context", {}).get("sessionSummary"), dict)]
         highlights = [text for text in highlights if text]
-        highlight_text = f"精彩的一句是：{_quote_child(_clip_phrase(highlights[-1], 70))}。" if highlights else ""
-        return f"你已经完成了 {len(items)} 次故事共创，共贡献了 {contributions} 个故事片段。{review}{highlight_text}"
+        highlight_text = f" 写得最闪亮的一句是：{_quote_child(_clip_phrase(highlights[-1], 70))}。" if highlights else ""
+        return _with_feedback(f"你一共写了 {len(items)} 个小故事，加起来写了 {contributions} 个小片段！{review}{highlight_text}".strip())
     if module == "chat":
         turns = sum(max(0, int(raw.get("turnCount", 0) or 0)) for raw in raw_items)
         topics = list(dict.fromkeys(str(raw.get("topicKey", "")).strip() for raw in raw_items if str(raw.get("topicKey", "")).strip()))
-        topic_text = f"你聊过“{'”“'.join(topics[-3:])}”。" if topics else ""
+        topic_text = f"你聊过「{'」「'.join(topics[-3:])}」。" if topics else ""
         excerpts = [_clean_words(turn.get("text", "")) for raw in raw_items for turn in raw.get("childTurns", []) if isinstance(turn, dict) and _clean_words(turn.get("text", ""))]
         excerpt_text = f"你分享过：{_quote_child('；'.join(_clip_phrase(text, 45) for text in excerpts[-2:]))}。" if excerpts else ""
         people = [name for name in ("同学", "朋友", "老师", "爸爸", "妈妈", "家人", "伙伴") if any(name in text for text in excerpts)]
-        relation_text = f"你还谈到了自己对{'、'.join(people)}的关注和期待。" if people else ""
+        relation_text = f"你还会想到{'、'.join(people)}，心里装着大家呢！" if people else ""
         activities = list(dict.fromkeys(name for raw in raw_items for name in _chat_activity_source(raw).split("、") if name))
-        activity_text = f"你还做过{'、'.join(activities)}，这些小任务里的选择和原话也一起保留了。" if activities else ""
-        return f"你已经完成了 {len(items)} 次聊天。{topic_text}{excerpt_text}{relation_text}{activity_text}"
+        activity_text = f"你还玩了「{'」「'.join(activities)}」这些小任务，自己的想法都留下来啦。" if activities else ""
+        return _with_feedback(f"你一共聊了 {len(items)} 次天。{topic_text}{excerpt_text}{relation_text}{activity_text}")
     if module == "career":
         careers = list(dict.fromkeys(CAREER_NAMES.get(str(raw.get("taskKey", "")), "这次职业") for raw in raw_items))
-        return f"你已经完成了 {len(items)} 次职业体验，体验过{'、'.join(careers)}。这些职业一天中的真实任务都收藏在这颗星里。"
-    return f"你已经完成了 {len(items)} 次相关探索，这颗星保留着之前的全部互动结果。"
+        return _with_feedback(f"你一共体验了 {len(items)} 次小职业，当过 {'、'.join(careers)}！这些职业一天里真正要做的小任务，都藏在这颗星星里。")
+    if module == "deep_sea":
+        grouped: dict[int, list[dict[str, Any]]] = defaultdict(list)
+        for item, raw in zip(items, raw_items):
+            level = int(raw.get("level", 0) or 0)
+            grouped[level].append(item)
+        lines: list[str] = []
+        for level in sorted(grouped):
+            runs = grouped[level]
+            count = len(runs)
+            if level == 1:
+                best_runs = []
+                for run in runs:
+                    raw = run.get("raw_evidence", {}) if isinstance(run.get("raw_evidence"), dict) else {}
+                    successful, total = int(raw.get("successfulPairs", 0) or 0), int(raw.get("totalPairs", 0) or 0)
+                    if successful and total:
+                        best_runs.append((successful, total))
+                if count == 1:
+                    lines.append(_event_line(runs[0]))
+                    continue
+                best_text = f"，最好的一次一共对了 {max(best_runs)[0]}/{max(best_runs)[1]} 组" if best_runs else ""
+                lines.append(f"你 {count} 次玩了「珊瑚公寓」：每次都认真看小动物住哪、和谁是邻居，给它们找到了自己的家{best_text}。")
+            elif level == 2:
+                last_raw = runs[-1].get("raw_evidence", {}) if isinstance(runs[-1].get("raw_evidence"), dict) else {}
+                last_summary = runs[-1].get("context", {}).get("sessionSummary", {}) if isinstance(runs[-1].get("context"), dict) else {}
+                last_review = last_summary.get("levelTwoReview", {}) if isinstance(last_summary.get("levelTwoReview"), dict) else {}
+                last_connected = last_review.get("connected") if isinstance(last_review, dict) else None
+                tail = "，最后一次真的接通啦，水哗哗流过去的样子一定很棒！" if last_connected is True else "。"
+                lines.append(f"你 {count} 次挑战「洋流电网」：把管子摆好、转一转方向，再看看水流能不能通过，调了 {max(0, int(last_raw.get('adjustmentCount', 0) or 0))} 次都没放弃{tail}")
+            elif level == 3:
+                if count == 1:
+                    lines.append(_event_line(runs[0]))
+                else:
+                    lines.append(f"你 {count} 次来到「海洋议事厅」：听两边的小动物说话，再帮他们想一个两边都开心的办法——越想越周到！")
+            else:
+                lines.append(_event_line(runs[-1]))
+        if 0 in grouped and grouped[0]:
+            lines.append(_event_line(grouped[0][-1]))
+        return _with_feedback("".join(lines))
+    recent_lines = _dedupe_sentences([_event_line(item) for item in items[-3:]], limit=2)
+    return _with_feedback("".join(recent_lines) if recent_lines else _event_line(items[-1]))
 
 
 def _dimension_event_summary(item: dict[str, Any], dimension: str) -> str:
@@ -461,9 +562,11 @@ def _cross_insights(events: list[dict[str, Any]], child_name: str) -> list[dict[
                     perfect_pairs.append(event)
             elif level == 2:
                 review = summary.get("levelTwoReview", {}) if isinstance(summary.get("levelTwoReview"), dict) else {}
-                value = review.get("rotateCount", raw.get("adjustmentCount", 0)) if review else raw.get("adjustmentCount", 0)
-                rotations.append(int(value or 0))
-                rotation_refs.append(ref)
+                value = int((review.get("rotateCount", raw.get("adjustmentCount", 0)) if review else raw.get("adjustmentCount", 0)) or 0)
+                pipe_count = int((review.get("pipesUsed", raw.get("pipesUsed", raw.get("pipeCount", 0))) if review else raw.get("pipesUsed", raw.get("pipeCount", 0))) or 0)
+                if value >= pipe_count if pipe_count else value >= 20:
+                    rotations.append(value)
+                    rotation_refs.append(ref)
             elif level == 3:
                 review = summary.get("levelThreeReview", {}) if isinstance(summary.get("levelThreeReview"), dict) else {}
                 solution = str(review.get("solutionSummary", "")).strip() if review else ""
@@ -482,13 +585,12 @@ def _cross_insights(events: list[dict[str, Any]], child_name: str) -> list[dict[
             career = str(summary.get("careerName", "")).strip() or CAREER_NAMES.get(str(raw.get("taskKey", "")), "")
             if career and career not in careers:
                 careers.append(career)
+    # 管件旋转是关卡本身要求的操作。合理次数保持中性，不生成“持续调整”
+    # 之类的正向能力结论；只有明显偏多时才说明本次任务完成较费力。
     if rotations:
         low, high = min(rotations), max(rotations)
         range_text = f"{low} 至 {high} 次" if low != high else f"{low} 次"
-        if len(rotations) == 1:
-            add(f"在需要反复试错的任务里孩子会持续调整：深海基地第二关“洋流电网”中，孩子旋转管件 {range_text} 后接通了起点与终点。", rotation_refs)
-        else:
-            add(f"在需要反复试错的任务里孩子会持续调整：深海基地第二关“洋流电网”的 {len(rotations)} 次挑战中，孩子共旋转管件 {range_text} 直到接通终点。", rotation_refs)
+        add(f"深海基地第二关“洋流电网”中，孩子旋转管件 {range_text}，调整次数较多，说明这次接通线路的过程较为费力；这一记录不作为逻辑或空间优势的依据。", rotation_refs)
     if perfect_pairs:
         total = int(perfect_pairs[0].get("raw_evidence", {}).get("totalPairs", 4) or 4)
         if len(perfect_pairs) == 1:
@@ -553,7 +655,7 @@ def generate_internal_report(child_name: str, events: list[dict[str, Any]]) -> d
                             "但记录中只有话题入口或轮次统计，没有可复述的原话或操作细节，"
                             "因此本维度只登记参与情况，不据此比较表现差异。")
             adult = _adult_observation(key, items)
-            child = _cumulative_child_story(items)
+            child = _cumulative_child_story(items, dimension=key)
         dimensions.append({"key": key, "name": name, "status": "采集行为较少" if len(items) < 2 else ("证据丰富" if strong >= 2 else "证据均衡"), "evidence_refs": refs, "analysis": analysis, "adult_observation": adult, "child_story": child})
     refs = [str(event["id"]) for event in scoped if event.get("id")]
     insights = _cross_insights(scoped, child_name)

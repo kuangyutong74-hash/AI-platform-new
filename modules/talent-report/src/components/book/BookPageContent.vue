@@ -17,7 +17,7 @@ const adultObservation=computed(()=>talent.value?props.liveReport?.dimensions.fi
 
 <template>
   <ReadingGuideSpread v-if="spreadIndex===0" :side="side"/>
-  <OverviewSpread v-else-if="spreadIndex===1" :side="side" :talents="talents" :insights="insights" :rich-names="richNames" :few-names="fewNames" @evidence="emit('evidence',$event)"/>
+  <OverviewSpread v-else-if="spreadIndex===1" :side="side" :talents="talents" :insights="insights" :rich-names="richNames" :few-names="fewNames" :family="family" :live-report="liveReport" @evidence="emit('evidence',$event)"/>
   <DimensionSpread v-else-if="talent" :side="side" :talent="talent" :analysis="analysis" :adult-observation="adultObservation" :highlighted-id="highlightedId" @open="emit('open',$event)"/>
   <ReflectSpread v-else-if="spreadIndex===8" :side="side" :questions="liveReport?.questions" :report="liveReport" @complete="emit('reflectionComplete',$event)" @skip="emit('reflectionSkip')"/>
   <AdviceSpread v-else :side="side" :family="family" :teacher="teacher" :family-attributions="familyAttributions" :teacher-attributions="teacherAttributions" @finish="emit('finish')"/>

@@ -31,7 +31,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from jsonschema import Draft202012Validator, FormatChecker
 
-from reports import ANALYSIS_VERSION, DEEP_SEA_SESSION_EVENT, generate_internal_report
+from reports import ANALYSIS_VERSION, CHILD_FEEDBACK_BY_DIMENSION, DEEP_SEA_SESSION_EVENT, generate_internal_report
 
 
 ROOT = Path(__file__).resolve().parent
@@ -1411,6 +1411,56 @@ def artifact_highlight_reason(
     return fallback.get(module_id, f"《{title}》留下了可回看的完成过程，因此被收藏为高光作品。")
 
 
+def artifact_archive(module_id: str, title: str, session_summary: dict, event_payloads: list[dict], behavior_summaries: list[str]) -> dict:
+    """把单次体验整理为作品页可阅读的过程档案；它记录过程，不生成天赋结论。"""
+    steps: list[dict[str, str]] = []
+    quote = ""
+    if module_id == "story":
+        story_title = str(session_summary.get("storyTitle") or title).strip()
+        synopsis = str(session_summary.get("storySynopsis") or session_summary.get("storyOutline") or "").strip()
+        ideas = session_summary.get("childIdeas") if isinstance(session_summary.get("childIdeas"), list) else []
+        highlight = str(session_summary.get("childHighlight") or (ideas[-1] if ideas else "")).strip()
+        contributions = max([_nonnegative_int(payload.get("contributionCount")) for payload in event_payloads] or [0])
+        steps.append({"title": "创作主题", "text": f"完成《{story_title}》的故事共创。"})
+        if synopsis: steps.append({"title": "故事发展", "text": _short_highlight_quote(synopsis, 180)})
+        if contributions: steps.append({"title": "写下的片段", "text": f"这次一共贡献了 {contributions} 个情节片段。"})
+        quote = _short_highlight_quote(highlight, 120)
+    elif module_id == "deep_sea":
+        level_one = session_summary.get("levelOneReview") if isinstance(session_summary.get("levelOneReview"), dict) else {}
+        level_two = session_summary.get("levelTwoReview") if isinstance(session_summary.get("levelTwoReview"), dict) else {}
+        level_three = session_summary.get("levelThreeReview") if isinstance(session_summary.get("levelThreeReview"), dict) else {}
+        pairs = [str(value).strip() for value in level_one.get("matchedRelationships", []) if str(value).strip()] if isinstance(level_one.get("matchedRelationships"), list) else []
+        if pairs: steps.append({"title": "珊瑚公寓", "text": f"依据栖息地和共生关系完成配对：{'、'.join(dict.fromkeys(pairs))}。"})
+        rotate_count = _nonnegative_int(level_two.get("rotateCount"))
+        if level_two: steps.append({"title": "洋流电网", "text": f"{'接通了起点和终点' if level_two.get('connected') is not False else '继续尝试接通线路'}{f'，调整了 {rotate_count} 次方向' if rotate_count else ''}。"})
+        solution = str(level_three.get("solutionSummary") or "").strip()
+        utterances = [str(value).strip() for value in level_three.get("childUtterances", []) if str(value).strip()] if isinstance(level_three.get("childUtterances"), list) else []
+        if solution: steps.append({"title": "海洋议事厅", "text": f"听完双方需要后，提出了协调办法：{_short_highlight_quote(solution, 150)}"})
+        quote = _short_highlight_quote(utterances[-1] if utterances else "", 120)
+    elif module_id == "career":
+        career_name = str(session_summary.get("careerName") or title).strip()
+        stages = [str(value).strip() for value in session_summary.get("stageTitles", []) if str(value).strip()] if isinstance(session_summary.get("stageTitles"), list) else []
+        payload = event_payloads[-1] if event_payloads else {}
+        steps.append({"title": "体验角色", "text": f"体验了“{career_name}”的一天。"})
+        if stages: steps.append({"title": "完成环节", "text": "、".join(stages)})
+        attempts, adjustments = _nonnegative_int(payload.get("attemptCount")), _nonnegative_int(payload.get("adjustmentCount"))
+        if attempts or adjustments: steps.append({"title": "过程记录", "text": f"主动尝试 {attempts} 次{f'，根据反馈调整 {adjustments} 次' if adjustments else ''}。"})
+        reflections = session_summary.get("mentorReflections") if isinstance(session_summary.get("mentorReflections"), list) else []
+        answers = [str(item.get("answer", "")).strip() for item in reflections if isinstance(item, dict) and str(item.get("answer", "")).strip()]
+        quote = _short_highlight_quote(answers[-1] if answers else "", 120)
+    elif module_id == "chat":
+        words = str(session_summary.get("childWords") or "").strip()
+        payload = event_payloads[-1] if event_payloads else {}
+        topic = str(payload.get("topicKey") or "").strip()
+        turns = _nonnegative_int(payload.get("turnCount"), session_summary.get("turnCount"))
+        if topic: steps.append({"title": "聊天话题", "text": topic})
+        if turns: steps.append({"title": "交流过程", "text": f"这次一共留下 {turns} 轮表达。"})
+        quote = _short_highlight_quote(words, 150)
+    if not steps:
+        steps = [{"title": "这次体验", "text": text.strip()} for text in behavior_summaries if text and text.strip()][:3]
+    return {"title": "这一次的体验档案", "steps": steps, "quote": quote}
+
+
 @app.get("/api/v1/artifacts")
 def list_artifacts_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     viewer = require_account(ai_bole_session)
@@ -1421,7 +1471,7 @@ def list_artifacts_v1(ai_bole_session: str | None = Cookie(default=None)) -> dic
                            JOIN assessment_sessions s ON s.id=a.session_id
                            WHERE s.child_profile_id=? ORDER BY a.created_at DESC""", (profile["id"],)).fetchall()
         evidence_rows = db.execute(
-            """SELECT se.session_id,se.payload_json,er.behavior_summary
+            """SELECT se.session_id,se.payload_json,er.behavior_summary,s.summary_json
                FROM source_events se JOIN evidence_records er ON er.source_event_id=se.id
                JOIN assessment_sessions s ON s.id=se.session_id
                WHERE s.child_profile_id=? ORDER BY se.occurred_at""",
@@ -1449,16 +1499,25 @@ def list_artifacts_v1(ai_bole_session: str | None = Cookie(default=None)) -> dic
     }
     session_evidence: dict[str, dict[str, list]] = {}
     for row in evidence_rows:
-        context = session_evidence.setdefault(row["session_id"], {"payloads": [], "summaries": []})
+        context = session_evidence.setdefault(row["session_id"], {"payloads": [], "summaries": [], "session_summary": {}})
         try:
             context["payloads"].append(json.loads(row["payload_json"] or "{}"))
         except json.JSONDecodeError:
             logger.warning("作品高光原因跳过了无效事件 payload：%s", row["session_id"])
         context["summaries"].append(row["behavior_summary"] or "")
+        try:
+            context["session_summary"] = json.loads(row["summary_json"] or "{}")
+        except json.JSONDecodeError:
+            logger.warning("作品档案跳过了无效会话摘要：%s", row["session_id"])
     artifacts = [{
         "id": row["id"], "sessionId": row["session_id"], "moduleId": row["module_id"],
         "moduleVersion": row["module_version"], "type": row["type"], "kind": "highlight",
-        "title": row["title"], "summary": row["summary"], "detail": row["summary"],
+        "title": row["title"], "summary": row["summary"],
+        "detail": row["summary"],
+        "archive": artifact_archive(
+            row["module_id"], row["title"], session_evidence.get(row["session_id"], {}).get("session_summary", {}),
+            session_evidence.get(row["session_id"], {}).get("payloads", []), session_evidence.get(row["session_id"], {}).get("summaries", []),
+        ),
         "highlightReason": artifact_highlight_reason(
             row["module_id"], row["title"], json.loads(row["summary_json"] or "{}"),
             session_evidence.get(row["session_id"], {}).get("payloads", []),
@@ -1557,20 +1616,39 @@ def create_talent_stories_v1(ai_bole_session: str | None = Cookie(default=None))
                         and event["event_type"] == "deep-sea.spatial-task-completed.v1"
                         and int(event["raw_evidence"].get("level", 0)) == 1]
     if level_one_events:
-        reviews = []
-        for event in level_one_events[-3:]:
-            raw = event["raw_evidence"]
+        runs = len(level_one_events)
+        pairs_seen: list[str] = []
+        best: tuple[int, int] | None = None
+        last_checks = None
+        for event in level_one_events:
+            raw = event.get("raw_evidence", {}) if isinstance(event.get("raw_evidence"), dict) else {}
             context = event.get("context", {}) if isinstance(event.get("context"), dict) else {}
             summary = context.get("sessionSummary", {}) if isinstance(context.get("sessionSummary"), dict) else {}
             review = summary.get("levelOneReview", {}) if isinstance(summary.get("levelOneReview"), dict) else {}
-            pairs = [str(item).strip() for item in review.get("matchedRelationships", []) if str(item).strip()] if isinstance(review.get("matchedRelationships"), list) else []
-            successful, total = int(raw.get("successfulPairs", 0)), int(raw.get("totalPairs", 4))
+            raw_pairs = review.get("matchedRelationships", []) if isinstance(review.get("matchedRelationships"), list) else []
+            for value in raw_pairs:
+                pair = str(value).strip()
+                if pair and pair not in pairs_seen:
+                    pairs_seen.append(pair)
+            successful, total = int(raw.get("successfulPairs", 0) or 0), int(raw.get("totalPairs", 0) or 0)
+            if successful and total and (best is None or successful > best[0]):
+                best = (successful, total)
             checks = raw.get("checkAttempts")
-            result = "完成了全部配对" if successful == total else f"完成了 {successful}/{total} 组配对"
-            pair_text = f"，为{'、'.join(pairs)}找到了合适的位置" if pairs else "，按照栖息地和共生关系安排生物住处"
-            check_text = f"，经过 {checks} 次检查" if checks is not None else ""
-            reviews.append(f"你在第一关“珊瑚公寓”里{pair_text}{check_text}，{result}")
-        exact_story = (f"你体验了 {len(level_one_events)} 次深海第一关。" if len(level_one_events) > 1 else "") + "；".join(reviews) + "。"
+            if checks is not None:
+                last_checks = checks
+        # 多次挑战合并成一句，避免同一关卡的描述重复出现；配对关系去重后保留具体名字。
+        pair_text = f"再给{'、'.join(pairs_seen[:4])}找到了自己的家" if pairs_seen else "给每对生物都安排了合适的家"
+        if runs == 1:
+            score_text = f"这一次一共对了 {best[0]}/{best[1]} 组" if best else ""
+            check_text = f"，自己检查了 {last_checks} 次" if last_checks is not None else ""
+            tail = f"{score_text}{check_text}，真稳！" if (score_text or check_text) else ""
+            exact_story = f"你玩了「珊瑚公寓」这一关：仔细看每个小动物住哪、和谁是邻居，{pair_text}。{tail}".rstrip("。")
+        else:
+            best_text = f"，最好的一次一共对了 {best[0]}/{best[1]} 组" if best else ""
+            exact_story = f"你 {runs} 次玩了「珊瑚公寓」：每次都认真看小动物住哪、和谁是邻居，{pair_text}{best_text}。"
+        feedback = CHILD_FEEDBACK_BY_DIMENSION.get("naturalistic", "")
+        if feedback:
+            exact_story = f"{exact_story}\n\n{feedback}"
         for item in report["dimensions"]:
             if item["key"] == "naturalistic":
                 item["child_story"] = exact_story

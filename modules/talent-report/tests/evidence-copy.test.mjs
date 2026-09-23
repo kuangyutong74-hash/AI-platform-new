@@ -99,12 +99,30 @@ test("深海基地按关卡聚合，并保留该关的真实内容", () => {
   ];
   const cards = buildTalentEvidence("naturalistic", events, [], sourceNames, "创造之洲", noExtraDetails);
   assert.equal(cards.length, 1);
+  assert.match(cards[0].behavior, /配对内容去重后/);
   assert.match(cards[0].behavior, /3 次挑战/);
-  assert.match(cards[0].behavior, /双锯鱼/);
+  assert.equal((cards[0].behavior.match(/双锯鱼 → 海葵/g) || []).length, 1);
   assert.doesNotMatch(cards[0].behavior, /共留下 \d+ 轮观察记录/);
-  // 三次挑战里两条描述相同被合并，一次细节较少的挑战保留为独立轮次。
+  // 原始事件仍可回溯，但展示明细不重复列出相同配对。
   assert.equal(cards[0].rounds.length, 2);
-  assert.equal(cards[0].logDetails.length, 2);
+  assert.equal(cards[0].logDetails.length, 1);
+});
+
+test("关卡摘要读取累计事件并将重复配对去重", () => {
+  const events = [
+    deepSeaEvent("repeat-a", 1, "2026-09-02T07:07:00Z", { successfulPairs: 4, totalPairs: 4 }),
+    deepSeaEvent("repeat-b", 1, "2026-09-03T07:07:00Z", { successfulPairs: 4, totalPairs: 4 }),
+    deepSeaEvent("repeat-c", 1, "2026-09-04T07:07:00Z", { successfulPairs: 4, totalPairs: 4 }),
+  ];
+  events[0].sessionSummary = { levelOneReview: { matchedRelationships: ["双锯鱼 → 海葵", "花园鳗 → 沙地"] } };
+  events[1].sessionSummary = { levelOneReview: { matchedRelationships: ["双锯鱼 → 海葵", "花园鳗 → 沙地"] } };
+  const cards = buildTalentEvidence("naturalistic", events, [], sourceNames, "创造之洲", noExtraDetails);
+  assert.equal(cards.length, 1);
+  assert.match(cards[0].behavior, /配对内容去重后/);
+  assert.equal((cards[0].behavior.match(/双锯鱼 → 海葵/g) || []).length, 1);
+  assert.match(cards[0].behavior, /花园鳗 → 沙地/);
+  assert.doesNotMatch(cards[0].behavior, /小丑鱼/);
+  assert.equal(cards[0].logDetails.length, 1);
 });
 
 test("完整通关记录不会重复成额外卡片，但会算作已引用证据", () => {

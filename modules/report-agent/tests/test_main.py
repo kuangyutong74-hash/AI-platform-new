@@ -94,6 +94,26 @@ class ReportAnalyzerTests(unittest.TestCase):
         self.assertIn("枪虾 ⇋ 鰕虎鱼", story)
         self.assertIn("栖息地和共生关系", story)
 
+    def test_repeated_level_one_story_keeps_shared_and_unique_pairs_distinct(self):
+        events = [
+            EvidenceEvent(
+                id=f"deep-{index}", module="deep_sea", event_type="deep-sea.spatial-task-completed.v1",
+                occurred_at=f"2026-09-0{index}T08:00:00Z", behavior_summary="完成生物配对",
+                intelligence_candidates=["naturalistic"],
+                raw_evidence={"level": 1, "successfulPairs": 4, "totalPairs": 4},
+                context={"sessionSummary": {"levelOneReview": {"matchedRelationships": pairs}}},
+            )
+            for index, pairs in [
+                (1, ["双锯鱼 → 海葵", "花园鳗 → 沙地"]),
+                (2, ["双锯鱼 → 海葵", "花园鳗 → 沙地"]),
+                (3, ["双锯鱼 → 海葵", "花园鳗 → 沙地", "小丑鱼 → 海葵"]),
+            ]
+        ]
+        story = child_story_for_events(events, "naturalistic")
+        self.assertIn("每次都完成了双锯鱼 → 海葵、花园鳗 → 沙地等相同配对", story)
+        self.assertIn("不同体验里还完成了小丑鱼 → 海葵", story)
+        self.assertEqual(story.count("双锯鱼 → 海葵"), 1)
+
     def test_partner_story_includes_level_three_negotiation(self):
         chat = EvidenceEvent(
             id="chat-partner", module="chat", event_type="chat.observation-shared.v1",
@@ -229,9 +249,43 @@ class ReportAnalyzerTests(unittest.TestCase):
         ]
         insights = RuleAnalyzer().analyze(events)["cross_insights"]
         text = "".join(item["text"] for item in insights)
-        self.assertIn("14 次", text)
+        self.assertNotIn("14 次", text)
         self.assertIn("4 组生态配对", text)
         self.assertTrue(all(item["evidence_refs"] for item in insights))
+
+    def test_many_pipeline_rotations_are_not_treated_as_talent_strength(self):
+        event = EvidenceEvent(
+            id="rotate-many", module="deep_sea", event_type="deep-sea.spatial-task-completed.v1",
+            occurred_at="2026-09-07T09:00:00Z", behavior_summary="完成深海基地建造任务",
+            intelligence_candidates=["logical", "spatial"], raw_evidence={"level": 2, "adjustmentCount": 20},
+            context={"sessionSummary": {"levelTwoReview": {"rotateCount": 20, "connected": True}}},
+        )
+        text = "".join(item["text"] for item in RuleAnalyzer().analyze([event])["cross_insights"])
+        self.assertIn("过程较为费力", text)
+        self.assertIn("不作为逻辑或空间优势的依据", text)
+        self.assertNotIn("表现突出", text)
+
+    def test_model_cannot_turn_required_pipeline_rotations_into_strength(self):
+        event = EvidenceEvent(
+            id="rotate-normal", module="deep_sea", event_type="deep-sea.spatial-task-completed.v1",
+            occurred_at="2026-09-07T09:00:00Z", behavior_summary="完成深海基地建造任务",
+            intelligence_candidates=["logical", "spatial"], raw_evidence={"level": 2, "adjustmentCount": 12},
+            context={"sessionSummary": {"levelTwoReview": {"rotateCount": 12, "pipesUsed": 22, "connected": True}}},
+        )
+        candidate = {"cross_insights": [{"text": "洋流电网中多次旋转管件，说明逻辑和空间表现突出。", "evidence_refs": ["rotate-normal"]}]}
+        text = "".join(item["text"] for item in normalize_report(candidate, [event])["cross_insights"])
+        self.assertNotIn("表现突出", text)
+
+    def test_single_event_cannot_be_promoted_to_stable_strength(self):
+        event = EvidenceEvent(
+            id="single", module="story", event_type="story.contribution-completed.v1",
+            occurred_at="2026-09-07T09:00:00Z", behavior_summary="完成一次故事共创",
+            intelligence_candidates=["linguistic"], raw_evidence={"contributionCount": 2, "storyTitle": "星空旅行"},
+            context={"sessionSummary": {"storyTitle": "星空旅行"}},
+        )
+        candidate = {"cross_insights": [{"text": "孩子的语言表达优势稳定而突出。", "evidence_refs": ["single"]}]}
+        text = "".join(item["text"] for item in normalize_report(candidate, [event])["cross_insights"])
+        self.assertNotIn("优势稳定而突出", text)
 
     def test_level_three_generic_model_copy_cannot_override_specific_report(self):
         event = EvidenceEvent(

@@ -5,15 +5,15 @@ import ExplorerIcon from "./ExplorerIcon";
 import useExplorerCollection from "../hooks/useExplorerCollection";
 import type { ExplorerItem } from "../lib/explorer-types";
 
-type Account = { display_name: string; age: number; created_at?: string };
+type Account = { display_name: string; age: number; created_at?: string; avatar_id?: string };
 type NavigationView = "planet" | "works" | "timeline" | "report";
 
-function formatDate(value: string) {
+function formatDate(value: string, withYear = true) {
   const date = new Date(value);
   if (Number.isNaN(date.valueOf()) || date.valueOf() === 0)
     return "最近一次探索";
   return new Intl.DateTimeFormat("zh-CN", {
-    year: "numeric",
+    year: withYear ? "numeric" : undefined,
     month: "long",
     day: "numeric",
   }).format(date);
@@ -29,7 +29,7 @@ function speak(text: string) {
   window.speechSynthesis.speak(voice);
 }
 
-function TrailLine() {
+function TrailLine({ avatarUrl }: { avatarUrl: string }) {
   const shellRef = useRef<HTMLDivElement>(null);
   const guideRef = useRef<SVGPathElement>(null);
   const progressGlowRef = useRef<SVGPathElement>(null);
@@ -138,23 +138,9 @@ function TrailLine() {
           pathLength="1000"
         />
       </svg>
-      <span ref={travelerRef} className="trail-traveler">
+      <span ref={travelerRef} className="trail-traveler trail-child-traveler">
         <i className="trail-comet-tail" />
-        <svg viewBox="0 0 64 64">
-          <defs>
-            <radialGradient id="growth-traveler-gold" cx="42%" cy="34%">
-              <stop offset="0" stopColor="#fffef0" />
-              <stop offset=".36" stopColor="#fff0a0" />
-              <stop offset=".76" stopColor="#f6c84c" />
-              <stop offset="1" stopColor="#d8952f" />
-            </radialGradient>
-          </defs>
-          <path
-            className="traveler-star"
-            d="M32 3 39.6 19.1 57 21.3 44.2 33.5 47.5 50.7 32 42.2 16.5 50.7 19.8 33.5 7 21.3 24.4 19.1Z"
-          />
-          <path className="traveler-shine" d="M25 18c3.7-5 8.5-6.7 13.5-4" />
-        </svg>
+        <span className="trail-avatar-ring"><img src={avatarUrl} alt="" /></span>
         <b />
         <em />
       </span>
@@ -213,7 +199,7 @@ function TrailDialog({
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <section
-        className="trail-memory-book"
+        className="trail-memory-book trail-evidence-sheet"
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
@@ -248,8 +234,9 @@ function TrailDialog({
               <span><b>最近一次完成</b>{formatDate(item.lastUsedAt || item.occurredAt)}</span>
             </div>
           )}
-          <p className="memory-heading">这一站的完成小结</p>
+          <p className="memory-heading">这次看见的具体过程</p>
           <p className="memory-note">{item.detail}</p>
+          <p className="evidence-caution">这里只记录发生过的过程，不根据点击、拖动或操作次数判断能力高低。</p>
           <button
             className="memory-listen"
             onClick={() => speak(`${item.title}。${item.detail}`)}
@@ -260,7 +247,7 @@ function TrailDialog({
           <div className="memory-actions">
             <button className="gold-button" onClick={() => onNavigate("works")}>
               <ExplorerIcon name="book" />
-              看看高光作品
+              查看关联作品
             </button>
           </div>
         </article>
@@ -280,7 +267,8 @@ export default function GrowthTrailPage({
 }) {
   const { data, loading, error, retry } = useExplorerCollection(account);
   const [selected, setSelected] = useState<ExplorerItem | null>(null);
-  const [lockedId, setLockedId] = useState<string | null>(null);
+  const [timeFilter, setTimeFilter] = useState<"all" | "month" | "quarter">("all");
+  const [moduleFilter, setModuleFilter] = useState("all");
   const lastTrigger = useRef<HTMLButtonElement | null>(null);
   const closeDialog = useCallback(() => {
     setSelected(null);
@@ -296,68 +284,35 @@ export default function GrowthTrailPage({
         <p>从注册那天开始，每一次完成都在赶来和你见面。</p>
       </section>
     );
-  const milestones = data.milestones.slice(0, 8);
+  const avatarUrl = `http://localhost:3000/assets/avatars/student/${account.avatar_id || "student-1"}.png`;
+  const newestTime = Math.max(...data.milestones.map((item) => new Date(item.occurredAt).valueOf() || 0), Date.now());
+  const dayLimit = timeFilter === "month" ? 31 : timeFilter === "quarter" ? 93 : Infinity;
+  const milestones = data.milestones.filter((item) => {
+    const itemTime = new Date(item.occurredAt).valueOf() || newestTime;
+    return (newestTime - itemTime) / 86400000 <= dayLimit && (moduleFilter === "all" || item.module === moduleFilter);
+  }).slice(0, 8);
   const adult = perspective === "adult";
-  const usedModuleCount = milestones.filter(
+  const allUnlocked = data.milestones.filter(
     (item) => item.module !== "registration" && item.unlocked,
-  ).length;
+  );
+  const usedModuleCount = new Set(allUnlocked.map((item) => item.module)).size;
+  const totalExplorations = allUnlocked.reduce((sum, item) => sum + Math.max(0, item.usageCount || 0), 0);
   const open = (item: ExplorerItem, trigger: HTMLButtonElement) => {
-    if (!item.unlocked) {
-      setLockedId(item.id);
-      window.setTimeout(
-        () => setLockedId((current) => (current === item.id ? null : current)),
-        5200,
-      );
-      return;
-    }
+    if (!item.unlocked) return;
     lastTrigger.current = trigger;
     setSelected(item);
   };
   return (
-    <main className="growth-view">
+    <main className={`growth-view ${adult ? "growth-parent-view" : ""}`}>
       <div className="growth-cloud growth-cloud-one" aria-hidden="true" />
       <div className="growth-cloud growth-cloud-two" aria-hidden="true" />
-      <header className="growth-hero" aria-labelledby="growth-title">
+      <header className="growth-hero growth-parent-hero" aria-labelledby="growth-title">
         <button className="growth-back" onClick={() => onNavigate("planet")}>
           <ExplorerIcon name="compass" />
           {adult ? "回天赋报告" : "回探索星球"}
         </button>
-        <div className="growth-avatar" aria-hidden="true">
-          <svg viewBox="0 0 120 120">
-            <path
-              d="M20 69c0-23 18-42 40-42s40 19 40 42c0 19-17 34-40 34S20 88 20 69Z"
-              fill="#f2c9a0"
-            />
-            <path
-              d="M29 55c4-28 26-39 49-29 9 4 15 13 17 25-14-7-23-16-27-26-7 14-20 24-39 30Z"
-              fill="#394d77"
-            />
-            <path
-              d="M24 43c8-20 24-30 43-30 16 0 29 7 36 21-23-8-49-5-79 9Z"
-              fill="#6e9bc4"
-            />
-            <path
-              d="M21 43c31-8 59-9 84-2"
-              fill="none"
-              stroke="#26385e"
-              strokeWidth="5"
-              strokeLinecap="round"
-            />
-            <circle cx="46" cy="66" r="3" fill="#27304b" />
-            <circle cx="75" cy="66" r="3" fill="#27304b" />
-            <path
-              d="M51 82c7 5 14 5 21 0"
-              fill="none"
-              stroke="#b56d6a"
-              strokeWidth="3"
-              strokeLinecap="round"
-            />
-            <path
-              d="M15 95c12-8 26-12 43-12 20 0 37 5 48 15v22H15V95Z"
-              fill="#e7a28e"
-              opacity=".9"
-            />
-          </svg>
+        <div className="growth-avatar">
+          <img src={avatarUrl} alt={`${data.account.displayName}的头像`} />
         </div>
         <div className="growth-hero-copy">
           <div>
@@ -366,15 +321,14 @@ export default function GrowthTrailPage({
             </h1>
             <ExplorerIcon name="spark" size={28} />
           </div>
-          <p className="growth-promise">{adult ? "从第一天出发，看见孩子一步步走过的路。" : "从第一天出发，看见自己走过的路。"}</p>
-          <p className="growth-summary">
-            从注册起点出发，{adult ? "孩子" : "你"}已经点亮了 <strong>{usedModuleCount}</strong>{" "}
-            座探索大陆。
-          </p>
+          <p className="growth-promise">从 {formatDate(data.account.createdAt)} 开始记录</p>
+          <div className="growth-facts" aria-label="成长记录概览">
+            <span><strong>{totalExplorations}</strong> 次完整探索</span>
+            <span><strong>{usedModuleCount}</strong> 类活动</span>
+            <span><strong>{data.works.length}</strong> 条可回溯记录</span>
+          </div>
           <p className="growth-source">
-            {data.timelineIsDemo
-              ? "示例完成历程 · 真实记录会从你的注册日开始"
-              : "账号注册与四个探索模块的真实完成小结"}
+            {data.timelineIsDemo ? "示例记录 · " : ""}这里记录孩子真实经历过的过程与变化，不做能力排名。
           </p>
         </div>
         <span className="growth-tape tape-one" aria-hidden="true" />
@@ -385,6 +339,18 @@ export default function GrowthTrailPage({
         <span>{data.timelineNotice}</span>
         {error && <button onClick={retry}>再试一次</button>}
       </div>
+      <nav className="growth-filters" aria-label="筛选成长记录">
+        <div>
+          <button className={timeFilter === "all" ? "is-active" : ""} onClick={() => setTimeFilter("all")}>全部时间</button>
+          <button className={timeFilter === "month" ? "is-active" : ""} onClick={() => setTimeFilter("month")}>本月</button>
+          <button className={timeFilter === "quarter" ? "is-active" : ""} onClick={() => setTimeFilter("quarter")}>最近三个月</button>
+        </div>
+        <label>活动类型
+          <select value={moduleFilter} onChange={(event) => setModuleFilter(event.target.value)}>
+            <option value="all">全部活动</option><option value="story">故事共创</option><option value="chat">聊天观察</option><option value="deep_sea">深海基地重建</option><option value="career">职业模拟</option><option value="registration">星光起点</option>
+          </select>
+        </label>
+      </nav>
       <section
         className="growth-trail"
         aria-label={`${data.account.displayName}的成长星路`}
@@ -392,71 +358,49 @@ export default function GrowthTrailPage({
         <div className="growth-intro">
           <ExplorerIcon name="spark" />
           <p>
-            第一站，是{adult ? "孩子" : "你"}来到探索星球的那一天。往后每一站，都记录在一座大陆完成了多少次探索。
+            沿着时间往下看：每一站只记录发生过的行为，作品作为证据单独查看。
           </p>
         </div>
-        <TrailLine />
+        <TrailLine avatarUrl={avatarUrl} />
         <div className="milestone-list">
           {milestones.map((item, index) => (
             <article
               key={item.id}
-              className={`growth-milestone ${index % 2 ? "side-right" : "side-left"} tone-${item.tone} ${item.unlocked ? "is-unlocked" : "is-locked"}`}
+              className={`growth-milestone evidence-milestone ${index % 2 ? "side-right" : "side-left"} tone-${item.tone} ${item.unlocked ? "is-unlocked" : "is-locked"}`}
             >
-              <div className="milestone-visual-wrap">
-                <button
-                  className="milestone-visual"
-                  onClick={(event) => open(item, event.currentTarget)}
-                  aria-label={`${item.island}：${item.title}${item.unlocked ? "，打开完成小结" : "，查看点亮提示"}`}
-                >
-                  <span className="milestone-halo" />
-                  <img
-                    src={item.milestoneImage}
-                    alt={`${item.island}水彩探索插画`}
-                    loading={index === 0 ? "eager" : "lazy"}
-                  />
-                  <span className="milestone-number" aria-hidden="true">
-                    {index + 1}
-                  </span>
-                </button>
+              <span className="milestone-node" aria-hidden="true"><ExplorerIcon name="spark" size={20} /></span>
+              <div className="milestone-scene" aria-label={`${item.island}阶段场景`}>
+                <span className="milestone-scene-glow" aria-hidden="true" />
+                <img
+                  src={item.milestoneImage}
+                  alt={`${item.island}阶段插画`}
+                  loading={index < 2 ? "eager" : "lazy"}
+                />
+                <small>阶段场景</small>
               </div>
               <div className="milestone-copy">
-                <p className="milestone-island">{item.island}</p>
+                <div className="milestone-heading"><p className="milestone-island">{item.island}</p><time>{formatDate(item.occurredAt, false)}</time></div>
                 <h2>{item.title}</h2>
-                <p className="milestone-date">
-                  {item.unlocked
-                    ? `${item.kind === "registration" ? "注册于" : "最近完成"} ${formatDate(item.occurredAt)}`
-                    : "等待下一次出发"}
-                </p>
-                <p className="milestone-usage">
+                <p className="milestone-observation">{item.detail || item.summary}</p>
+                {item.kind !== "registration" && <p className="milestone-usage milestone-context">
                   <span>{item.metricLabel}</span>
                   <strong>{item.metricValue}</strong>
-                </p>
-                <p className="milestone-label">
-                  <ExplorerIcon name="spark" size={14} />
-                  {item.status}
-                </p>
-                <button
-                  className="milestone-open"
-                  onClick={(event) => open(item, event.currentTarget)}
-                >
-                  {item.unlocked ? "打开这页完成小结" : "看看怎样点亮"}
-                  <ExplorerIcon name="arrow" />
-                </button>
-              </div>
-              {lockedId === item.id && (
-                <div className="unlock-note" role="status">
-                  <strong>这颗星还在云后面悄悄等你。</strong>
-                  <span>第一次进入{item.island}并完成探索，就能把它点亮啦。</span>
-                  <button onClick={() => onNavigate("planet")}>
-                    现在去看看
-                  </button>
+                </p>}
+                <div className="milestone-actions">
+                  <button className="milestone-open" onClick={(event) => open(item, event.currentTarget)}>查看原始记录 <ExplorerIcon name="arrow" /></button>
+                  {data.works.find((work) => work.module === item.module) && <button className="milestone-work-link" onClick={() => onNavigate("works")}><ExplorerIcon name="book" size={16} />关联作品：《{data.works.find((work) => work.module === item.module)?.title}》</button>}
                 </div>
-              )}
+              </div>
             </article>
           ))}
         </div>
+        <aside className="growth-reflection" aria-labelledby="reflection-title">
+          <span className="reflection-star"><ExplorerIcon name="spark" size={28} /></span>
+          <div><p>阶段回望</p><h2 id="reflection-title">把重复出现的过程线索放在一起看</h2><p>{allUnlocked.length >= 2 ? `本阶段已有 ${allUnlocked.length} 类活动留下记录。可以继续观察“先检查、再修改”等过程是否会在不同任务中稳定复现。` : "目前记录还不多，先保留这次具体行为，等更多独立活动出现后再判断是否形成稳定线索。"}</p></div>
+          <button className="plain-button" onClick={() => onNavigate("report")}><ExplorerIcon name="book" />查看阶段性报告</button>
+        </aside>
       </section>
-      <footer className="starlight-camp">
+      <footer className="starlight-camp growth-continuation">
         <div className="camp-stars" aria-hidden="true">
           <i />
           <i />
@@ -469,23 +413,24 @@ export default function GrowthTrailPage({
           loading="lazy"
         />
         <div>
-          <h2>从第一颗星到今天，每一次完成都有自己的位置</h2>
+          <p className="growth-eyebrow">TO BE CONTINUED</p>
+          <h2>记录仍在继续</h2>
           <p>
-            这里从注册日开始，整理了 {usedModuleCount} 座已点亮大陆的完成次数和时间。
-            新的探索会继续补进这本历程手账。
+            新的真实活动会继续沿着星路出现。家长可以回看阶段结论，也可以筛选和保存这段成长记录。
           </p>
           <div>
-            <button className="gold-button" onClick={() => onNavigate("works")}>
+            <button className="gold-button" onClick={() => onNavigate("report")}>
               <ExplorerIcon name="book" />
-              看看高光作品
+              查看阶段性报告
             </button>
             <button
               className="plain-button"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             >
               <ExplorerIcon name="compass" />
-              回到星路起点
+              筛选时间
             </button>
+            <button className="plain-button" onClick={() => window.print()}>导出阶段回顾</button>
           </div>
         </div>
       </footer>

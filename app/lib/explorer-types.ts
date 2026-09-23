@@ -1,4 +1,5 @@
 export type ExplorerModule="registration"|"story"|"deep_sea"|"career"|"chat";
+export type ExplorerArchive={title:string;steps:Array<{title:string;text:string}>;quote:string};
 
 export type ExplorerItem={
   id:string;
@@ -26,6 +27,7 @@ export type ExplorerItem={
   tone:string;
   isHighlight:boolean;
   snapshotUrl:string;
+  archive:ExplorerArchive;
   comments:Array<{id:string;body:string;authorName:string;authorKind:string;createdAt:string}>;
 };
 
