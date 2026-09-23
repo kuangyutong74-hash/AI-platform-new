@@ -8,9 +8,10 @@ import {
 } from '../utils/childInputGuard';
 import { useStoryState, type ChatMessage } from '../contexts/StoryContext';
 import { completeStory, getStory, getStoryMessages, updateStory, type StoryMessage } from '../api/endpoints';
-import { addStoryToMyWorks, listCollectedStoryIds } from '../api/platformWorks';
+import { addStoryToMyWorks, listCollectedStoryKinds } from '../api/platformWorks';
 import ChatBubble from '../components/Story/ChatBubble';
 import StoryInput from '../components/Story/StoryInput';
+import WritingToolbox from '../components/Story/WritingToolbox';
 import TypingIndicator from '../components/Story/TypingIndicator';
 import StoryFairyFloating from '../components/Story/StoryFairyFloating';
 import Button from '../components/Shared/Button';
@@ -47,6 +48,33 @@ function vividChildSentence(messages: StoryMessage[]): string {
     .filter((sentence) => sentence.length >= 12);
   const vivid = candidates.filter((sentence) => /像|仿佛|轻轻|忽然|闪|光|声音|香气|颜色|笑|眼睛/.test(sentence));
   return (vivid.sort((a, b) => b.length - a.length)[0] || candidates.sort((a, b) => b.length - a.length)[0] || '').slice(0, 140);
+}
+
+export function storyHighlightDecision(
+  messages: StoryMessage[],
+  completionMode: 'child' | 'director',
+  ending = '',
+) {
+  const childMessages = messages.filter((message) => message.role === 'child');
+  const totalChildChars = childMessages.reduce(
+    (total, message) => total + compactText(message.content).length,
+    0,
+  );
+  const expressiveSentence = vividChildSentence(messages);
+  const childAuthoredEnding = completionMode === 'child' && compactText(ending).length >= 20;
+  const isHighlight = (
+    childAuthoredEnding && childMessages.length >= 3
+  ) || (
+    childMessages.length >= 4 && totalChildChars >= 80 && expressiveSentence.length >= 12
+  );
+  return {
+    isHighlight,
+    contributionCount: childMessages.length,
+    totalChildChars,
+    reason: childAuthoredEnding
+      ? '自主完成结尾，并持续参与了故事推进'
+      : '持续贡献多个情节，并写出了具体、有画面的表达',
+  };
 }
 
 export default function StoryPlayPage() {
@@ -159,13 +187,17 @@ export default function StoryPlayPage() {
   const [showPinyin, setShowPinyin] = useState(false);
   const [fontSize, setFontSize] = useState<'s' | 'm' | 'l'>('m');
   const [completionLoading, setCompletionLoading] = useState(false);
-  const [workSaveState, setWorkSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [storyDraft, setStoryDraft] = useState('');
+  const [workSaveState, setWorkSaveState] = useState<'idle' | 'saving' | 'saved' | 'highlight'>('idle');
   const [workSaveError, setWorkSaveError] = useState('');
 
   useEffect(() => {
     if (!id) return;
-    listCollectedStoryIds()
-      .then((ids) => { if (ids.has(id)) setWorkSaveState('saved'); })
+    listCollectedStoryKinds()
+      .then((stories) => {
+        const kind = stories.get(id);
+        if (kind) setWorkSaveState(kind === 'highlight' ? 'highlight' : 'saved');
+      })
       .catch(() => undefined);
   }, [id]);
 
@@ -175,7 +207,7 @@ export default function StoryPlayPage() {
     return Math.max(1, Math.round(activeMs / 1000));
   }
 
-  async function emitStoryCompleted(completionMode: 'child' | 'director', ending = '') {
+  async function emitStoryCompleted(completionMode: 'child' | 'director', ending = ''): Promise<boolean> {
 try {
   const activityId = `story-${id}`;
   const endingText = ending.trim();
@@ -191,6 +223,7 @@ try {
   const contributionCount = savedMessages.filter(
     (message) => message.role === 'child',
   ).length;
+  const highlightDecision = storyHighlightDecision(savedMessages, completionMode, endingText);
   const synopsis = storySynopsis(savedStory.full_text || savedMessages.map((message) => message.content).join(' '));
   const childHighlight = vividChildSentence(savedMessages);
   const childIdeas = savedMessages
@@ -199,14 +232,14 @@ try {
     .filter(Boolean)
     .slice(-3);
   const artifactSummary = synopsis
-    ? `故事梗概：${synopsis}${childHighlight ? ` 精彩表达：“${childHighlight}”` : ''}`.slice(0, 520)
+    ? `故事梗概：${synopsis}${childHighlight ? ` 精彩表达：“${childHighlight}”` : ''}`.slice(0, 500)
     : '完成故事共创表达';
 
   const sdk =
     platformSdkRef.current ||
     (window as any).AIBoleModuleSDK?.create({ moduleId: 'story' });
 
-  if (!sdk) return;
+  if (!sdk) return false;
 
   platformSdkRef.current = sdk;
 
@@ -214,7 +247,7 @@ try {
     platformConnectionRef.current || sdk.connectOptional()
   ).catch(() => null);
 
-  if (!connection || connection.notConnected || !sdk.connected()) return;
+  if (!connection || connection.notConnected || !sdk.connected()) return false;
 
   await sdk.emitEvidence(
     sdk.makeEvent(
@@ -228,23 +261,24 @@ try {
     ),
   );
 
-  const snapshot = await sdk
-    .captureSnapshot('.story-chat-area')
-    .catch(() => null);
-
-  if (snapshot?.id) {
-    await sdk
-      .publishArtifact({
+  let highlightPublished = false;
+  if (highlightDecision.isHighlight) {
+    const snapshot = await sdk.captureSnapshot('.story-chat-area').catch(() => null);
+    try {
+      await sdk.publishArtifact({
         schemaVersion: '1.0',
-        artifactId: `story:${id}:${Date.now()}`,
+        artifactId: `story-highlight:${id}`,
         type: 'story',
         title: savedTitle,
         summary: artifactSummary,
-        previewResourceId: snapshot.id,
+        ...(snapshot?.id ? { previewResourceId: snapshot.id } : {}),
         sourceResourceId: `story:${id}`,
         createdAt: new Date().toISOString(),
-      })
-      .catch(() => null);
+      });
+      highlightPublished = true;
+    } catch {
+      highlightPublished = false;
+    }
   }
 
   await sdk
@@ -255,27 +289,23 @@ try {
       storySynopsis: synopsis,
       childHighlight,
       childIdeas,
+      totalChildChars: highlightDecision.totalChildChars,
+      autoHighlight: highlightDecision.isHighlight,
+      autoHighlightReason: highlightDecision.reason,
     })
     .catch(() => null);
+  return highlightPublished;
 } catch {
   // 平台留痕失败时静默降级，不影响孩子完成故事。
+  return false;
 }
   }
 
   async function syncCompletedStory(completionMode: 'child' | 'director', ending = '') {
     setWorkSaveState('saving');
     setWorkSaveError('');
-    const [timelineResult, workResult] = await Promise.allSettled([
-      emitStoryCompleted(completionMode, ending),
-      addStoryToMyWorks(id),
-    ]);
-    if (workResult.status === 'fulfilled') {
-      setWorkSaveState('saved');
-    } else {
-      setWorkSaveState('idle');
-      setWorkSaveError(workResult.reason instanceof Error ? workResult.reason.message : '作品暂时没有自动加入，请点击按钮重试。');
-    }
-    if (timelineResult.status === 'rejected') throw timelineResult.reason;
+    const highlighted = await emitStoryCompleted(completionMode, ending);
+    setWorkSaveState(highlighted ? 'highlight' : 'idle');
   }
 
   async function handleAddToMyWorks() {
@@ -344,6 +374,7 @@ try {
   }
 
   const showStartHint = state.messages.length === 0 && !state.isStreaming && state.turnNumber === 0;
+  const showWritingToolbox = !state.isStreaming && state.messages.some((message) => message.role === 'ai');
 
   return (
     <>
@@ -419,15 +450,20 @@ try {
           <div className="story-ended-card">
             <span className="story-ended-emoji"><PngIcon name="celebration" size={96} /></span>
             <h3>故事创作完成！</h3>
-            <p>太棒了！你们一起创造了一个精彩的故事~</p>
+            <p>{workSaveState === 'highlight'
+              ? '这次创作达成了高光标准，已经自动收藏到“我的作品”。'
+              : workSaveState === 'saved'
+                ? '故事已经收藏好了，随时可以回到作品册阅读。'
+                : '这次故事由你决定是否收藏；创作回顾仍会正常保留。'}</p>
             <div className="story-ended-actions">
               <Button
                 variant="accent"
                 onClick={handleAddToMyWorks}
                 disabled={workSaveState !== 'idle'}
               >
-                {workSaveState === 'saving' ? '添加中...'
-                  : workSaveState === 'saved' ? '✓ 已添加到我的作品' : '+ 添加到我的作品'}
+                {workSaveState === 'saving' ? '正在判断与收藏...'
+                  : workSaveState === 'highlight' ? '✨ 高光已自动收藏'
+                    : workSaveState === 'saved' ? '✓ 已收藏到我的作品' : '+ 收藏完整故事'}
               </Button>
               <Button variant="primary" onClick={() => id && navigate(`/story-create/talent/${id}`)}>
                 <PngIcon name="celebration" size={28} /> 查看创作回顾
@@ -439,11 +475,23 @@ try {
             {workSaveError && <p className="story-work-save-error" role="alert">{workSaveError}</p>}
           </div>
         ) : (
-          <StoryInput
-            onSubmit={handleSend}
-            disabled={state.isStreaming}
-            placeholder="写下你的想法吧..."
-          />
+          <div className={`story-compose-row ${showWritingToolbox ? 'has-toolbox' : 'without-toolbox'}`}>
+            {showWritingToolbox && (
+              <WritingToolbox
+                storyId={id}
+                onUse={(suggestion) => setStoryDraft((current) => current.trim()
+                  ? `${current.trim()}\n${suggestion}`
+                  : suggestion)}
+              />
+            )}
+            <StoryInput
+              value={storyDraft}
+              onChange={setStoryDraft}
+              onSubmit={handleSend}
+              disabled={state.isStreaming}
+              placeholder="写下你的想法吧..."
+            />
+          </div>
         )}
 
         {/* End story button */}

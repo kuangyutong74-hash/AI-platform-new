@@ -5,26 +5,29 @@ import './StoryInput.css';
 
 interface StoryInputProps {
   onSubmit: (text: string) => void;
+  value: string;
+  onChange: (text: string) => void;
   disabled?: boolean;
   placeholder?: string;
 }
 
 export default function StoryInput({
   onSubmit,
+  value,
+  onChange,
   disabled = false,
   placeholder = '写下你的想法吧...',
 }: StoryInputProps) {
-  const [text, setText] = useState('');
   const [voiceError, setVoiceError] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { startListening, stopListening, listening, interim } = useSpeechInput();
 
   function handleSubmit(e?: FormEvent) {
     e?.preventDefault();
-    const trimmed = text.trim();
+    const trimmed = value.trim();
     if (!trimmed || disabled) return;
     onSubmit(trimmed);
-    setText('');
+    onChange('');
     setVoiceError('');
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
@@ -63,7 +66,7 @@ export default function StoryInput({
 
     try {
       const transcript = await startListening();
-      setText((prev) => `${prev}${prev && !prev.endsWith(' ') ? ' ' : ''}${transcript}`);
+      onChange(`${value}${value && !value.endsWith(' ') ? ' ' : ''}${transcript}`);
       requestAnimationFrame(handleInput);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '语音识别失败，请再试一次~';
@@ -92,8 +95,8 @@ export default function StoryInput({
         <textarea
           ref={inputRef}
           className="story-input-field"
-          value={text}
-          onChange={(e) => { setText(e.target.value); setVoiceError(''); }}
+          value={value}
+          onChange={(e) => { onChange(e.target.value); setVoiceError(''); }}
           onKeyDown={handleKeyDown}
           onInput={handleInput}
           placeholder={listening ? (interim || '正在聆听...请说话') : placeholder}
@@ -103,7 +106,7 @@ export default function StoryInput({
         <button
           type="submit"
           className="story-input-send"
-          disabled={disabled || !text.trim()}
+          disabled={disabled || !value.trim()}
           onClick={handleSubmit}
           title="发送"
         >

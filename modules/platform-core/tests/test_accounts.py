@@ -169,13 +169,14 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(forbidden.exception.status_code, 403)
 
     def test_password_reset_uses_username_and_invalidates_old_password(self):
+        student_response = Response()
         main.register_account(main.AccountRegistrationIn(
             username="reset_star", display_name="小重", age=7, password="before88",
             role="student",
-        ), Response())
+        ), student_response)
         main.reset_password(main.PasswordResetIn(
             username="reset_star", new_password="after888",
-        ))
+        ), session_cookie(student_response))
         with self.assertRaises(HTTPException):
             main.create_session(main.AccountCredentialsIn(username="reset_star", password="before88"), Response())
         logged_in = main.create_session(
@@ -185,10 +186,11 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(logged_in["account"]["display_name"], "小重")
 
     def test_generated_account_typo_is_corrected_for_login_reset_and_binding(self):
+        padded_response = Response()
         padded = main.register_account(main.AccountRegistrationIn(
             username="S2026007", display_name="小七", age=8, password="before77",
             role="student",
-        ), Response())["account"]
+        ), padded_response)["account"]
         self.assertEqual(padded["username"], "s20260007")
         logged_in = main.create_session(
             main.AccountCredentialsIn(username="S2026007", password="before77", expected_role="student"),
@@ -196,7 +198,10 @@ class AccountTests(unittest.TestCase):
         )
         self.assertEqual(logged_in["account"]["id"], padded["id"])
 
-        reset = main.reset_password(main.PasswordResetIn(username="S2026-007", new_password="after777"))
+        reset = main.reset_password(
+            main.PasswordResetIn(username="S2026-007", new_password="after777"),
+            session_cookie(padded_response),
+        )
         self.assertEqual(reset["username"], "s20260007")
         main.create_session(
             main.AccountCredentialsIn(username="s2026007", password="after777", expected_role="student"),
@@ -269,6 +274,49 @@ class AccountTests(unittest.TestCase):
         self.assertNotIn(created["id"], {
             work["id"] for work in main.list_artifacts_v1(student_cookie)["artifacts"]
         })
+
+    def test_manual_work_type_is_saved_and_highlight_wins_same_source(self):
+        student_response = Response()
+        main.register_account(main.AccountRegistrationIn(
+            username="typed_creator", display_name="小类型", age=9, password="create99",
+            role="student",
+        ), student_response)
+        cookie = session_cookie(student_response)
+        source_id = "story:typed-story"
+
+        main.create_manual_work(main.ManualWorkIn(
+            module="story", work_type="story_fragment", title="月光片段",
+            description="这是我决定收藏的一段故事。", source_id=source_id,
+        ), cookie)
+        manual = next(
+            item for item in main.list_artifacts_v1(cookie)["artifacts"]
+            if item["sourceResourceId"] == source_id
+        )
+        self.assertEqual(manual["workType"], "story_fragment")
+
+        context = main.create_assessment_session(main.AssessmentSessionIn(module_id="story"), cookie)
+        token = main.exchange_module_authorization(
+            main.LaunchCodeExchangeIn(launchCode=context["launchCode"])
+        )["token"]
+        main.create_artifact_v1(main.ArtifactIn(
+            schemaVersion="1.0", artifactId="story-highlight-typed", type="story",
+            title="月光故事高光", summary="孩子持续贡献情节并完成了故事。",
+            sourceResourceId=source_id, createdAt=main.now_iso(),
+        ), f"Bearer {token}")
+
+        same_source = [
+            item for item in main.list_artifacts_v1(cookie)["artifacts"]
+            if item["sourceResourceId"] == source_id
+        ]
+        self.assertEqual(len(same_source), 1)
+        self.assertEqual(same_source[0]["id"], "story-highlight-typed")
+        self.assertEqual(same_source[0]["kind"], "highlight")
+
+        with self.assertRaises(HTTPException) as invalid_type:
+            main.create_manual_work(main.ManualWorkIn(
+                module="story", work_type="base_design", title="不匹配类型",
+            ), cookie)
+        self.assertEqual(invalid_type.exception.status_code, 422)
 
     def test_adult_comment_is_visible_to_the_bound_student(self):
         child_response = Response()
@@ -384,7 +432,18 @@ class AccountTests(unittest.TestCase):
         self.assertIn("调整了 1 次", saved_artifact["highlightReason"])
         timeline = main.timeline_v1(cookie)
         self.assertEqual(timeline["sessions"][0]["evidenceCount"], 1)
+        self.assertIn("3/3 个阶段", timeline["sessions"][0]["caption"])
         self.assertEqual(timeline["moduleSummaries"][0]["completedCount"], 1)
+        self.assertEqual(timeline["moduleSummaries"][0]["recentSessions"][0]["id"], context["sessionId"])
+        self.assertTrue(timeline["moduleSummaries"][0]["observations"])
+        self.assertTrue(timeline["sessions"][0]["observations"])
+        planning_signal = next(
+            signal for signal in timeline["longTermSignals"]
+            if signal["key"] == "problem_solving.planning"
+        )
+        self.assertEqual(planning_signal["label"], "规划")
+        self.assertEqual(planning_signal["evidenceCount"], 1)
+        self.assertEqual(planning_signal["modules"], ["career"])
         self.assertTrue(timeline["moduleSummaries"][0]["firstUsedAt"])
         self.assertEqual(timeline["moduleSummaries"][0]["lastUsedAt"], main.read_assessment_session(context["sessionId"], cookie)["endedAt"])
         self.assertEqual(

@@ -36,6 +36,21 @@ const DATA_DIR = resolveDataDir({
 });
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
+// 账号身份解析：把统一账号会话映射成 userId，避免所有账号共用 guest 数据
+const {
+  createAccountResolver,
+  GUEST_USER_ID,
+  readBooleanEnv,
+} = require('./lib/infra/account-identity');
+
+const accountResolver = createAccountResolver({
+  cookieName: process.env.AI_BOLE_SESSION_COOKIE,
+  coreUrl: process.env.AI_BOLE_CORE_URL || process.env.CORE_API_URL,
+  ttlMs: Number.parseInt(process.env.AI_BOLE_IDENTITY_TTL_MS, 10),
+  timeoutMs: Number.parseInt(process.env.AI_BOLE_IDENTITY_TIMEOUT_MS, 10),
+  enabled: readBooleanEnv(process.env.AI_BOLE_CHAT_ACCOUNT_ISOLATION, true),
+});
+
 // trust proxy — 仅在显式配置时启用；禁止 true
 if (envConfig.TRUST_PROXY !== false) {
   app.set('trust proxy', envConfig.TRUST_PROXY);
@@ -135,7 +150,8 @@ app.use(function (err, req, res, next) {
 
 // 从平台登录 Cookie 获取当前学生身份。
 // - 没有 ai_bole_session Cookie → 访客（'guest'），允许未登录体验。
-// - 带 Cookie 但 Core 不可用 / 超时 / 身份解析失败 → 返回 null（让上层 503 拒绝写入），
+// - 保留可注入 fetch 的解析函数供回归测试使用；生产请求使用下方带缓存的解析器。
+// - 带 Cookie 但 Core 不可用 / 超时 / 身份解析失败 → 返回 null，
 //   避免已登录用户被静默归入 guest 桶与其他未登录用户共享数据。
 async function resolveRequestUserId(cookieHeader, fetchImpl) {
   const hasSessionCookie = typeof cookieHeader === 'string'
@@ -165,14 +181,6 @@ async function resolveRequestUserId(cookieHeader, fetchImpl) {
   }
 }
 
-async function guestIdentity(req, res, next) {
-  req.userId = await resolveRequestUserId(req.headers.cookie || '');
-  if (req.userId === null) {
-    return res.status(503).json({ error: 'PLATFORM_UNAVAILABLE', detail: '统一账号服务暂时不可用，已登录用户请稍后再试' });
-  }
-  next();
-}
-
 function userSessionKey(userId, sessionId) {
   const normalizedUserId = String(userId || 'guest');
   const normalizedSessionId = String(sessionId || '');
@@ -180,6 +188,22 @@ function userSessionKey(userId, sessionId) {
   return normalizedUserId === 'guest'
     ? normalizedSessionId
     : normalizedUserId + ':' + normalizedSessionId;
+}
+// 统一账号身份中间件：
+//   从 ai_bole_session Cookie 解析出 "acct:<账号id>" 作为 userId，
+//   没有会话（直接打开模块）时回退到 guest；有会话但账号服务不可用时拒绝写入。
+async function guestIdentity(req, res, next) {
+  try {
+    const identity = await accountResolver.resolve(req.headers && req.headers.cookie);
+    if (identity.source === 'unresolved') {
+      return res.status(503).json({ error: 'PLATFORM_UNAVAILABLE', detail: '统一账号服务暂时不可用，已登录用户请稍后再试' });
+    }
+    req.userId = identity.userId;
+    req.accountId = identity.accountId || null;
+  } catch (_) {
+    return res.status(503).json({ error: 'PLATFORM_UNAVAILABLE', detail: '统一账号服务暂时不可用，已登录用户请稍后再试' });
+  }
+  next();
 }
 // 基础安全响应头（HTML 和 API 统一设置）
 app.use(securityHeadersMiddleware);
@@ -768,6 +792,7 @@ app.post('/api/history', guestIdentity, (req, res) => {
     const history = readHistory();
 
     // Upsert: prefer convId match, then sessionId match
+    // 归属校验：只允许更新属于当前身份的记录，避免跨账号覆盖别人的对话
     let existingIdx = -1;
     if (convId) {
       existingIdx = history.findIndex(h => h.id === convId && h.userId === req.userId && !h.completed);
@@ -784,7 +809,7 @@ app.post('/api/history', guestIdentity, (req, res) => {
 
     const entry = {
       id: isNew ? ('conv-' + Date.now()) : history[existingIdx].id,
-      userId: existingIdx >= 0 ? history[existingIdx].userId : req.userId,
+      userId: isNew ? req.userId : history[existingIdx].userId,
       sessionId: sessionId || null,
       startTime: isNew ? new Date().toISOString() : history[existingIdx].startTime,
       turnCount: turnCount || messages.filter(m => m.role === 'user').length,
@@ -892,6 +917,7 @@ app.put('/api/history/auto-save', guestIdentity, (req, res) => {
     }
     const history = readHistory();
     // 如果有 convId（续接旧对话），优先用 convId 查找原记录
+    // 归属校验：只允许续写属于当前身份的记录（避免跨账号串写）
     let existingIdx = -1;
     if (convId) {
       existingIdx = history.findIndex(h => h.id === convId && h.userId === req.userId && !h.completed);

@@ -129,6 +129,21 @@ export function getStoryMessages(id: number) {
   return apiFetch<StoryMessage[]>(`/stories/${id}/messages`);
 }
 
+export type WritingTool = 'next' | 'detail' | 'twist' | 'question' | 'custom';
+export interface WritingAssistResult {
+  tool: WritingTool;
+  title: string;
+  instruction: string;
+  suggestions: string[];
+}
+
+export function getWritingCards(id: number, tool: WritingTool, customRequest = '') {
+  return apiFetch<WritingAssistResult>(`/stories/${id}/assist`, {
+    method: 'POST',
+    body: JSON.stringify({ tool, custom_request: customRequest }),
+  });
+}
+
 // ── Story Turn (SSE) ──
 
 export function sendStoryTurn(

@@ -451,3 +451,4 @@ a{color:inherit;text-decoration:none}button{font-family:inherit;cursor:pointer;b
 .page-careers .back-link:hover:after,.page-careers .back-link:focus-visible:after{transform:scaleX(1)}
 .page-careers .back-link:focus-visible{outline:3px solid #ffe28e;outline-offset:3px}
 @media(max-width:720px){.page-careers .back-link{top:70px;left:12px;min-height:40px;padding:7px 12px;font-size:.76rem}}
+.exploration-relay{width:min(720px,calc(100% - 32px));margin:0 auto 22px;padding:13px 17px;border:1px solid rgba(255,190,73,.55);border-radius:16px;background:rgba(255,249,225,.94);color:#533d67;box-shadow:0 12px 30px rgba(58,38,72,.14)}.exploration-relay b,.exploration-relay span{display:block}.exploration-relay span{margin-top:4px;color:#76647d;font-size:14px}.exploration-relay[hidden]{display:none}

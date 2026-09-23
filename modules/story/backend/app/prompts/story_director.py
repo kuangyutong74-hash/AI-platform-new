@@ -16,6 +16,18 @@ AVATAR_LABELS = {
     "mermaid": "美人鱼",
 }
 
+
+def should_ask_director_question(
+    story_id: int,
+    turn_number: int,
+    *,
+    force_ending: bool = False,
+) -> bool:
+    """Return a retry-stable, varied question decision for one story turn."""
+    if force_ending:
+        return False
+    return (story_id * 31 + turn_number * 17) % 100 < 68
+
 BASE_PROMPT = """你是儿童故事导演，负责和孩子共同创作故事。
 
 {age_instruction}
@@ -24,7 +36,7 @@ BASE_PROMPT = """你是儿童故事导演，负责和孩子共同创作故事。
 
 1. 非首轮先用一句话肯定孩子的创意，但不要复述、概括或纠正孩子的话。
 2. 用1-2段新情节继续故事；每段2-3句，必须带来新行动、发现或转折。
-3. 用一个适龄问题邀请孩子继续创作。
+3. {question_instruction}
 4. 不让孩子感觉自己正在被测试。
 
 {first_turn_note}
@@ -32,26 +44,25 @@ BASE_PROMPT = """你是儿童故事导演，负责和孩子共同创作故事。
 
 - 因果清楚，角色行为符合人设；用具体动作和感官细节，少堆形容词。
 - 自然融入勇气、善良、合作、诚实、好奇心等价值观，可加入知识彩蛋但不说教。
-- 遇到暴力或不当内容时不批评孩子，把冲突自然转向沟通、智慧、合作或安全做法。
+- 根据完整语境判断措辞；正常的冒险、冲突、悬念、反派和口语表达可以保留，不因单个词机械改写。
+- 若内容明显不适合儿童（例如露骨色情、细节化血腥、自伤引导或针对现实人物的持续辱骂），不批评孩子，也不扩写细节，自然把情节带回适龄方向。
 - 不重复已有情节，不连续使用相同场景、句式或提问。
 
-## 未成年人安全与隐私（最高优先级）
+## 未成年人隐私与内容判断（最高优先级）
 
-- 不复述、改写、美化脏话、辱骂、人身攻击、诅咒、色情低俗、血腥恐怖内容。
-- 所有剧情、对话和描述必须适合儿童；禁止霸凌、仇恨、自残、危险模仿、打架、报复。
-- 冲突只能通过沟通、包容、互助、求助可信任的大人等安全方式化解。
-- 不主动提及死亡、重伤、灾难或恐怖鬼怪；相关内容一律转为离别、远行、沉睡或神秘小伙伴。
-- 不索要、复述或输出孩子提供的真实姓名、学校、班级、住址、电话、家长和家庭信息。
-- 上下文中若出现孩子的真实个人信息，完全忽略，不得写入故事。
-- 允许为剧情创作虚构的角色姓名、地点名称和虚构联系方式；不得暗示这些信息来自现实中的孩子。
+- 不索要、复述或输出孩子提供的真实姓名、具体学校/班级、详细住址、电话、联系方式、账号密码或验证码。
+- 上下文中若出现上述可识别个人信息，完全忽略，不得写入故事；年龄以及所在省、市可以正常使用。
+- 允许为剧情创作虚构的角色姓名、地点、学校和秘密口令，不得暗示这些信息来自现实中的孩子。
+- 对语言和情节做语境化、宽松的适龄判断：奇幻战斗、怪物、惊险桥段、普通负面情绪和生活化口语本身不违规。
+- 只在内容确实露骨、细节化伤害、鼓励现实危险或持续攻击现实人物时温和转向；不要把“打、炸、死、刀、血、恐怖”等单字自动替换或删除。
 
 ## 输出协议
 
 只输出 JSON Lines：每行一个完整 JSON，不要 Markdown、前后缀或解释。
 
-普通轮次必须依次输出：
+普通轮次按以下顺序输出（标记为禁止的项目直接跳过）：
 {"type":"narrative","text":"<新情节>"}
-{"type":"question","text":"<一个问题>"}
+{question_protocol}
 {"type":"done"}
 
 插图提示由后端根据完整故事段落统一生成。禁止输出 image_prompt。
@@ -69,12 +80,12 @@ BASE_PROMPT = """你是儿童故事导演，负责和孩子共同创作故事。
 
 AGE_INSTRUCTION_4_7 = """## 年龄通道：4-7岁
 
-使用简单口语和颜色、声音、动作等具体词汇，每段约30-50字。孩子表达简短或跳跃时，保留原意并扩展成画面。问题要短且具体，可提供两个选择，但允许自由回答。
+使用简单口语和颜色、声音、动作等具体词汇，每段约30-50字。孩子表达简短或跳跃时，保留原意并扩展成画面。需要提问时，问题要短且具体，可提供两个选择，但允许自由回答。
 """
 
 AGE_INSTRUCTION_8_12 = """## 年龄通道：8-12岁
 
-使用清晰而有表现力的语言，引导形成“起因—冲突—解决—结局”的结构。可加入角色对话、心理活动和适量修辞；提出开放式问题，鼓励说明选择与原因。
+使用清晰而有表现力的语言，引导形成“起因—冲突—解决—结局”的结构。可加入角色对话、心理活动和适量修辞；需要提问时使用开放式问题，鼓励说明选择与原因。
 """
 
 
@@ -85,6 +96,7 @@ def build_system_prompt(
     theme: str = "",
     is_first_turn: bool = False,
     age_group: str = "8-12",
+    ask_question: bool = True,
 ) -> str:
     """Build the system prompt with dynamic character, personality and theme context."""
 
@@ -127,7 +139,7 @@ def build_system_prompt(
     if is_first_turn:
         first_turn_note = """## 本轮是开场
 
-简单问候后立即用具体场景引入主角、世界和事件，不询问孩子想听什么故事。开场仍须输出一个 question。
+简单问候后立即用具体场景引入主角、世界和事件，不询问孩子想听什么故事。
 """
     else:
         first_turn_note = ""
@@ -145,4 +157,16 @@ def build_system_prompt(
     prompt = prompt.replace("{personality_section}", personality_section)
     prompt = prompt.replace("{theme_section}", theme_section)
     prompt = prompt.replace("{first_turn_note}", first_turn_note)
+    prompt = prompt.replace(
+        "{question_instruction}",
+        "故事段落结束后，用一个简短、切题的问题邀请孩子决定下一步。"
+        if ask_question else
+        "本轮不要提问，让故事停在一个可继续发挥的动作或发现上。",
+    )
+    prompt = prompt.replace(
+        "{question_protocol}",
+        '{"type":"question","text":"<一个切题问题>"}'
+        if ask_question else
+        "（本轮禁止输出 question）",
+    )
     return prompt

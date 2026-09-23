@@ -923,6 +923,16 @@ describe('V2 集成', function () {
     var csStore = v2Module._v2ConversationStateStore;
     var sid = 'v2-paa-false';
 
+    // 第一轮先提问，使下一轮 question_budget=0；此时无问题回复才是合法输出。
+    v2Captured = mockFetchQueue([
+      { reply: analyzeJSON() },
+      { reply: '你今天过得怎么样？' },
+    ]);
+    await httpRequest('/chat/session', {
+      method: 'POST', port: v2Port,
+      data: { sessionId: sid, message: '你好' },
+    });
+
     v2Captured = mockFetchQueue([
       { reply: analyzeJSON() },
       { reply: '今天天气很不错。' }, // 无问题
@@ -930,7 +940,7 @@ describe('V2 集成', function () {
 
     await httpRequest('/chat/session', {
       method: 'POST', port: v2Port,
-      data: { sessionId: sid, message: '你好' },
+      data: { sessionId: sid, message: '今天是晴天' },
     });
 
     var st = csStore.get(sid);

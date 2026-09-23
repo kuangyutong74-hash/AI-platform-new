@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ExplorerIcon from "./ExplorerIcon";
 import useExplorerCollection from "../hooks/useExplorerCollection";
-import type { ExplorerItem } from "../lib/explorer-types";
+import type { ExplorerGrowthOverview, ExplorerItem, ExplorerModule } from "../lib/explorer-types";
 
 type Account = { display_name: string; age: number; created_at?: string; avatar_id?: string };
 type NavigationView = "planet" | "works" | "timeline" | "report";
@@ -18,6 +18,43 @@ function formatDate(value: string, withYear = true) {
     day: "numeric",
   }).format(date);
 }
+
+function formatDuration(seconds: number) {
+  if (!seconds) return "尚未记录时长";
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  if (minutes < 60) return `${minutes} 分钟`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours} 小时 ${rest} 分钟` : `${hours} 小时`;
+}
+
+const reviewCopy = {
+  registration: {
+    observations: ["从这一天开始，之后每一次完整探索都会成为一枚可回看的脚印。"],
+    question: "还记得第一次来到探索星球时，最想去哪里看看吗？",
+    next: "选一座还没点亮的大陆，完成第一次探索。",
+  },
+  story: {
+    observations: ["愿意沿着一个想法继续补充，让故事慢慢完整起来。", "在创作中会作出自己的选择，而不只是接受现成答案。"],
+    question: "哪一个情节最像你的想法？如果再写一次，你最想改哪里？",
+    next: "下次换一个角色或结局，留意自己会不会用新的讲法。",
+  },
+  deep_sea: {
+    observations: ["会把大任务拆成配对、布局和协商等不同问题。", "看到结果不理想时，愿意回头检查并调整方案。"],
+    question: "哪一次调整最有用？你是怎么发现原来的办法需要改变的？",
+    next: "下次先说出计划再动手，完成后对照计划看看哪里发生了变化。",
+  },
+  career: {
+    observations: ["能够跟随职业情境完成连续任务，并在关键节点作出选择。", "体验不同角色时，开始留意自己更投入的任务类型。"],
+    question: "哪个任务让你最投入？是因为它有挑战，还是因为能帮助别人？",
+    next: "换一种职业再体验一次，比较自己在哪类任务里更愿意坚持。",
+  },
+  chat: {
+    observations: ["愿意从生活里的小事出发，把感受和原因慢慢说清楚。", "在被追问时能够继续补充，让表达变得更具体。"],
+    question: "那次对话里，你最希望别人听懂的是哪一句？现在有没有新的想法？",
+    next: "下次试着多说一个‘因为’，看看能不能把想法讲得更完整。",
+  },
+} as const;
 
 function speak(text: string) {
   if (!("speechSynthesis" in window)) return;
@@ -148,14 +185,116 @@ function TrailLine({ avatarUrl }: { avatarUrl: string }) {
   );
 }
 
+const growthModuleNames: Record<Exclude<ExplorerModule, "registration">, string> = {
+  story: "想象之洲",
+  deep_sea: "创造之洲",
+  career: "未来之洲",
+  chat: "倾听之洲",
+};
+
+function GrowthOverviewPanel({
+  overview,
+  adult,
+  isDemo,
+}: {
+  overview: ExplorerGrowthOverview;
+  adult: boolean;
+  isDemo: boolean;
+}) {
+  const todayLabel = new Intl.DateTimeFormat("zh-CN", {
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  }).format(new Date());
+  const person = adult ? "孩子" : "你";
+  return (
+    <section className="growth-overview" aria-labelledby="growth-overview-title">
+      <header>
+        <div>
+          <p>{isDemo ? "示例观察面板" : "真实探索证据"}</p>
+          <h2 id="growth-overview-title">今天与长期以来</h2>
+        </div>
+        <span>把一次表现和反复出现的线索分开看</span>
+      </header>
+      <div className="growth-overview-grid">
+        <article className="growth-today-card">
+          <div className="growth-card-heading">
+            <span className="growth-card-icon"><ExplorerIcon name="spark" /></span>
+            <div><small>{todayLabel}</small><h3>今天的足迹</h3></div>
+          </div>
+          {overview.todayCompletedCount > 0 ? (
+            <>
+              <div className="growth-stat-row">
+                <span><b>{overview.todayCompletedCount}</b><small>次完成</small></span>
+                <span><b>{overview.todayModules.length}</b><small>座大陆</small></span>
+                <span><b>{formatDuration(overview.todayDurationSeconds)}</b><small>今日投入</small></span>
+              </div>
+              <ol className="growth-today-list">
+                {overview.todaySessions.slice(0, 3).map((session) => (
+                  <li key={session.id}>
+                    <i />
+                    <span><b>{growthModuleNames[session.module!]}</b>{session.caption}</span>
+                    {session.evidenceCount ? <small>{session.evidenceCount} 条过程记录</small> : null}
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : (
+            <div className="growth-overview-empty">
+              <ExplorerIcon name="compass" />
+              <p>今天还没有新的完成记录。下一次认真尝试，也会成为一枚新的脚印。</p>
+            </div>
+          )}
+        </article>
+
+        <article className="growth-long-card">
+          <div className="growth-card-heading">
+            <span className="growth-card-icon"><ExplorerIcon name="compass" /></span>
+            <div><small>{overview.firstCompletedAt ? `从 ${formatDate(overview.firstCompletedAt)} 开始` : "从第一次探索开始"}</small><h3>长期以来的线索</h3></div>
+          </div>
+          <div className="growth-stat-row">
+            <span><b>{overview.totalCompletedCount}</b><small>次完整探索</small></span>
+            <span><b>{overview.activeDays}</b><small>个探索日</small></span>
+            <span><b>{overview.exploredModuleCount}</b><small>类不同情境</small></span>
+          </div>
+          {overview.longTermSignals.length ? (
+            <div className="growth-signal-list">
+              {overview.longTermSignals.slice(0, 4).map((signal) => (
+                <div key={signal.key} className="growth-signal">
+                  <span><b>{signal.label}</b><em>{signal.status}</em></span>
+                  <p>{signal.observation}</p>
+                  <small>
+                    来自 {signal.evidenceCount} 条证据
+                    {signal.modules.length ? ` · ${signal.modules.map(module => growthModuleNames[module]).join("、")}` : ""}
+                  </small>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="growth-overview-empty compact">
+              <p>再完成几次不同情境的探索，反复出现的做法会在这里慢慢连成线。</p>
+            </div>
+          )}
+        </article>
+      </div>
+      <p className="growth-evidence-note">
+        <ExplorerIcon name="spark" size={15} />
+        这里呈现的是{person}在不同任务里的过程证据和变化，不是一次测验，也不是固定标签。
+      </p>
+    </section>
+  );
+}
+
 function TrailDialog({
   item,
   isDemo,
+  adult,
   onClose,
   onNavigate,
 }: {
   item: ExplorerItem;
   isDemo: boolean;
+  adult: boolean;
   onClose: () => void;
   onNavigate: (view: NavigationView) => void;
 }) {
@@ -192,6 +331,14 @@ function TrailDialog({
       document.body.classList.remove("dialog-open");
     };
   }, [onClose]);
+  const copy = reviewCopy[item.module];
+  const observations = item.observations.length ? item.observations : [...copy.observations];
+  const spokenReview = [
+    item.title,
+    ...observations,
+    `可以一起聊聊：${copy.question}`,
+    `下一站建议：${copy.next}`,
+  ].join("。");
   return (
     <div
       className="trail-dialog-backdrop"
@@ -214,12 +361,20 @@ function TrailDialog({
           <ExplorerIcon name="close" />
         </button>
         <div className="memory-picture">
-          <p>{item.island}</p>
+          <p>{item.island} · 成长回顾</p>
           <img src={item.milestoneImage} alt="" />
-          <span>{item.status}</span>
-          {item.quote && (
-            <blockquote>“{item.quote.replace(/[“”]/g, "")}”</blockquote>
+          {item.kind === "registration" ? (
+            <span>{item.status}</span>
+          ) : (
+            <div className="memory-snapshot-stats" aria-label="这一站的探索概况">
+              <span><b>{item.usageCount}</b>次完成</span>
+              <span><b>{formatDuration(item.durationSeconds)}</b>累计投入</span>
+              <span><b>{item.evidenceCount}</b>条过程记录</span>
+            </div>
           )}
+          <p className="memory-boundary">
+            这里回顾的是探索过程与变化；作品内容会在作品展柜里单独收藏。
+          </p>
         </div>
         <div className="memory-seam" aria-hidden="true" />
         <article>
@@ -236,19 +391,53 @@ function TrailDialog({
           )}
           <p className="memory-heading">这次看见的具体过程</p>
           <p className="memory-note">{item.detail}</p>
+          <section className="memory-section memory-observations">
+            <p className="memory-heading">从过程中看见</p>
+            <ul>
+              {observations.map((observation) => <li key={observation}>{observation}</li>)}
+            </ul>
+          </section>
+          {item.recentSessions.length > 0 && (
+            <section className="memory-section memory-footprints">
+              <p className="memory-heading">最近的探索脚印</p>
+              <ol>
+                {item.recentSessions.map((session) => (
+                  <li key={session.id}>
+                    <time>{formatDate(session.occurredAt)}</time>
+                    <span>{session.caption}</span>
+                    {session.durationSeconds > 0 && <small>{formatDuration(session.durationSeconds)}</small>}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+          <div className="memory-family-card">
+            <span>{adult ? "今晚可以这样聊" : "可以和家人聊聊"}</span>
+            <p>{copy.question}</p>
+          </div>
+          <div className="memory-next-step">
+            <ExplorerIcon name="spark" size={16} />
+            <p><b>下一站建议</b>{copy.next}</p>
+          </div>
           <p className="evidence-caution">这里只记录发生过的过程，不根据点击、拖动或操作次数判断能力高低。</p>
           <button
             className="memory-listen"
-            onClick={() => speak(`${item.title}。${item.detail}`)}
+            onClick={() => speak(spokenReview)}
           >
             <ExplorerIcon name="headphones" />
-            听小纸条
+            听完整回顾
           </button>
           <div className="memory-actions">
-            <button className="gold-button" onClick={() => onNavigate("works")}>
-              <ExplorerIcon name="book" />
-              查看关联作品
+            <button className="gold-button" onClick={onClose}>
+              <ExplorerIcon name="spark" />
+              收好这页回顾
             </button>
+            {item.artifactCount > 0 && (
+              <button className="memory-work-link" onClick={() => onNavigate("works")}>
+                <ExplorerIcon name="book" />
+                查看关联作品（{item.artifactCount}）
+              </button>
+            )}
           </div>
         </article>
       </section>
@@ -339,6 +528,11 @@ export default function GrowthTrailPage({
         <span>{data.timelineNotice}</span>
         {error && <button onClick={retry}>再试一次</button>}
       </div>
+      <GrowthOverviewPanel
+        overview={data.growthOverview}
+        adult={adult}
+        isDemo={data.timelineIsDemo}
+      />
       <nav className="growth-filters" aria-label="筛选成长记录">
         <div>
           <button className={timeFilter === "all" ? "is-active" : ""} onClick={() => setTimeFilter("all")}>全部时间</button>
@@ -358,7 +552,7 @@ export default function GrowthTrailPage({
         <div className="growth-intro">
           <ExplorerIcon name="spark" />
           <p>
-            沿着时间往下看：每一站只记录发生过的行为，作品作为证据单独查看。
+            第一站，是{adult ? "孩子" : "你"}来到探索星球的那一天。往后每一站，都整理完成节奏、过程变化和下一次可以尝试的方向。
           </p>
         </div>
         <TrailLine avatarUrl={avatarUrl} />
@@ -416,7 +610,8 @@ export default function GrowthTrailPage({
           <p className="growth-eyebrow">TO BE CONTINUED</p>
           <h2>记录仍在继续</h2>
           <p>
-            新的真实活动会继续沿着星路出现。家长可以回看阶段结论，也可以筛选和保存这段成长记录。
+            这里从注册日开始，整理了 {usedModuleCount} 座已点亮大陆的完成节奏和过程变化。
+            新的探索会继续补进这本成长手账。
           </p>
           <div>
             <button className="gold-button" onClick={() => onNavigate("report")}>
@@ -438,6 +633,7 @@ export default function GrowthTrailPage({
         <TrailDialog
           item={selected}
           isDemo={data.timelineIsDemo}
+          adult={adult}
           onClose={closeDialog}
           onNavigate={onNavigate}
         />

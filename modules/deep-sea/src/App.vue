@@ -8,6 +8,10 @@
       <span>{{ syncMessage }}</span>
       <button v-if="syncStatus === 'error'" @click="retryCompletionSync">重新保存</button>
     </div>
+    <div v-if="relayTask && currentState === 'START'" class="exploration-relay-toast" role="status">
+      <b>✨ 探索接力 · 来自《{{ relayTask.sourceTitle }}》</b>
+      <span>{{ relayTask.prompt }}</span>
+    </div>
 
     <!-- 主游戏面板：全透明玻璃容器，让海底 Canvas 完全透出 -->
     <div class="game-shell relative z-10 w-full min-w-0 max-w-[1600px] h-full mx-auto
@@ -127,6 +131,18 @@ const showDebug = ref(false)
 const currentState = ref('START')
 const showPinyin = usePinyinState()
 const studentIdentity = ref(readStudentIdentity())
+const relayTask = ref(readRelayTask())
+
+function readRelayTask() {
+  try {
+    const launch = JSON.parse(window.name || '')
+    const relay = launch?.namespace === 'ai-bole.launch-context.v1' ? launch.context?.relay : null
+    if (relay?.prompt) return relay
+  } catch (_) { /* query string fallback below */ }
+  const params = new URLSearchParams(window.location.search)
+  const prompt = params.get('relayPrompt')
+  return prompt ? { sourceTitle: params.get('relayTitle') || '上一件作品', prompt } : null
+}
 
 function readStudentIdentity() {
   try {
@@ -461,6 +477,7 @@ function handleBackStart() {
 .evidence-sync-toast.is-saved { border-color: rgba(20, 184, 166, .62); }
 .evidence-sync-toast.is-queued { background: rgba(255, 251, 235, .97); border-color: rgba(245, 158, 11, .5); }
 .evidence-sync-toast.is-error { background: rgba(255, 241, 242, .97); border-color: rgba(244, 63, 94, .42); }
+.exploration-relay-toast{position:fixed;z-index:60;top:82px;left:50%;width:min(620px,calc(100% - 32px));transform:translateX(-50%);display:flex;flex-direction:column;gap:3px;padding:10px 16px;border:1px solid rgba(251,191,36,.65);border-radius:14px;background:rgba(255,251,235,.96);color:#51406a;box-shadow:0 12px 30px rgba(3,19,42,.3)}.exploration-relay-toast b{font-size:.86rem}.exploration-relay-toast span{font-size:.78rem;color:#6d607b}
 .evidence-sync-toast button {
   flex: none;
   border: 0;

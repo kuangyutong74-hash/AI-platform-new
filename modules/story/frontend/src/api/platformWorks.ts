@@ -7,6 +7,7 @@ const SOURCE_PREFIX = 'story:';
 type ArtifactCollection = {
   artifacts?: Array<{ moduleId?: string; kind?: string; sourceResourceId?: string | null }>;
 };
+export type CollectedStoryKind = 'highlight' | 'manual_work';
 
 async function responseError(response: Response): Promise<string> {
   try {
@@ -30,6 +31,7 @@ export async function addStoryToMyWorks(storyId: number): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       module: 'story',
+      work_type: 'full_story',
       title: (story.title || story.theme || '故事共创').trim().slice(0, 60),
       description: content.slice(0, 20000),
       source_id: `${SOURCE_PREFIX}${storyId}`,
@@ -38,17 +40,22 @@ export async function addStoryToMyWorks(storyId: number): Promise<void> {
   if (!response.ok) throw new Error(await responseError(response));
 }
 
-export async function listCollectedStoryIds(): Promise<Set<number>> {
+export async function listCollectedStoryKinds(): Promise<Map<number, CollectedStoryKind>> {
   const response = await fetch(`${PLATFORM_CORE_URL}/api/v1/artifacts`, {
     credentials: 'include',
   });
   if (!response.ok) throw new Error(await responseError(response));
   const data = await response.json() as ArtifactCollection;
-  const ids = (data.artifacts || []).flatMap((artifact) => {
-    if (artifact.moduleId !== 'story' || artifact.kind !== 'manual_work'
+  const entries = (data.artifacts || []).flatMap((artifact) => {
+    if (artifact.moduleId !== 'story'
       || !artifact.sourceResourceId?.startsWith(SOURCE_PREFIX)) return [];
     const id = Number(artifact.sourceResourceId.slice(SOURCE_PREFIX.length));
-    return Number.isFinite(id) ? [id] : [];
+    const kind: CollectedStoryKind = artifact.kind === 'highlight' ? 'highlight' : 'manual_work';
+    return Number.isFinite(id) ? [[id, kind] as const] : [];
   });
-  return new Set(ids);
+  return new Map(entries);
+}
+
+export async function listCollectedStoryIds(): Promise<Set<number>> {
+  return new Set((await listCollectedStoryKinds()).keys());
 }
