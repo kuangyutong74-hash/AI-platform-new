@@ -1,0 +1,1046 @@
+               Agency in Child–AI Interaction: A Review of How It Is
+                  Conceptualised, Studied, and Supported in HCI
+                   Isobel Voysey∗                                       Vidminas Vizgirda∗                                    Sarah Turner
+            isobel.voysey@cs.ox.ac.uk                              vidminas.vizgirda@cs.ox.ac.uk                         s.turner@ucl.ac.uk
+               University of Oxford                                    University of Oxford                           University College London
+                    Oxford, UK                                              Oxford, UK                                       London, UK
+                                                                     University College London
+                                                                            London, UK
+
+        Leslye Denisse Dias Duran                                              Zaki Pauzi                                 Manolis Mavrikis
+    leslye.diasduran@philosophy.ox.ac.uk                                 z.pauzi@ucl.ac.uk                              m.mavrikis@ucl.ac.uk
+             University of Oxford                                    University College London                        University College London
+                  Oxford, UK                                                London, UK                                       London, UK
+
+                                                 Carina Prunkl                                         Jun Zhao
+                                   carina.prunkl@philosophy.ox.ac.uk                            jun.zhao@cs.ox.ac.uk
+                                          University of Oxford                                   University of Oxford
+                                              Oxford, UK                                             Oxford, UK
+Abstract                                                                                Keywords
+Children’s lives are increasingly intertwined with AI systems, from                     children, agency, AI, data-driven systems, autonomy, empower-
+recommender algorithms to generative models, raising concerns                           ment, datafication
+about potential impacts on children’s agency. Although supporting                       ACM Reference Format:
+human agency, autonomy, and empowerment is a widely shared                              Isobel Voysey, Vidminas Vizgirda, Sarah Turner, Leslye Denisse Dias Duran,
+HCI goal, we lack clear definitions of these concepts in designing                      Zaki Pauzi, Manolis Mavrikis, Carina Prunkl, and Jun Zhao. 2026. Agency
+child-AI interaction. Through a review of 25 recent HCI studies, we                     in Child–AI Interaction: A Review of How It Is Conceptualised, Studied, and
+find agency is rarely explicitly defined and its conceptualisation                      Supported in HCI. In Proceedings of the 25th Interaction Design and Children
+varies across something children innately possess and something                         Conference (IDC ’26), June 22–25, 2026, Brighton, United Kingdom. ACM, New
+to be developed. Our literature mapping shows that researchers                          York, NY, USA, 15 pages. https://doi.org/10.1145/3773077.3806105
+observed agency through children’s planning and self-regulation,
+asserting control over AI systems, and critique and re-design of                        1    INTRODUCTION
+the status quo. Conditions reported by researchers that enable or                       Children are increasingly interacting with artificial intelligence (AI)
+constrain agency span epistemic conditions, interactional design,                       systems, both knowingly and unknowingly. Recent surveys have
+social context, and motivational orientation. Our review highlights                     found that between half and three-quarters of 9- to 17-year-olds
+gaps in research on designing for children’s agency. We advocate                        use AI technologies, such as ChatGPT, with a large proportion of
+for conceptual clarity by drawing upon existing frameworks and                          them doing so at least weekly [45, 60, 75, 79]. Behind the scenes,
+highlight the importance of considering children’s agency through                       algorithmic decision-making systems now recommend content, fil-
+a relational lens.                                                                      ter information, and influence everyday choices made by children
+                                                                                        online [63, 65, 98, 106]. While these technologies offer new opportu-
+CCS Concepts                                                                            nities for learning, creativity, and social connection, they also raise
+                                                                                        concerns among parents, educators, and children themselves. Their
+• Human-centered computing → HCI theory, concepts and
+                                                                                        concerns range from content safety and data privacy to deeper ques-
+models; • Computing methodologies → Artificial intelligence; •
+                                                                                        tions about how such systems may influence children’s cognitive
+Applied computing; • Social and professional topics → Chil-
+                                                                                        and emotional development [22, 52].
+dren; Adolescents;
+                                                                                           A key area of concern is the potential impact of AI systems on
+                                                                                        children’s agency. Agency can be defined as the ability to act inten-
+∗ Both authors contributed equally to this research.
+                                                                                        tionally, making informed decisions and enacting them, to achieve
+                                                                                        desired outcomes. It is a concept that has been considered in depth
+                                                                                        in psychology, sociology, educational science, and philosophy, with
+                                                                                        seminal definitions from Bandura [11], Emirbayer and Mische [27],
+This work is licensed under a Creative Commons Attribution 4.0 International License.   and Sen [88], among others. Different accounts of agency oper-
+IDC ’26, Brighton, United Kingdom                                                       ate at different levels of analysis [92]: some focus on biophysical
+© 2026 Copyright held by the owner/author(s).
+ACM ISBN 979-8-4007-2283-7/2026/06                                                      processes [12, 35], others on psychosocial capacities [11, 93] or so-
+https://doi.org/10.1145/3773077.3806105                                                 ciocultural contexts [6, 81]. Historically, children have been viewed
+IDC ’26, June 22–25, 2026, Brighton, United Kingdom                                                                                 Voysey et al.
+
+
+as lacking meaningful agency, but this assumption is being chal-          and its conceptualisation varies across something children innately
+lenged as children’s developing capacity to make informed choices         possess and something to be developed. Our literature mapping
+gains greater recognition [40, 76].                                       shows that HCI researchers have often observed agency through
+   The notion of agency is closely linked to autonomy and empower-        children’s reported planning and self-regulation, asserting control
+ment. They are often used interchangeably to mean some aspect(s)          over AI systems, and critique and re-design of the status quo. Condi-
+of action or interaction, though each term carries different connota-     tions reported by researchers that enable or constrain agency span
+tions. In fields like philosophy, developmental psychology, learning      epistemic conditions, interactional design, social context, and moti-
+sciences, and sociology, authors variously disambiguate these terms       vational orientation. Our review highlights gaps in HCI research
+without consensus [4, 49, 80, 91, 109]. This suggests the need for        on designing for children’s agency. We conclude by highlighting
+domain- or context-specific definitions. In human-computer inter-         the need for conceptual clarity while recognising the plurality of
+action (HCI) and child-computer interaction (CCI) research, agency        agency and the importance of looking beyond individual agency
+is sometimes linked to initiating action [34], autonomy to inde-          by drawing on literature from other related disciplines.
+pendence and self-endorsed volition [82], and empowerment to
+achievement of personally meaningful outcomes [85], but there is
+no universally agreed-upon distinction. This was conveyed in a re-        2   BACKGROUND
+cent review of 30 years’ of HCI research by Bennett et al. [13], where    Current AI systems often operate with partial autonomy and lim-
+they showed that the field lacks clear definitions of agency and          ited transparency, leaving the users as passive collaborators or
+autonomy. Instead, these concepts are often used as umbrella terms        recipients of technologies [80, 110]. Human agency can be eroded
+to indicate broad and diverse design goals, like user enablement          by systems that provide anthropomorphic answers, believable con-
+(e.g., [24]) and positive user experience (e.g., [71]).                   tent, recommendations, or automated choices on the user’s behalf
+   Regardless of the term used, these concepts remain important           [8, 64, 69]. Furthermore, AI systems may be designed, even with-
+in HCI; respecting autonomy is a key ethical principle in value           out explicit intent, in ways that produce manipulative effects (e.g.,
+sensitive design [32] and empowering people through technology            sycophancy, persuasion, or blackmail), as a result of training on
+has been the focus of HCI [87] and CCI research [85]. However, the        datasets with manipulative human behaviours or in the process of
+lack of clarity on the conceptualisation of agency, autonomy, and         optimising for narrow objectives [19, 23, 62]. This dynamic raises
+empowerment hampers efforts towards replicability and cumula-             attention to designing for users’ agency [54, 80], which is increas-
+tive knowledge building, and risks creating knowledge siloes due to       ingly recognised as a neglected aspect in the age of automation and
+use of different terminology for similar concepts. This lack of clarity   agentic digital future.
+also complicates the application of agency-supporting design for             The challenge of enabling users to form intentions, make choices,
+children. Children’s developmental needs vary across age groups           and enact them in this context is especially pronounced for chil-
+and require explicit and systematic consideration of their cognitive      dren, who are still developing their cognitive and metacognitive
+abilities and self-regulation capacities [55, 97]. Without a shared       capacities that are foundational to decision-making [9, 108]. While
+understanding of what it means to design for agency, research may         the HCI community has a long history of taking a child-centred
+result in misplaced focus and misaligned design objectives, ulti-         approach, designs often prioritise protection-focused options, to
+mately undermining the value of children’s time and contributions         ensure that children experience a safe environment [103]. For ex-
+in child-centred research.                                                ample, parental controls, content filtering, or age-assurance mech-
+   This critical gap creates an urgent need to clarify how agency is      anisms are regularly integrated in technologies or used to enable
+conceptualised, examined, and supported in child–AI interaction           online safety for children. Scholars are increasingly arguing that
+specifically, as Bennett et al.’s [13] literature review of agency and    children’s agency should be central to child-centred design [52],
+autonomy in HCI research was conducted in 2022, before the intro-         because protection-focused approaches alone are often insufficient
+duction of many now ubiquitous generative AI tools that challenge         to build the resilience and decision-making skills children need.
+traditional notions of agency in HCI. Through a review of recent             Foundational literature from psychology, learning sciences, and
+HCI literature on children’s agency in interacting with AI systems,       philosophy provide rich conceptualisations that help us understand
+we identify gaps in understanding children’s agency in the context        components of agency, autonomy, empowerment. In educational
+of AI and propose avenues moving forwards. To do so, we examine           psychology, Zimmerman’s self-regulated learning cycle [112] con-
+the following research questions:                                         ceptualises agency as unfolding across cycles of forethought, voli-
+                                                                          tional control, and self-reflection. This recognises that children’s
+RQ1: How do HCI researchers conceptualise children’s agency in
+                                                                          agency develops through a process rather than presents as a for-
+     the context of AI?
+                                                                          mative ability. In the context of AI-assisted learning, Brod [17]
+RQ2: What evidence of agency have researchers found, and how?
+                                                                          characterises agency as learners’ capacities to make decisions and
+RQ3: What do researchers suggest enables and constrains agency?
+                                                                          enact them, emphasising the action-taking aspect of agency. From
+RQ4: What are researchers’ recommendations for supporting agency
+                                                                          a philosophical standpoint, Levinson [58] understands agency as
+     in child-AI interaction?
+                                                                          the capacity to act intentionally, encompassing both the desires
+   Our primary contribution is a mapping of recent HCI literature         and beliefs that motivate action and the mental processes through
+studying children’s agency in the context of AI. We identify gaps         which individuals interpret and transform their environment. Au-
+and directions for future HCI research. We find that in current re-       tonomy, in turn, is defined as self-endorsed volitional choice in
+search agency is still rarely explicitly defined in the HCI literature    Self-Determination Theory [82]. Empowerment highlights whether
+Agency in Child–AI Interaction: A Review of How It Is Conceptualised, Studied, and Supported in HCI                    IDC ’26, June 22–25, 2026, Brighton, United Kingdom
+
+
+such choice can actually be exercised and translated into outcomes:                      interchangeably with agency, as also acknowledged by Bennett et al.
+for Alsop et al. [4, p. 14], empowerment depends on the existence                        [13] in their review. However, while Bennett et al. [13] excluded
+of meaningful choices, the ability to use them, and the possibility                      empowerment, we noted empowerment is a commonly used term in
+of achieving desired results.                                                            the CCI literature when it comes to making and enacting decisions
+   In the context of childhood, we must consider the conditions                          (e.g., [85, 99]), and so decided to include it as a relevant concept
+under which children are afforded the opportunity to develop and                         term. Given how freely much of the literature moves between these
+exercise these capacities, given that genuine agency requires not                        three terms and how difficult it is to infer authorial intent behind
+only internal cognitive ability but also an environment that supports                    the use of different terms (see Supplementary Material), we use the
+intentional, self-directed action. Children’s agency differs from                        core term “agency” in our reporting unless deliberately distinguish-
+adults’ because children are usually not in a position of (direct)                       ing agency, autonomy, or empowerment in accordance with the
+control. Adults, like parents and teachers, often limit children’s                       authors’ use of specific terms.
+control to protect them from harm. For children, socially-mediated,                         To capture the HCI research community’s perspective, we queried
+indirect modes of agency offer ways to enact decisions and achieve                       the ACM Digital Library (including conferences and journals), but
+desired outcomes. Many prevalent agency definitions emphasise the                        not including any additional sources from specific application areas
+agent’s social environment. For instance, in Social Cognitive Theory,                    like educational technology (which we note is a limitation of this
+Bandura [11] defines agency as an emergent, interactive capacity                         approach). We used fielded searching to increase the likelihood
+to exercise control over the nature and quality of one’s life, where                     the search keywords were central to the work, searching the title,
+agency is both realised through interactions an agent has with and                       abstract, and keyword fields of publications. The search was not
+on its environment and influenced by that environment. It further                        time-bound, because we did not want to restrict our focus to any
+distinguishes three modes of agency: individual agency, associated                       specific type of AI systems.
+with an individual’s motivation and intentionality; proxy agency,                           Our search was conducted in August 2025 and yielded 152 publi-
+which involves relying on others to act on one’s behalf, and collective                  cations. These were imported into Covidence1 for screening and
+agency, which encourages a socially coordinated effort [10].                             data extraction. Figure 1 provides an overview of the paper screen-
+   Recent child-centred studies recognise children’s unique posi-                        ing process.
+tion and strive to support their agency, data autonomy, and com-
+putational empowerment [70, 85, 101, 105]. However, as found by                          3.2     Screening of papers
+Bennett et al. [13], HCI studies mix up different terminology be-                        To screen papers for relevance, we looked for evidence of the fol-
+tween agency and autonomy, and rarely state explicit definitions,                        lowing in the titles and abstracts: 1) discussion of child-computer
+yet focus on different things, which makes it difficult to synthesise                    interaction, 2) mentions of agency, autonomy, and/or empower-
+prior research. Our goal is therefore to establish how these concepts                    ment relating to children’s interaction with systems, and 3) original
+are defined and assessed in HCI research, so we can facilitate the                       research, rather than a workshop proposal or keynote talk. Two
+development of an agency design research roadmap for child-AI                            authors independently reviewed entries, removing 56 irrelevant
+interaction and help future research to determine whether design                         papers; unclear cases and the remaining 96 papers advanced to
+interventions are genuinely achieving their goals.                                       full-text review.
+                                                                                            During full-text review, at least two authors independently as-
+3     METHODS                                                                            sessed each paper against our inclusion criteria, with conflicts re-
+This paper aims to systematically map and synthesise research                            solved through discussion between the first three authors:
+within the HCI community that addresses child-AI interaction                                  • Empirical Papers: We removed 10 papers describing pro-
+agency. To achieve this, we conducted a structured literature review                             posed ideas or prototypes that that did not include an em-
+to identify the key conceptualisations, assessment methods, and                                  pirical user study with children.
+recommendations in recent research in the field.                                              • AI Systems: We removed 44 papers that were not about
+                                                                                                AI. Defining AI is a much acknowledged challenge in the
+3.1     Literature search                                                                        field [53, 84, 107], so here our principle was to include any
+We conducted a review with a systematic search protocol based on                                 systems that relied on data-intensive methods to make deci-
+the PRISMA framework [67]. To structure our search strategy, we                                  sions, like large language models, robots, social media and
+used the PCC (Population, Concept, Context) framework [78], fo-                                  recommender systems, and smart home devices. Works were
+cusing on children (Population), agency (Concept), and artificial                                excluded if they reported on technologies with no evidence
+intelligence (Context).                                                                          for data-driven decisions, for example, papers discussing
+   Through iterative testing, we established the following set of                                data collection without considering how the data would be
+search keywords, which were combined with the AND operator:                                      used, such as those investigating children’s agency in the
+      • child* OR teen* OR youth OR adolescen* OR K*12                                           design and use of health data trackers [5, 77].
+      • agency OR agentic OR autonomy OR empowerment                                          • CCI Agency: We removed 17 papers where agency was
+      • AI OR artificial intelligence OR ML OR machine learning OR                               defined not in relation to children’s interaction with tech-
+        data* OR algorithm OR media OR recommender OR generative                                 nology, such as agency in choosing learning topics about AI
+                                                                                                (e.g., [29, 72, 83]) or on children’s agency as designers of AI
+  We included autonomy and empowerment (see section 2) be-
+cause in our preliminary reading, these terms were frequently used                       1 https://www.covidence.org
+IDC ’26, June 22–25, 2026,    agencyUnited
+                           Brighton,
+                       Child               Kingdom
+                                     with AI rapid review                                                                                    Voysey et al.
+
+
+
+
+                                                                                       References from other sources (n = 0)
+                                        Studies from databases/registers (n = 152)
+                                                                                          Citation searching (n = 0)
+                                           ACM DL (n = 152)
+                                                                                          Grey literature (n = 0)
+                       Identification
+
+
+
+
+                                                                                       References removed (n = 0)
+                                                                                          Duplicates identified manually (n = 0)
+                                                                                          Duplicates identified by Covidence (n = 0)
+                                                                                          Marked as ineligible by automation tools (n = 0)
+                                                                                          Other reasons (n = 0)
+
+
+
+
+                                        Studies screened (n = 152)                     Studies excluded (n = 56)
+
+
+
+
+                                        Studies sought for retrieval (n = 96)          Studies not retrieved (n = 0)
+                       Screening
+
+
+
+
+                                        Studies assessed for eligibility (n = 96)
+
+                                                                                       Studies excluded (n = 71)
+                                                                                          Not full paper/proposed research (n = 10)
+                                                                                          Not AI (n = 44)
+                                                                                          Not CCI agency (n = 17)
+                      Included
+
+
+
+
+                                        Studies included in review (n = 25)
+
+
+
+
+                                          Figure 1: Flowchart (PRISMA) illustrating the paper selection process.
+
+
+        systems, i.e., how their voices can be heard in the design of                3.3.1 Phase 1: Data Extraction. In the first phase, we read and
+        technologies (e.g., [2]) without considering child-AI interac-               systematically extracted descriptive information from each paper
+        tion. However, we included studies of children’s imagined                    using a structured template, which included:
+        interactions11th March 2026
+                      with future AI systems.
+                                                                                         • Stated research purpose(s)
+                                                                                         • Research methods
+3.3     Data extraction and analysis                                                     • Participant sample size and age groups
+We analysed the final 25 papers using an inductive qualitative ap-                       • Type(s) of AI involved and the nature of the child-AI inter-
+proach comprising three phases: structured data extraction, colloca-                       action
+tion analysis [14], and reflexive thematic analysis [16]. Collocation                    • Terms used related to agency, autonomy, and/or empower-
+analysis was used alongside thematic analysis to examine language                          ment
+use patterns and complement interpretation of themes [95]—see                            • Definitions for agency, autonomy, and/or empowerment (if
+subsubsection 3.3.2 for further details.                                                   any)
+Agency in Child–AI Interaction: A Review of How It Is Conceptualised, Studied, and Supported in HCI                IDC ’26, June 22–25, 2026, Brighton, United Kingdom
+
+
+   This template was agreed a priori based on our primary research                         Throughout our findings, we endeavour to reflect the specific
+question—how agency is conceptualised and studied. Each paper                           terms used by researchers. As such, we use underline to emphasise
+was read and extracted independently by two authors. After the                          the authors’ use of a specific term, e.g., agency, autonomy, em-
+independent data extraction, three authors met to review discrepan-                     powerment. Where several terms are used in a similar way (within
+cies and reach consensus across the dataset. The extracted data was                     or across papers) without clear distinction, we use the core term
+used to summarise and compare study characteristics, definitions                        “agency” without emphasis.
+of agency (RQ1), and employed study methods (RQ2). It also helped
+the authors get familiar with the data and informed subsequent
+deeper analysis.                                                                         4.1     Study characteristics
+                                                                                         Table 1 summarises the 25 reviewed papers. Participants ranged
+3.3.2 Phase 2: Collocation Analysis. In the process of data ex-                          from age 3 to 21. Most studies targeted specific developmental
+traction, it became apparent that few papers provided definitions                        stages: four focused on early childhood (ages 3–6), eight on middle
+for agency. As such, we applied collocation analysis to identify                         childhood (ages 7–12), and sixteen on adolescence (ages 13 and
+words and phrases frequently used with agency, autonomy, and                             over), with six studies spanning more than one of these brackets.
+empowerment in an attempt to infer authors’ conceptualisations                           Only one study, Toivonen et al. [96], included participants across
+(RQ1) [14]. To do this, we chose agency, autonomy, or empower-                           this entire age range.
+ment (as appropriate) to be our node word, identified all uses of                           Geographically, research was predominantly situated in the
+the word, and considered a span of four words either side, identify-                     Global North, with fifteen studies in the USA, four in England,
+ing frequently appearing adjective-noun (e.g., “full agency”, “more                      two each in Canada, Scotland, and Finland, and one in Denmark. A
+agency”), verb-noun (e.g., “develop agency”, “exercise autonomy”),                       few studies were international: one was co-located in Scotland and
+and noun-preposition-noun (e.g., “lack of agency”, “sense of auton-                      Türkiye, one included workshops in USA, India, and Finland, while
+omy”) collocates. Due to the small size of the corpus, this was done                     another, held online, involved individual participants from eleven
+manually.                                                                                different countries.
+3.3.3 Phase 3: Thematic Analysis. Four authors used Taguette2 to                            Research settings varied: three studies took place in participants’
+review the papers again and to highlight passages regarding ex-                          homes [41, 104, 111] and five were conducted partly or entirely
+pressions, evidence, and measures of agency (RQ2), enablers and                          online [1, 26, 33, 42, 104], but the majority (eighteen studies) were
+constraints (RQ3), and recommendations by authors (RQ4). We                              held in external locations, including schools [8, 25, 68, 86, 89, 101],
+highlighted passages using semantic (descriptive) codes indepen-                         clubs, libraries, and community centres [25, 30, 38, 39, 46, 51, 57,
+dently and focused on quotes that represented the authors’ claims                        89], research spaces [21, 57, 102, 106], a science fair [96], and a
+and reflections regarding their own findings, rather than adding                         workplace [56].
+secondary synthesis of prior literature, speculation, or discussion.                        The number of children involved in the research varied signifi-
+    Three authors then iteratively organised quotes into different                       cantly from 6 to approximately 150. The median was 30 participants,
+groups of shared meanings (or themes) independently and through                          with twelve studies having 25 or fewer participants. Sixteen studies
+discussions, focusing on clarifying each individual’s coding ratio-                      involved children working in peer groups, and ten had children
+nale and interpretation of the data. By reaching a shared clarifica-                     working individually. In twelve studies, children participated along-
+tion of the codes and interpretations of the data, we produced a                         side close adults such as parents or teachers. The duration of the
+stable thematic categorisation.                                                          studies ranged from a single interaction session [1, 26, 30, 39, 42,
+    Additionally, to mitigate the risk of over-interpretation, we re-                    57, 96, 101, 102, 104, 106] to activities taking place over multiple
+stricted our analysis to passages that the original authors explic-                      consecutive days [8, 21, 38, 68, 86], or multiple sessions spaced over
+itly linked to agency, autonomy, empowerment, and related terms                          several days, weeks, or months [7, 25, 33, 41, 46, 51, 56, 111]. One
+(regardless of whether they had defined them explicitly). This ap-                       study combined different one-off and multiple-week workshops
+proach aimed to remain grounded in the researchers’ reported per-                        [89].
+spectives, but we acknowledge the subjective nature of our analysis                         The studies investigated diverse AI technologies, including ro-
+reflected in choices of examples and thematic groupings.                                 botics [57, 111], social media recommender and moderation systems
+                                                                                         [1, 30, 46, 101, 104, 106], generative AI systems [38, 39, 68], voice as-
+                                                                                         sistants [33, 42], coding assistants [25, 26], other machine learning
+4     FINDINGS
+                                                                                         systems [41, 56, 86, 96, 102], and AI more broadly [7, 8, 21, 51, 89].
+In this section, we report our analysis of the literature corpus of                         Nine studies explored imaginary AI systems, eight studies used
+25 papers. First, we summarise the characteristics of the studies                        existing, publicly available applications like ChatGPT, while another
+included. We then address how researchers define and conceptu-                           eight built and tested interactive research prototypes. A further
+alise agency (RQ1). Next, we present how and where researchers                           five used non-interactive demos or mock-interactive (e.g., Wizard
+found evidence of agency (RQ2), before describing what researchers                       of Oz) systems to simulate AI behaviour. These technologies were
+present as enablers and constraints of agency (RQ3). Finally, we                         examined across several domains, most commonly education [7,
+present the recommendations for supporting agency in child-AI                            21, 25, 33, 38, 39, 51, 68, 86, 89, 111], social media [1, 8, 30, 46, 51,
+interaction that emerged from the corpus (RQ4).                                          56, 86, 101, 104, 105], home and daily life [8, 21, 33, 41, 56, 57, 89,
+                                                                                         102, 111], creative activities (writing, storytelling, art, music, dance)
+2 https://app.taguette.org/                                                              [38, 39, 42, 56, 57, 68, 96], and programming [25, 26, 86].
+IDC ’26, June 22–25, 2026, Brighton, United Kingdom                                                                                                    Voysey et al.
+
+
+                                                             Table 1: Summary of included studies
+
+          Author                                      Year    Participants                 Region               Type of AI             Ag.   Au.   Em.
+          Agha et al. [1]                             2024    20, aged 13 to 18            USA                  Mock                         ✓     ✓
+          Atabey et al. [7]                           2025    72, aged 10 to 12            Scotland;            Imaginary              ✓     ✓     ✓
+                                                                                           Türkiye
+          Babai et al. [8]                            2025    43, aged 11 to 12            Finland              Imaginary              ✓     ✓     ✓
+          Chang et al. [21]                           2024    15, high-school age          USA                  Imaginary              ✓
+          Druga and Ko [25]                           2021    52, aged 7 to 12             USA                  Prototype              ✓     ✓
+          Druga and Ko [26]                           2025    18, aged 7 to 12             International*       Prototype              ✓           ✓
+          Fiani et al. [30]                           2024    13, aged 8 to 16             Scotland             Mock; imaginary        ✓     ✓     ✓
+          Garg [33]                                   2021    22, aged 13 to 17            USA                  Public; imaginary      ✓     ✓
+          Han and Han [38]                            2025    12, aged 8 to 14             USA                  Prototype              ✓
+          Han et al. [39]                             2024    12, aged 8 to 12             USA                  Public                 ✓     ✓
+          Hiniker et al. [41]                         2018    25, aged 3 to 5              USA                  Prototype              ✓     ✓
+          Hubbard et al. [42]                         2021    33, aged 4 to 5              USA                  Prototype              ✓     ✓
+          Irannejad Bisafar et al. [46]               2020    49, aged 14 to 21            USA                  Public                 ✓           ✓
+          Kenny et al. [51]                           2025    6, aged 14 to 17             Canada               Imaginary              ✓           ✓
+          Lee et al. [56]                             2022    16, aged 15 to 19            USA                  Public                 ✓     ✓     ✓
+          Levinson et al. [57]                        2024    15, aged 12 to 17            USA                  Public; Mock           ✓     ✓
+          Morales-Navarro et al. [68]                 2025    35, aged 14 to 15            USA                  Public; Prototype                  ✓
+          Schaper et al. [86]                         2023    11, aged 14 to 15            Denmark              Public; imaginary      ✓           ✓
+          Sharma et al. [89]                          2024    73, aged 9 to 12             USA; India;          Public; imaginary      ✓           ✓
+                                                                                           Finland
+          Toivonen et al. [96]                        2022    ∼150, aged 5 and up          Finland              Prototype              ✓
+          Wang et al. [104]                           2022    48, aged 7 to 13             England              Public                 ✓     ✓
+          Wang et al. [106]                           2023    53, aged 7 to 14             England              Public; Mock; imagi-   ✓     ✓     ✓
+                                                                                                                nary
+          Wang et al. [101]                           2024    109, aged 10 to 13           England              Prototype              ✓     ✓     ✓
+          Wang et al. [102]                           2025    30, aged 8 to 13             England              Mock; imaginary              ✓     ✓
+          Zhang et al. [111]                          2023    31, aged 4 to 6              USA                  Prototype              ✓     ✓
+          Ag.=agency, Au.=autonomy, Em.=empowerment
+          * 11 countries: USA, Spain, Singapore, China, Mexico, Romania, Jamaica, Canada, India, Israel, New Zealand
+
+
+
+
+   Most studies in the corpus did not set out to examine agency                           drew on established theoretical traditions such as Social Cognitive
+directly. Most research focused on the qualitative understanding                          Theory and Cultural-Historical Activity Theory.
+of youth opinions, perspectives, needs, and challenges [7, 8, 21, 30,                        A few papers used a term, then provided a reference to a defini-
+33, 38, 39, 42, 46, 51, 56, 57, 86, 89, 101, 102, 104, 106]. Among these,                 tion, but without expanding in the body of the text. For example,
+there was a series of consequent studies investigating datafication                       Garg [33] referenced a paper on autonomy from moral and political
+and data autonomy [101, 102, 104, 106]. Another significant focus                         philosophy after using the word autonomy, but did not include any
+area was analysis of reported and/or observed youth behaviour                             quote or explicit definition. Likewise, Schaper et al. [86] referenced
+when interacting with AI systems [1, 25, 26, 41, 46, 56, 68, 96, 104,                     Iversen et al. [47] after mentioning computational empowerment.
+111]. Some of the research aimed to inform the design and devel-                             As shown in Table 1, many works used multiple terms of agency,
+opment of artefacts [1, 21, 30, 33, 38, 39, 42, 101, 106]. Finally, a                     autonomy, and/or empowerment. Some used the terms in close
+few studies aimed to evaluate systems [26, 38, 42, 101, 111] and                          conjunction suggesting a similarity or deep connection between the
+research interventions [51, 68, 89, 102]. Children’s exhibition of                        terms, e.g., systems may impact or teenagers may establish “agency
+agency emerged as part of some of these research studies. This pro-                       and autonomy” [8, 39, 57, 111]. Hubbard et al. [42] was an exception
+vides a critical context for our analysis of how agency is reported                       in elucidating the relationship between the terms according to
+in existing research.                                                                     the authors—they describe autonomy as an “element” of agency.
+                                                                                          However, in other works, the terms agency and autonomy have
+                                                                                          often been used interchangeably without the authors drawing an
+4.2     Conceptualisation of agency (RQ1)                                                 explicit distinction.
+                                                                                             Some papers used the term “sense of agency” [8, 25, 41, 46, 56,
+4.2.1 Definitions. The terms agency, autonomy, and empower-
+                                                                                          57, 96, 101], potentially acknowledging the discrepancy between
+ment were rarely explicitly defined in the papers. As summarised
+                                                                                          agency and self-perception of agency. Wang et al. [101] explicitly
+in Table 2, the nine works that provided formal definitions often
+Agency in Child–AI Interaction: A Review of How It Is Conceptualised, Studied, and Supported in HCI                     IDC ’26, June 22–25, 2026, Brighton, United Kingdom
+
+
+                      Table 2: Explicit definitions of agency, autonomy, and empowerment in the reviewed papers
+
+        Paper                      Construct                        Definition
+        Babai et al. [8]           Agency                           “socially mediated capacity to act” [3]; “a temporally embedded process of
+                                                                    social engagement, informed by the past (in its habitual aspect), but also
+                                                                    oriented toward the future (as a capacity to imagine alternative possibilities)
+                                                                    and toward the present (as a capacity to contextualize past habits and future
+                                                                    projects within the contingencies of the moment)” (quoting Emirbayer and
+                                                                    Mische [27])
+        Hubbard et al. [42]        Agency                           “the power to take meaningful action; exercising control over “processes,
+                                                                    motivation, action, and environment”” [10]
+        Wang et al. [106]          Autonomy                         “hav[ing] greater autonomy, i.e., [taking] more active roles when coping with
+                                                                    datafication practices”
+        Hiniker et al. [41]        Autonomy                         ability to “plan, set goals, and choose their own actions with intention”
+        Sharma et al. [89]         Empowerment                      “increased control and mastery for individual children or entire collectives
+                                                                    over their own lives, i.e. having increased agency in the sense of capacity to
+                                                                    act, [...] as an individual and collective construct” [44, 48]
+        Chang et al. [21]          Transformative agency “the initiative and commitment to transform the context(s) of their activity for
+                                                         personal, academic, life in the work force and/or civic ends” (quoting Kajamaa
+                                                         and Kumpulainen [50])
+        Kenny et al. [51]          Transformative agency “ability to actively change their own matters, their shared matters, or even
+                                                         societal matters for the better and more just society” [43]
+        Toivonen et al. [96]       Data agency                      “data agency (people’s volition and capacity for informed actions that make a
+                                                                    difference in their digital world)” [94]
+        Babai et al. [8]           Data agency                      “the ability to understand, control, and meaningfully engage with data-driven
+                                                                    systems” [94]
+        Wang et al. [101]          Data Autonomy                    “empowerment and capability of individuals to comprehend, exercise control
+                                                                    over, and reflect on the collection, processing, and inference of their data
+                                                                    within the digital realm”
+        Note: The remaining 16 papers in the corpus did not provide explicit definitions for agency, autonomy, or empowerment.
+
+
+
+differentiated between sense of autonomy and autonomy, but other                            A conception of agency that traversed these concepts is as some-
+papers used a mix of “sense of agency” and “agency” without clear                        thing with degrees, i.e., children can have greater agency in one
+differentiation.                                                                         circumstance than another. Druga and Ko [26] described children’s
+                                                                                         agency as “strong” and Zhang et al. [111] described one experimen-
+                                                                                         tal condition as offering “complete agency”. Other papers talked
+4.2.2 Collocated words and conceptual metaphors. In the absence of                       about “increasing” agency [38, 42, 56, 89, 104] or “reducing” auton-
+explicit definitions, we analysed the words collocated with agency                       omy [1, 8, 41, 106]. This conception of degrees was also implied by
+to infer how the authors may have understood agency.                                     papers that described agency as something that can be developed
+    One prevalent metaphor (conceptualisation) framed agency as                          or strengthened and those that describe it being diminished.
+something children innately have, which must be “preserved”, “main-                         Clusters of papers offered slightly different views of the rela-
+tained”, or “retained” [1, 8, 21, 26, 33, 111]. Under this conceptuali-                  tionship between agency and action. Some indicated agency to
+sation, agency is vulnerable to loss—children can “lose” it or “lack”                    be something internal made externally visible to others through
+it [7, 8, 21, 30, 33, 39, 56, 106]. Another metaphor used language of                    action, using verbs like “express”, “demonstrate”, “display”, and
+opposition, describing agency as being “restricted”, “undermined”,                       “manifest” [8, 21, 26, 41, 56, 89]. Others implied that actions turn the
+“diminished”, or “limited” by something [1, 8, 21, 33, 41, 56, 106].                     potential for agency into agency—agency is “exercised”, “enacted”,
+Both conceptions positioned agency as something under threat.                            “asserted”, and “established” [8, 56, 57, 104].
+    Alternatively, a number of papers used a development or culti-                          All papers presented children’s agency as a positive quality. Sev-
+vation metaphor for agency, positioning it as something children                         eral papers implied a duty or responsibility of other agents, usually
+“develop”, that can be “fostered”, “nurtured”, or “supported” [21, 41,                   designers, to “respect”, “prioritise”, or “promote” agency [7, 26, 38,
+56, 96, 104]. This view was particularly prevalent in Chang et al.                       39, 41, 106].
+[21], which focused on supporting children to develop transfor-
+mative agency. Here, agency is not simply possessed but grows
+through the appropriate conditions and care.
+IDC ’26, June 22–25, 2026, Brighton, United Kingdom                                                                                      Voysey et al.
+
+
+4.3     Methods applied in studying agency (RQ2)                             agency over the system (shown through asserting control during
+Studies adopted three approaches for analysing agency: 1) deduc-             interactions), and agency over the environment (shown through
+tively seeking evidence of agency using theoretical frameworks, 2)           critiquing and re-designing the status quo).
+adopting an inductive approach with an explicit focus on agency,
+                                                                             4.4.1 Agency over self. This theme includes children engaging in
+or 3) surfacing agency incidentally as part of other concerns, such
+                                                                             planning and self-regulation, seen through them articulating inten-
+as fairness, privacy, or AI literacy.
+                                                                             tions and enacting decisions. Within our corpus, explicitly labelled
+   Most commonly, agency was included tangentially or inciden-
+                                                                             instances were concentrated in Hiniker et al. [41], where young
+tally in studies focused on adjacent constructs such as fairness,
+                                                                             children using “Coco’s Videos” planned viewing sessions in ad-
+privacy, or AI literacy [1, 7, 25, 30, 33, 38, 42, 46, 51, 56, 57, 68, 86,
+                                                                             vance (building a playlist of YouTube videos, selecting how long to
+96, 104, 106, 111]. For example, while Agha et al. [1] focused on
+                                                                             watch videos for, and what activity to do next). They demonstrated
+understanding the social and contextual factors that mattered for
+                                                                             agency by implementing self-defined plans independently during
+creating online safety nudges for teens, autonomy (as the option to
+                                                                             transitions (e.g., one child explained, “I’m ready to go outside...I
+override automated decision making) was considered as a design
+                                                                             clicked ‘going outside’ after my videos” or another reaffirmed, “No, I
+requirement rather than as a focus of the original analysis. Lee et al.
+                                                                             picked play outside”, when their mother jokingly suggested, “What
+[56] used ethnographic observation and interviews to investigate
+                                                                             will you do next? Clean the living room?”) [41]. Hiniker et al. [41]
+how youth engage with and question AI technologies, and searched
+                                                                             connect these observable children’s expressions of intentionality
+for meaningful moments in this data according to three aspects of
+                                                                             and behaviours to internalisation of norms, self-regulation, agency,
+critical computational literacy: critical pedagogy, computational
+                                                                             and autonomy.
+thinking and creative expression; youth agency was discussed as
+an incidental theme linked to critical computational literacy. Simi-         4.4.2 Agency over system. This theme captures instances where
+larly, while Kenny et al. [51] used Veldhuis et al.’s four-dimensional       children asserted control in their interaction with an AI system,
+framework of Critical AI Literacy [100] to structure their workshop          as owners of their outputs or their interaction flow with AI. For
+activities and theorised how it could lead to computational empow-           example, during creative coding with an AI copilot, study partici-
+erment, they focused on identifying ways of how youth cultivated             pants demonstrated agency by rejecting, adapting, and pre-empting
+Critical AI Literacy using reflexive thematic analysis.                      system outputs. Some positioned the AI system as a helper rather
+   Several studies explicitly focused on agency and employed in-             than a co-creator (“It’s like a teammate who knows coding tricks,
+ductive, interpretive analysis [8, 26, 39, 41, 89, 101, 102]. For in-        but I’m the captain”), refused AI suggestions (“No, that’s not my
+stance, Babai et al. [8] used iterative inductive-deductive coding           idea!”), prompted iteratively (“I was expecting it to give something
+and nexus analysis of children’s speculative future narratives to            more unique. [...] Maybe it will give something else [...] Sky Beak
+examine power dynamics. Here, agency was inferred from how chil-             is good!”; “I asked for an elf then added ‘full body and no back-
+dren position actors and propose ways of acting within data-driven           ground’.”), and experimented on their own (e.g., “Wait, let me try
+systems. Druga and Ko [26] transcribed children’s AI-assisted cod-           first.!”) [26].
+ing sessions and through open coding identified three recurring                 Other instances of control were exhibited in children’s percep-
+manifestations of agency: direct rejection, adaptive integration (se-        tions of data-driven social media: children reported feeling more
+lecting from and modifying), and pre-emptive control of AI copilot           empowered when they could adjust data controls and immediately
+suggestions. Wang et al. [101] used thematic analysis to categorise          see recommendation changes [101]. Together, these accounts ob-
+evidence of a sense of data autonomy (including being “in control”,          serve agency as control, which is observable through verbal expres-
+“empowered”, and “having a say”) in children’s reflections about             sions and actions that reassert the child’s direction when engaging
+algorithmic social media.                                                    with an interactive AI system.
+   Only one study [21] used a theoretical framework for deductive               Notably, examples of control were clearest when children op-
+analysis, pre-specifying indicators of agency and systematically             posed systems. As Han et al. [39] illustrated, instances of uncritical
+looking for these indicators in data; Chang et al. [21] examined             acceptance (e.g., when a child copied an AI-generated story and
+youth transformative agency as per the four indices of historical            said, “I’m done, I like the story, so why should I change it?”) are am-
+actors from Gutiérrez et al. [37]: double binds (identifying dilemmas        biguous, as they could represent either active deliberate approval
+that cannot be adequately resolved using current cultural resources),        or passive resignation.
+breach of the social order (challenging power structures and the
+status quo), cycles of experimentation (iterative trials in creating         4.4.3 Agency over environment. Here, children acted upon the
+new worlds, considering own positionality and roles of tools in              broader socio-technical environment, not just to navigate it, but to
+their contexts), and expansion of the object of activity (interrogating      interrogate and critique the status quo and imagine alternatives that
+purposes and meanings of existing activities).                               redistribute voice, power, or governance. In speculative co-design
+                                                                             workshops, youth identified “double binds” in cooperative house
+                                                                             living arrangements (safety and comfort requiring enforcement, yet
+4.4     Observations of agency (RQ2)                                         surveillance itself producing harm) and proposed “breaches in the
+Researchers reported empirical evidence of agency observed in chil-          social order” that reconfigured accountability and care hierarchies
+dren’s verbal expressions, choices, and actions. We clustered these          [21]. In another (school) context in the same study, participants
+examples in three themes of expanding targets of action: agency over         iterated through “cycles of experimentation” by extending, repur-
+the self (shown through engaging in planning and self-regulation),           posing, and testing speculative mechanisms (e.g., imagining how a
+Agency in Child–AI Interaction: A Review of How It Is Conceptualised, Studied, and Supported in HCI               IDC ’26, June 22–25, 2026, Brighton, United Kingdom
+
+
+tool could “give voice to the students”), and in doing so “expanded                      reported that around one in three children characterised their algo-
+the object of activity” by contesting what schooling should optimise                     rithmic social media use experience as passive, and one participant
+for beyond narrow outcomes like efficiency [21].                                         described a sensation of drift towards loss of autonomy: “the TikTok
+                                                                                         algorithm is deciding for you what you can like, and the more your
+                                                                                         data is collected, the more you just become a zombie”. Nudging
+4.5     Constraints and enablers of agency (RQ3)                                         application behaviour (or worse, manipulative “dark patterns” [36])
+Although the reviewed papers tended to foreground design im-                             can also encourage passivity: Hiniker et al. [41] found that auto-
+plications rather than theorising causal factors behind observed                         matic post-play videos reduced children’s autonomous transitions
+outcomes, they nevertheless identified a range of conditions that                        from video watching to other activities. Druga and Ko [26] high-
+constrain or enable children’s agency in child–AI interaction. We                        lighted a tension between support and over-reliance in creative
+organise these findings into four dialectical groups of conditions:                      coding with an AI copilot: while AI suggestions could be helpful,
+epistemic conditions (where knowledge about AI systems offsets sys-                      older (aged 10–12) participants worried about “losing originality”
+tem opacity), interactional design (where opportunities for choice,                      and authors emphasised “the need to not rely too heavily on the
+control, and self-expression oppose volition displacement and sys-                       tool, to maintain agency and control” [26].
+tem rigidity), social context (where influence, participation, and                          When children were provided with meaningful opportunities
+support contend with power asymmetries), and motivational orien-                         for choice, control, and self-expression with visible consequences,
+tation (where self-efficacy counters resignation).                                       this often led to increased agency. For example, Druga and Ko
+                                                                                         [26] described how some children used AI suggestions to over-
+4.5.1 Epistemic conditions. Limited knowledge about AI systems                           come creative blocks while coding without letting the system take
+was presented as limiting children’s agency. For example, Wang et al.                    over, by getting ideas for inspiration, as a scaffolded starting point,
+[104] argued that critical gaps in understanding “who are involved                       which they could then extend or alter by themselves. In the con-
+in the data processing” prevented children “exercising informed                          text of voice agent design, Hubbard et al. [42] documented how
+choices”. Similarly, in speculative narratives, children portrayed                       children exhibited agency by choosing the agent’s voice, adjust-
+harms as stemming from lack of awareness (“Jimmy wasn’t aware                            ing interaction pacing, and role-switching/puppeteering the agent.
+that he was being tracked” and “billbob blindly clicked the ‘agree to                    Children using CHAITok, a customisable social media app, experi-
+share’ info about him – don’t be like billbob”) [8]; they responded by                   enced increased feelings of empowerment and engagement when
+positioning data literacy as a route to empowerment and informed                         data controls could be adjusted and immediately changed content
+action [8].                                                                              recommendations (“Now, I’m actively making choices, rather than
+   Understanding how AI systems work enables children to act                             just whatever is thrown at me”) [101]. Studies also suggested pro-
+more independently, strategically, and critically. Although the man-                     viding the opportunity to challenge or override AI decisions was
+ifestation of agency varies with age, some studies [41, 42, 111] show                    important for enabling agency. Druga and Ko [26] explained that
+that even very young children (aged 3–6) can use tools indepen-                          the AI copilot “requires active user confirmation for AI suggestions
+dently when given sufficient experience with how these tools work.                       and promotes iterative refinement of code” as an explicit strategy
+Toivonen et al. [96] described how short guided explorations of an                       to foster agency and avoid user over-reliance [26]. In safety mod-
+image-recognition system enabled children to shift from self-blame                       eration systems, teens wanted proactive risk prevention but with
+(“Maybe I just can’t draw”) to recognising system limitations, and                       autonomy to override safety nudges, rather than enforced censor-
+strategically adapt drawings and improve classification outcomes.                        ship [1]. In social VR gaming, children worried that automated
+Similarly, Lee et al. [56] reported that collective interpretation al-                   embodied moderators would take punitive action before arguments
+lowed youth to “manipulate and ‘hack’” algorithms. After learning                        could be disputed or resolved, undermining their agency [30], lead-
+how Spotify scored ‘danceability’, they questioned the algorithm’s                       ing the authors to suggest that children should be able to customise
+authority and built their own rating system to better reflect their                      the automated embodied moderators and choose “if they would
+views.                                                                                   want to be guided (fully automated moderator) or have a say in the
+                                                                                         decision-making (semi-automated)”, framing such customisation
+4.5.2 Interactional design. Studies described agency being inhib-                        as enhancing children’s sense of control.
+ited when AI systems subtly or overtly displace the child’s role
+in decision-making, through constraining choices, steering deci-                         4.5.3 Social context. Without meaningful participation, children’s
+sions, or encouraging passivity. Participating students in a creative                    agency can be constrained by existing adult or institutional power
+writing study reported that “the AI bot kept steering me toward                          dynamics, potentially amplified by AI systems. In scenarios with
+a specific storyline”, leading them to “question the extent of their                     a smart home robot, teens framed privacy and agency as the abil-
+own agency” and to ask for more open-ended control of story de-                          ity to control who has access to data and for what purposes, and
+velopment [38]. Garg [33] observed that system guidance “could                           worried when the robot was not transparent about when it acted au-
+restrain one from thinking independently” particularly for personal                      tonomously (e.g., covertly collecting or sharing information, acting
+decisions (“I HATE getting advice or being given a limited number                        as “snitches”), interpreting this as a threat to their agency [57]. In
+of choices. I want to make that decision independently”), recog-                         social VR gaming, experts raised concerns that automated modera-
+nising that “providing limited to no choices can negatively impact                       tion could make children feel watched or behave less authentically,
+one’s agency, but too many choices or guided recommendations                             reducing perceived agency and control [30]. Even where children
+can be a hindrance” too. In a social media context, Wang et al. [101]                    attempt self-governance, adult intervention can override it, as seen
+IDC ’26, June 22–25, 2026, Brighton, United Kingdom                                                                                  Voysey et al.
+
+
+in Hiniker et al. [41], where although children could set their own       for the future) yet drawing on their lived experiences to imagine
+activity plans and video watching limits, parents sometimes inter-        technological alternatives. Chang et al. [21] further highlighted
+vened and forced changing activities. At an institutional level, youth    the importance of research setting and facilitation for creating a
+expressed frustration with “not being heard” by school adminis-           sense of possibility; bringing participants to a cooperative house,
+trators, which Chang et al. [21] linked to their lack of agency as        an unfamiliar yet relatable environment, helped youth actively
+students. Together, these studies show that surveillance and power        imagine themselves in alternative arrangements and relationships.
+asymmetries constrain agency both by shaping what children feel           Taking a different approach, Kenny et al. [51] engaged participants
+safe to do and by structuring who ultimately decides outcomes.            in a worldbuilding exercise and encouraged them to move away
+   In multiple studies, agency was enabled when children and              from “entrenched imaginations” rooted in present-day constraints
+young people were meaningfully involved, taken seriously, and             by prompting consideration of power relations and whose voices
+given opportunities to translate perspectives into action. Hubbard        might be missing in their speculative designs.
+et al. [42] argued that “meaningfully involving children in technol-
+ogy design” can support their agency and empowerment. Kenny
+et al. [51] emphasised “taking action” as a critical AI literacy dimen-   4.6     Recommendations on supporting agency
+sion, where participants are encouraged to translate critique into                (RQ4)
+praxis by imagining or producing more just AI systems; they sug-          While often an implicit goal in HCI and CCI literature, seven papers
+gested workshops should connect reflections to actionable projects,       in our corpus provided justifications for supporting agency, across
+including appropriating existing AI technologies to resist oppres-        three categories: ethical reasons [1, 7, 26, 30, 101], such as the
+sive systems. Chang et al. [21] detailed an example of how par-           protection of children rights [101] and minimising the potential
+ticipatory design can surface and contest institutional power; in         for manipulation [1]; benefits of supporting agency for children’s
+their speculative design, youth explicitly called for collaboration       learning and development [26, 111]; and children’s desire for greater
+that would “give voices to the students and not be silenced” and          agency [1, 26, 41]. Based on these motivations, authors formulated
+produced a video message to school administrators presenting their        recommendations for designers, HCI researchers, policymakers,
+invention, while asserting that administrators must recognise and         and educators.
+address issues beyond what technology alone can fix. In this way,
+agency was framed as not solely individual, but socially distributed—     4.6.1 Recommendations for designers. Design recommendations
+children needed support from other actors and systems to achieve          clustered around four strategies to equip children with the means
+desired outcomes. In children’s speculative narratives about data-        to exercise agency:
+driven social media challenges, Babai et al. [8] noted “children’s
+reliance on the agency of external actors, such as parents, consul-             • Control: Give children increased control over the AI tools
+tants, or law enforcement” to address problems. They interpreted                  or platforms. Agha et al. [1] recommended that the ultimate
+this reliance as potentially reflecting perceived children’s limited              decision-making control should be placed in the hands of
+autonomy, while also emphasising the importance of accessible                     teens, Fiani et al. [30] argued that children could be enabled
+support systems that children can mobilise to exercise agency when                to set rules for the interaction and control when to turn the
+direct control is not possible or constrained [8]. These examples                 tool off. Hiniker et al. [41] suggested to support agency by
+show that possibilities to be involved and influence others can                   providing opportunities for children to plan and make their
+enable agency.                                                                    own choices, and Hubbard et al. [42] recommended allowing
+                                                                                  children to choose how much input they wanted to receive
+4.5.4 Motivational orientation. Some studies highlighted how feel-                from the tool.
+ings of resignation can pervade children’s experiences with AI and              • Choice: Design systems with a broader variety of meaning-
+hinder their perceived ability to act. Participants in Wang et al.                ful options. Atabey et al. [7] recommended design choices
+[101] described a sense of resignation regarding the permanence                   that afforded children options to monitor and manage their
+of their digital footprint, noting, “I don’t think we have autonomy.              data, and emphasised that these options should be under-
+Once you enter your data, you can’t change or delete it”, as well                 standable and enable easy interaction; Druga and Ko [26],
+as a normalisation of datafication and internalisation of responsi-               from a different perspective, argued that AI tools should be
+bility for these conditions [101]. Kenny et al. [51] cautioned that               designed with a range of options to support children with
+pedagogies focused only on AI’s societal impacts can promote de-                  diverse backgrounds and experience.
+terministic thinking (framing AI outcomes as inevitable and beyond              • Scaffolded Literacy: AI literacy must adapt to the develop-
+one’s control), which may undermine children’s perceived capac-                   mental phase of children. Papers like Wang et al. [106] and
+ity to stimulate social change and potentially leave youth feeling                Druga and Ko [25], highlighted the critical need to support
+disempowered.                                                                     AI literacy through design patterns that prompt children
+   To support agency, existing research also explored how to en-                  to understand the tools’ limitations and offer technical and
+able young people to see AI futures as changeable and themselves                  conceptual information in a scaffolded manner.
+as capable of contributing to change. Speculative design activi-                • Active Participation: Multiple authors argued that one of
+ties in Babai et al. [8], Kenny et al. [51], and Chang et al. [21]                the most relevant ways to support children’s agency is to
+showed potential to help children overcome a perceived lack of                    included them as active participants in design spaces and
+influence by distancing away from the status quo (e.g., by designing              decision-making [21, 57, 68, 102].
+Agency in Child–AI Interaction: A Review of How It Is Conceptualised, Studied, and Supported in HCI               IDC ’26, June 22–25, 2026, Brighton, United Kingdom
+
+
+   These design recommendations align with the manifestations                            agency as something children innately have that is often opposed
+of agency discussed in subsection 4.4, particularly regarding the                        implies a need for ‘negative liberty’ (i.e., removing barriers), where
+capacity to resist, override, or contest AI tool outputs. Most impor-                    designers should address AI nudging behaviour and researchers
+tantly, they reinforce the argument that children can and should                         should find ways to break down power dynamics during studies.
+be equipped with the cognitive and epistemic means to exercise                              The negative liberty view may risk trapping researchers in a
+their agency in meaningful ways that serve their interests, goals,                       zero-sum mindset regarding children’s agency and system agency,
+and needs.                                                                               assuming that if a system makes decisions or initiates actions, the
+                                                                                         child necessarily loses agency. However, maximising choice is not
+4.6.2 Recommendations for HCI researchers. Papers that made rec-                         always beneficial. Children can suffer from ‘choice overload’ [61, 66]
+ommendations to other HCI researchers focused mainly on the                              and often benefit from the scaffolding provided by ‘lower’ agency
+urgent need to include children in the studies in a more active way,                     conditions, particularly in learning contexts [18, 111]. Thus, sup-
+and with a focus on their agency. Babai et al. [8], for instance, ar-                    porting agency requires balancing opportunities to make decisions
+gued that such a focus could encourage children to offer more open                       with appropriate support [17].
+and honest responses in studies. Furthermore, Chang et al. [21]                             This is not to say that the CCI community needs to settle on a
+and Kenny et al. [51] recommended conducting co-design studies                           single definition—agency is a complex, multifaceted concept, and
+over longer periods of time and establishing lasting community                           no one definition is likely to capture all of the concept—but authors
+collaborations to truly foster transformation in children’s lives.                       should strive to be clear when defining terms for their specific
+4.6.3 Recommendations for policymakers. A few papers positioned                          context and to use them consistently. The current literature in HCI
+regulatory structures as essential enablers of agency and suggested                      covers different accounts of agency at different levels of analysis,
+that they require a prior understanding of the importance of sup-                        primarily sociocultural contexts (e.g., [21, 51]) and psychosocial
+porting children’s agency to take purposeful action. Agha et al.                         capacities (e.g., [41, 96]), but largely falls short of addressing the
+[1] emphasised the importance of providing educational resources                         influence of cognitive factors, social structures, and other agents.
+that go beyond generic community guidelines, while Atabey et al.                         Research in CCI could advance by drawing on cognitive and devel-
+[7] stressed that data laws should ensure transparency in the in-                        opmental perspectives and conceptions of agency from educational
+formation provided to children. They also noted that meaningful                          technology and psychology literature, e.g., Brod [17].
+consent mechanisms should be developed before data is shared
+with third-party vendors and that these mechanisms should be easy                        5.2     Forms of agency in child-AI interaction
+to understand.
+                                                                                         The diversity of agency examples synthesised in subsection 4.4 indi-
+4.6.4 Recommendations for educators. Recommendations to educa-                           cates that agency takes many different forms in child-AI interaction.
+tors focused on two areas. First, they were encouraged to promote                        Across studies in our review, authors observed agency in children’s
+AI literacy by providing opportunities for developing and practising                     planning and self-regulation behaviours, asserting control over AI
+skills in a critical manner in formal educational settings. Druga and                    applications, and critiquing and re-designing the status quo. Here
+Ko [25] recommended that designers and educators work together                           we highlight how these forms of agency are reflected in literature
+to foster children’s development of critical thinking regarding AI                       on agency in other fields, which may be useful for CCI researchers
+systems. Second, they were encouraged to adopt the role of facili-                       to further ground and expand their work.
+tators rather than gatekeepers in order to help students develop a                          Planning and self-regulation resonates with Bandura’s concep-
+responsible understanding of these tools.                                                tion of agency in Social Cognitive Theory [11], Zimmerman’s
+                                                                                         self-regulated learning cycle [112], Brod’s model of agency in AI-
+5 DISCUSSION                                                                             assisted learning [17], and autonomy in Self-Determination Theory
+                                                                                         [82]. Asserting control relates to using opportunities to make de-
+5.1 Conceptual clarity as a foundation for                                               cisions and choices, framed as central to agency [17] and empow-
+    supporting agency                                                                    erment [4]. Interactional control can foster a sense of agency [59].
+Consistent with Bennett et al. [13], we find that agency in child–                       Design that balances automation with human control aligns with
+AI interaction remains ill-defined in CCI research. This hinders                         HCI principles of direct manipulation and User/Human-Centred
+collective interpretation of findings. While the field does not require                  System Design [73, 74, 90]. Critiquing and re-designing the status
+a single universal definition, authors should explicitly articulate                      quo overlaps with transformative agency [21, 51], “transformative
+their conceptualisation because different premises yield distinct                        possibilities” [8] , and “action towards social transformation” [56].
+design implications.                                                                     These ideas are rooted in Cultural-Historical Activity Theory [28]
+    There is general consensus on a few aspects of agency, e.g., as                      and Freire’s critical pedagogy [31].
+having degrees, but the view on the extent to which it already                              Despite the emphasis on agency, current HCI literature lacks
+exists in children or needs to be developed varies. For instance,                        structured approaches to its evaluation, usually relying on ex-
+viewing agency as something developed or cultivated implies a need                       ploratory observations. While early research necessarily focused
+for ‘positive liberty’ (i.e., providing enabling conditions), where                      on establishing whether children could exercise agency in using
+educators should provide improved epistemic conditions through AI                        AI systems and explored what this might look like, the field now
+literacy education and interaction designers should focus on giving                      possesses a sufficient vocabulary to characterise how agency might
+children meaningful choice and control. On the other hand, viewing                       manifest. Consequently, new studies do not need to investigate
+IDC ’26, June 22–25, 2026, Brighton, United Kingdom                                                                                     Voysey et al.
+
+
+agency from first principles each time. Instead, researchers can            technology, or consideration of the setting in which the technology
+build on this foundation to specify what forms of agency are in             will be used (or not).
+scope and design research protocols to deliberately elicit them. This          A relational lens may also help policymakers and educators
+transition would enable more systematic and comparable research.            develop strategies that provide children with the knowledge needed
+   We argue that the next step for research towards effectively             to make informed decisions about their use of AI. Building on
+supporting agency in child–AI interaction is to develop methods to          work that explores agency in an educational context, Biesta [15]
+evaluate to what extent AI systems support (or hinder) children’s           suggests that asking the questions ‘effective for what?’ and ‘effective
+agency. Targeting particular forms of agency will help to scope             for whom?’ can prevent AI literacy education from being limited
+down constructs to operationalise. Literature from other fields offers      to a narrow curriculum of technical proficiency and socialisation
+relevant methods to assess forms of agency in different contexts [20].      into ‘responsible use’. Instead, it creates space for young people
+Importantly, child-centred research on agency with AI will need to          to engage more broadly with the purposes and possibilities of AI,
+focus not just on individual user experience, but also on distributed       including developing critical positions that may involve rejecting
+capacity shared across peer groups, families, and communities.              or resisting particular tools.
+
+                                                                            5.4    Limitations
+5.3     Looking beyond individual agency
+                                                                            This review offers valuable insights into how children’s agency in
+While agency is often considered as an individual trait, research in
+                                                                            AI-mediated interactions is understood and supported within HCI
+psychology and sociology [10, 27] and our review corpus findings
+                                                                            research, but several limitations should be noted. First, our scope
+[8, 21, 51, 57] highlight that children are not isolated individuals,
+                                                                            was intentionally narrow: we focused on work published in the
+they are embedded in rich and complex social networks and situated
+                                                                            ACM Digital Library to capture the HCI perspective. Which this
+in changing environments (as evidenced in subsubsection 4.5.3).
+                                                                            helped maintain relevance, it excludes relevant recent contributions
+Yet, current recommendations (see subsection 4.6) largely overlook
+                                                                            from related fields such as education, psychology, and philosophy,
+this, targeting design of single-user tools.
+                                                                            which could have included interdisciplinary viewpoints.
+   We propose a relational lens to bridge this gap. In simple terms,
+                                                                               Second, the literature itself presented challenges. Key concepts
+a relational lens highlights the importance of the relationships
+                                                                            of agency, autonomy, and empowerment were often used incon-
+that individuals form in concrete practical contexts and how they
+                                                                            sistently or left undefined, making it difficult to compare studies
+influence, in this case, the exercise of agency of children when using
+                                                                            systematically. Methods for agency assessment varied widely, and
+AI tools. In formal learning environments (e.g., schools or institutes),
+                                                                            few papers offered clear measures. This limits our ability to gen-
+children acquire specific social identities (e.g., as students or pupils)
+                                                                            eralise findings and draw concrete conclusions about cause and
+and are enabled to enter into particular kinds of relationships (e.g.,
+                                                                            effect.
+student–teacher or pupil–educator). These relationships often have
+                                                                               Finally, the reviewed studies were predominantly conducted in
+distinctive characteristics; for instance, they are hierarchical. In this
+                                                                            the Global North, with limited representation from diverse cul-
+context, the hierarchical relationship between teacher and student
+                                                                            tural contexts. Most also focused on individual agency rather than
+impacts children’s access to technology, as the teacher has the role
+                                                                            collective or relational forms, overlooking the social and institu-
+of educator. A relational lens would prompt designers to consider
+                                                                            tional factors that shape children’s experiences. In our review, we
+this particular power dynamic and make design choices that provide
+                                                                            excluded grey literature, which may have left out emerging ideas.
+educators with options to enable children to exercise their agency.
+                                                                            These constraints highlight the need for future research that is more
+   Concretely, designers can draw on educational research to inform
+                                                                            inclusive, conceptually precise, and methodologically consistent.
+their thinking about how to apply a relational lens to children’s
+use of AI. When designing for learners’ agency in educational
+technology, Brod et al. [18] suggest answering four questions: “what        6     CONCLUSION
+can be chosen”, “who has choice”, “when can choices be made”,               Supporting children’s agency is an important goal for the HCI com-
+and “where can choices be made”. In asking these questions, a               munity, yet this review confirms that agency remains a widely used
+designer is prompted to consider the relationship between system            but nebulous concept. The lack of a shared understanding hinders
+design, students, and any other individuals facilitating the process        our ability to assess challenges and design solutions. In the course
+(such as parents or teachers). When answering them, assumptions             of this review, we mapped varied conceptualisations of children’s
+about agency may arise that can be further investigated with the            agency in AI contexts and compiled definitions from the literature.
+involvement of the children who will use the tool.                          We found researchers observe agency through children’s choices,
+   HCI researchers can adopt it as a conceptual framework to reflect        verbal expressions, and actions, which we cluster into three themes
+the interdependencies and situated practices that exist in real life.       of expanding targets of action: agency over the self (shown through
+In this case, co-design and the exploration of children’s previous          engaging in planning and self-regulation), agency over the system
+experiences with, and future concerns about, AI systems, as seen            (shown through asserting control during interactions), and agency
+in the corpus, provide a starting point for the process. Following          over the environment (shown through critiquing and re-designing
+Kenny et al. [51], a relational lens could extend these methodologies       the status quo). We synthesised conditions that enable and con-
+by encouraging researchers to reflect on the broader social, institu-       strain these behaviours, spanning epistemic conditions, interactional
+tional, and technical contexts that shape AI use. This could involve        design, social context, and motivational orientation. Finally, our re-
+other individuals who facilitate children’s access to or use of the         view identifies important gaps in the current HCI literature. We
+Agency in Child–AI Interaction: A Review of How It Is Conceptualised, Studied, and Supported in HCI                        IDC ’26, June 22–25, 2026, Brighton, United Kingdom
+
+
+conclude by highlighting the need for conceptual clarity while                              [16] Virginia Braun and Victoria Clarke. 2021. Thematic Analysis. SAGE, 128–147.
+recognising the plurality of agency and the importance of looking                           [17] Garvin Brod. 2026. Agency does not equal choice – conceptualizing agency for
+                                                                                                 learning in the age of AI. Learning and Individual Differences 125 (2026), 102841.
+beyond individual agency.                                                                        doi:10.1016/j.lindif.2025.102841
+                                                                                            [18] Garvin Brod, Natalia Kucirkova, Joshua Shepherd, Dietsje Jolles, and Inge Mole-
+Acknowledgments                                                                                  naar. 2023. Agency in Educational Technology: Interdisciplinary Perspectives
+                                                                                                 and Implications for Learning Design. Educational Psychology Review 35, 1 (Feb.
+This work was supported by the UK Research and Innovation                                        2023), 25. doi:10.1007/s10648-023-09749-x
+                                                                                            [19] Micah Carroll, Alan Chan, Henry Ashton, and David Krueger. 2023. Character-
+(UKRI) Cross Research Council Responsive Mode project CHAILD -                                   izing manipulation from AI systems. In Proceedings of the 3rd ACM Conference
+Children’s Agency In the age of AI: Leveraging InterDisciplinarity                               on Equity and Access in Algorithms, Mechanisms, and Optimization. 1–13.
+(MR/Z505882/1).                                                                             [20] Federica Cavazzoni, Alec Fiorini, and Guido Veronese. 2022. How Do We Assess
+                                                                                                 How Agentic We Are? A Literature Review of Existing Instruments to Evaluate
+   We used GPT-5.2 and Gemini 3 Pro large language models to                                     and Measure Individuals’ Agency. Social Indicators Research 159, 3 (Feb. 2022),
+assist with editing tasks like rephrasing and summarising text. The                              1125–1153. doi:10.1007/s11205-021-02791-8
+core ideas and content in this paper are our own, and we take full                          [21] Michael Alan Chang, Richmond Y. Wong, Thomas Breideband, Thomas M.
+                                                                                                 Philip, Ashieda McKoy, Arturo Cortez, and Sidney K. D’Mello. 2024. Co-design
+responsibility for the final text, having carefully checked all quotes,                          Partners as Transformative Learners: Imagining Ideal Technology for Schools
+and reviewed and edited all suggestions generated by these tools,                                by Centering Speculative Relationships. Association for Computing Machinery.
+                                                                                                 doi:10.1145/3613904.3642559
+before incorporating them into the article.                                                 [22] Aayushi Dangol, Robert Wolfe, Daeun Yoo, Arya Thiruvillakkat, Ben Chickadel,
+                                                                                                 and Julie A. Kientz. 2025. "If anybody finds out you are in BIG TROUBLE":
+SELECTION AND PARTICIPATION OF                                                                   Understanding Children’s Hopes, Fears, and Evaluations of Generative AI. doi:10.
+                                                                                                 48550/arXiv.2505.16089 arXiv:2505.16089 [cs].
+CHILDREN                                                                                    [23] Carson Denison, Monte MacDiarmid, Fazl Barez, David Duvenaud, Shauna
+                                                                                                 Kravec, Samuel Marks, Nicholas Schiefer, Ryan Soklaski, Alex Tamkin, Jared
+No children participated in this work.                                                           Kaplan, Buck Shlegeris, Samuel R. Bowman, Ethan Perez, and Evan Hubinger.
+                                                                                                 2024. Sycophancy to Subterfuge: Investigating Reward-Tampering in Large
+References                                                                                       Language Models. arXiv:2406.10162 [cs] doi:10.48550/arXiv.2406.10162
+                                                                                            [24] Pieter Desmet and Marc Hassenzahl. 2012. Towards Happiness: Possibility-
+  [1] Zainab Agha, Jinkyung Park, Ruyuan Wan, Naima Samreen Ali, Yiwei Wang,
+                                                                                                 Driven Design. In Human-Computer Interaction: The Agency Perspective,
+      Dominic Difranzo, Karla Badillo-Urquiola, and Pamela J. Wisniewski. 2024.
+                                                                                                 Marielba Zacarias and José Valente de Oliveira (Eds.). Springer, Berlin, Hei-
+      Tricky vs. Transparent: Towards an Ecologically Valid and Safe Approach for
+                                                                                                 delberg, 3–27. doi:10.1007/978-3-642-25691-2_1
+      Evaluating Online Safety Nudges for Teens. In Proceedings of the CHI Conference
+                                                                                            [25] Stefania Druga and Amy J Ko. 2021. How do children’s perceptions of machine
+      on Human Factors in Computing Systems. ACM, Honolulu HI USA, 1–20. doi:10.
+                                                                                                 intelligence change when training and coding smart programs? Association for
+      1145/3613904.3642313
+                                                                                                 Computing Machinery, 49–61. doi:10.1145/3459990.3460712
+  [2] Zainab Agha, Zinan Zhang, Oluwatomisin Obajemu, Luke Shirley, and Pamela
+                                                                                            [26] Stefania Druga and Amy J Ko. 2025. Scratch Copilot: Supporting Youth Creative
+      J. Wisniewski. 2022. A Case Study on User Experience Bootcamps with Teens to
+                                                                                                 Coding with AI. In Proceedings of the 24th Interaction Design and Children.
+      Co-Design Real-Time Online Safety Interventions. In CHI Conference on Human
+                                                                                                 Association for Computing Machinery, New York, NY, USA, 140–153. https:
+      Factors in Computing Systems Extended Abstracts. ACM, New Orleans LA USA,
+                                                                                                 //doi.org/10.1145/3713043.3727051 Journal Abbreviation: Proceedings of the
+      1–8. doi:10.1145/3491101.3503563
+                                                                                                 24th Interaction Design and Children.
+  [3] Laura M Ahearn. 2001. Language and agency. Annual review of anthropology
+                                                                                            [27] Mustafa Emirbayer and Ann Mische. 1998. What is agency? American journal
+      30, 1 (2001), 109–137.
+                                                                                                 of sociology 103, 4 (1998), 962–1023. ISBN: 0002-9602 Publisher: The University
+  [4] Ruth Alsop, Mette Frost Bertelsen, and Jeremy Holland. 2006. Empowerment in
+                                                                                                 of Chicago Press.
+      Practice: From Analysis to Implementation. World Bank Publications.
+                                                                                            [28] Yrjö Engeström. 2001. Expansive Learning at Work: Toward an Activity The-
+  [5] Elizabeth A. Ankrah, Franceli L. Cibrian, Lucas M. Silva, Arya Tavakoulnia,
+                                                                                                 oretical Reconceptualization. Journal of Education and Work 14, 1 (Feb. 2001),
+      Jesus A. Beltran, Sabrina E.b. Schuck, Kimberley D. Lakes, and Gillian R. Hayes.
+                                                                                                 133–156. doi:10.1080/13639080020028747
+      2023. Me, My Health, and My Watch: How Children with ADHD Understand
+                                                                                            [29] Jayne Everson, F. Megumi Kivuva, and Amy J. Ko. 2022. "A Key to Reducing
+      Smartwatch Health Data. ACM Trans. Comput.-Hum. Interact. 30, 4 (Sept. 2023).
+                                                                                                 Inequities in Like, AI, is by Reducing Inequities Everywhere First": Emerging
+      doi:10.1145/3577008 Place: New York, NY, USA Publisher: Association for
+                                                                                                 Critical Consciousness in a Co-Constructed Secondary CS Classroom. In Pro-
+      Computing Machinery.
+                                                                                                 ceedings of the 53rd ACM Technical Symposium on Computer Science Education -
+  [6] Margaret Scotford Archer. 1996. Culture and agency: The place of culture in social
+                                                                                                 Volume 1 (SIGCSE 2022). Association for Computing Machinery, New York, NY,
+      theory. Cambridge University Press.
+                                                                                                 USA, 209–215. doi:10.1145/3478431.3499395 event-place: Providence, RI, USA.
+  [7] Ayça Atabey, Cara Wilson, Lachlan D Urquhart, and Burkhard Schafer. 2025.
+                                                                                            [30] Cristina Fiani, Robin Bretin, Shaun Alexander Macdonald, Mohamed Khamis,
+      Fairness by Design: Cross-Cultural Perspectives from Children on AI and Fair
+                                                                                                 and Mark Mcgill. 2024. "Pikachu would electrocute people who are misbehaving":
+      Data Processing in their Education Futures. Association for Computing Machin-
+                                                                                                 Expert, Guardian and Child Perspectives on Automated Embodied Moderators
+      ery. doi:10.1145/3706598.3714402
+                                                                                                 for Safeguarding Children in Social Virtual Reality. Association for Computing
+  [8] Najme Babai, Eva Durall Gazulla, Netta Iivari, and Marianne Kinnula. 2025.
+                                                                                                 Machinery. doi:10.1145/3613904.3642144
+      Navigating the Future of Data-Driven Systems: Children’s perspectives on
+                                                                                            [31] Paulo Freire. 1996. Pedagogy of the Oppressed. Penguin, London.
+      data and agency. Association for Computing Machinery, 124–139. doi:10.1145/
+                                                                                            [32] Batya Friedman. 1996. Value-Sensitive Design. Interactions 3, 6 (Dec. 1996),
+      3713043.3728844
+                                                                                                 16–23. doi:10.1145/242485.242493
+  [9] Albert Bandura. 1989. Human Agency in Social Cognitive Theory. (1989).
+                                                                                            [33] Radhika Garg. 2021. Engaging Parents and Teens in an Asynchronous, Remote,
+ [10] Albert Bandura. 2001. Social cognitive theory: An agentic perspective. Annual
+                                                                                                 Community-Based Method for Understanding the Future of Voice Technology.
+      review of psychology 52, 1 (2001), 1–26.
+                                                                                                 Association for Computing Machinery, 224–235. doi:10.1145/3459990.3460732
+ [11] Albert Bandura. 2006. Toward a Psychology of Human Agency. Perspectives on
+                                                                                            [34] Romualdo Gondomar and Enric Mor. 2021. Understanding Agency in Human-
+      psychological science : a journal of the Association for Psychological Science 1, 2
+                                                                                                 Computer Interaction Design. In Human-Computer Interaction. Theory, Methods
+      (June 2006), 164–180. doi:10.1111/j.1745-6916.2006.00011.x Place: United States.
+                                                                                                 and Tools, Masaaki Kurosu (Ed.). Springer International Publishing, Cham, 137–
+ [12] John A Bargh and Tanya L Chartrand. 1999. The unbearable automaticity of
+                                                                                                 149. doi:10.1007/978-3-030-78462-1_10
+      being. American psychologist 54, 7 (1999), 462.
+                                                                                            [35] Gilbert Gottlieb. 2001. Individual development and evolution: The genesis of novel
+ [13] Dan Bennett, Oussama Metatla, Anne Roudaut, and Elisa D. Mekler. 2023. How
+                                                                                                 behavior. Psychology Press.
+      does HCI Understand Human Agency and Autonomy?. In Proceedings of the
+                                                                                            [36] Colin M. Gray, Yubo Kou, Bryan Battles, Joseph Hoggatt, and Austin L. Toombs.
+      2023 CHI Conference on Human Factors in Computing Systems. ACM, Hamburg
+                                                                                                 2018. The Dark (Patterns) Side of UX Design. In Proceedings of the 2018 CHI
+      Germany, 1–18. doi:10.1145/3544548.3580651
+                                                                                                 Conference on Human Factors in Computing Systems. ACM, Montreal QC Canada,
+ [14] Douglas Biber and Randi Reppen. 2015. The Cambridge handbook of English
+                                                                                                 1–14. doi:10.1145/3173574.3174108
+      corpus linguistics. Cambridge University Press.
+                                                                                            [37] Kris D. Gutiérrez, Bryce L. C. Becker, Manuel L. Espinoza, Krista L. Cortes, Arturo
+ [15] Gert Biesta. 2009. Good education in an age of measurement: On the need to
+                                                                                                 Cortez, José Ramón Lizárraga, Edward Rivero, Karen Villegas, and Peng Yin. 2019.
+      reconnect with the question of purpose in education. Educ. Assess. Eval. Acc. 21
+                                                                                                 Youth as Historical Actors in the Production of Possible Futures. Mind, Culture,
+      (2009), 33–46.
+                                                                                                 and Activity 26, 4 (Oct. 2019), 291–308. doi:10.1080/10749039.2019.1652327
+IDC ’26, June 22–25, 2026, Brighton, United Kingdom                                                                                                                 Voysey et al.
+
+
+ [38] Ariel Han and Shenshen Han. 2025. Empowering Children’s AI Literacy Through               (2017), 198–207.
+      Co-Creating Stories with LLM. In Proceedings of the 24th Interaction Design and      [62] Samuel Marks, Johannes Treutlein, Trenton Bricken, Jack Lindsey, Jonathan
+      Children. Association for Computing Machinery, New York, NY, USA, 994–999.                Marcus, Siddharth Mishra-Sharma, Daniel Ziegler, Emmanuel Ameisen, Joshua
+      https://doi.org/10.1145/3713043.3731520 Journal Abbreviation: Proceedings of              Batson, Tim Belonax, Samuel R. Bowman, Shan Carter, Brian Chen, Hoagy
+      the 24th Interaction Design and Children.                                                 Cunningham, Carson Denison, Florian Dietz, Satvik Golechha, Akbir Khan,
+ [39] Ariel Han, Xiaofei Zhou, Zhenyao Cai, Shenshen Han, Richard Ko, Seth Corrigan,            Jan Kirchner, Jan Leike, Austin Meek, Kei Nishimura-Gasparian, Euan Ong,
+      and Kylie A Peppler. 2024. Teachers, Parents, and Students’ perspectives on               Christopher Olah, Adam Pearce, Fabien Roger, Jeanne Salle, Andy Shih, Meg
+      Integrating Generative AI into Elementary Literacy Education. Association for             Tong, Drake Thomas, Kelley Rivoire, Adam Jermyn, Monte MacDiarmid, Tom
+      Computing Machinery. doi:10.1145/3613904.3642438                                          Henighan, and Evan Hubinger. 2025. Auditing Language Models for Hidden
+ [40] Ute Haring, Reesa Sorin, and Nerina J Caltabiano. 2019. Reflecting on childhood           Objectives. arXiv:2503.10965 [cs] doi:10.48550/arXiv.2503.10965
+      and child agency in history. Palgrave Communications 5, 1 (2019), 1–9.               [63] Giovanna Mascheroni. 2020. Datafied childhoods: Contextualising datafication
+ [41] Alexis Hiniker, Sharon S. Heung, Sungsoo (Ray) Hong, and Julie A. Kientz. 2018.           in everyday life. Current Sociology 68, 6 (2020), 798–813.
+      Coco’s Videos: An Empirical Investigation of Video-Player Design Features and        [64] Giovanna Mascheroni. 2020. Datafied Childhoods: Contextualising Datafication
+      Children’s Media Use. Association for Computing Machinery, 1–13. doi:10.1145/             in Everyday Life. Current Sociology 68, 6 (Oct. 2020), 798–813. doi:10.1177/
+      3173574.3173828                                                                           0011392118807534
+ [42] Layne Hubbard, Shanli Ding, Vananh Le, Pilyoung Kim, and Tom Yeh. 2021.              [65] Ulises A Mejias and Nick Couldry. 2019. Datafication. Internet Policy Review 8,
+      Voice Design to Support Young Children’s Agency in Child-Agent Interaction.               4 (2019).
+      Association for Computing Machinery. doi:10.1145/3469595.3469604                     [66] Raffaella Misuraca, Ashley E Nixon, Silvana Miceli, Giovanni Di Stefano, and
+ [43] Netta Iivari, Ole Sejer Iversen, Rachel Charlotte Smith, Marie-Monique Schaper,           Costanza Scaffidi Abbate. 2024. On the advantages and disadvantages of choice:
+      Leena Ventä-Olkkonen, Heidi Hartikainen, Sumita Sharma, Marianne Kinnula,                 future research directions in choice overload and its moderators. Frontiers in
+      Essi Lehto, Jenni Holappa, and Tonja Molin-Juustila. 2024. Transformative                 Psychology 15 (2024), 1290359.
+      agency – the next step towards children’s computational empowerment. In              [67] David Moher, Alessandro Liberati, Jennifer Tetzlaff, Douglas G Altman, and
+      Proceedings of the 23rd Annual ACM Interaction Design and Children Conference             PRISMA Group*. 2009. Preferred reporting items for systematic reviews and
+      (Delft, Netherlands) (IDC ’24). Association for Computing Machinery, New York,            meta-analyses: the PRISMA statement. Annals of internal medicine 151, 4 (2009),
+      NY, USA, 322–337. doi:10.1145/3628516.3655806                                             264–269.
+ [44] Netta Iivari, Leena Ventä-Olkkonen, Heidi Hartikainen, Sumita Sharma, Essi           [68] Luis Morales-Navarro, Daniel J. Noh, and Yasmin Kafai. 2025. Building babyG-
+      Lehto, Jenni Holappa, and Tonja Molin-Juustila. 2023. Computational empow-                PTs: Youth engaging in data practices and ethical considerations through the
+      erment of children: Design research on empowering and impactful designs by                construction of generative language models. In Proceedings of the 24th Interac-
+      children. International Journal of Child-Computer Interaction 37 (2023), 100600.          tion Design and Children. Association for Computing Machinery, New York, NY,
+ [45] Internet Matters. 2025. Me, myself and AI: Understanding and safeguarding                 USA, 1021–1026. https://doi.org/10.1145/3713043.3731525 Journal Abbreviation:
+      children’s use of AI chatbots. Technical Report.                                          Proceedings of the 24th Interaction Design and Children.
+ [46] Farnaz Irannejad Bisafar, Brooke Foucault Welles, and Andrea G. Parker. 2020.        [69] Ana Mouta, Ana María Pinto-Llorente, and Eva María Torrecilla-Sánchez. 2025.
+      A Dramaturgical Approach to Online Activism within Youth Empowerment                      “Where Is Agency Moving to?”: Exploring the Interplay between AI Technologies
+      Organizations. Proc. ACM Hum.-Comput. Interact. 4, CSCW2 (2020). doi:10.1145/             in Education and Human Agency. Digital Society 4, 2 (June 2025), 49. doi:10.
+      3415193                                                                                   1007/s44206-025-00203-9
+ [47] Ole Sejer Iversen, Rachel Charlotte Smith, and Christian Dindler. 2018. From         [70] Amy Mullin. 2007. Children, Autonomy, and Care. Journal of Social Philosophy
+      computational thinking to computational empowerment: a 21st century PD                    38, 4 (2007).
+      agenda. In Proceedings of the 15th participatory design conference: Full papers-     [71] Claudia Nass, Sebastian Adam, Joerg Doerr, and Marcus Trapp. 2012. Balancing
+      volume 1. 1–11.                                                                           User and Business Goals in Software Development to Generate Positive User
+ [48] Louise B Jennings, Deborah M Parra-Medina, Deanne K Hilfinger-Messias, and                Experience. In Human-Computer Interaction: The Agency Perspective, Marielba
+      Kerry McLoughlin. 2006. Toward a critical social theory of youth empowerment.             Zacarias and José Valente de Oliveira (Eds.). Springer, Berlin, Heidelberg, 29–53.
+      Journal of community practice 14, 1-2 (2006), 31–55.                                      doi:10.1007/978-3-642-25691-2_2
+ [49] Naila Kabeer. 1999. Resources, agency, achievements: Reflections on the mea-         [72] Daniel J. Noh, Deborah A. Fields, Luis Morales-Navarro, Alexis M. Cabrera-Sutch,
+      surement of women’s empowerment. Development and change 30, 3 (1999),                     Yasmin B. Kafai, and Danaé Metaxa. 2025. Youth as Advisors in Participatory
+      435–464.                                                                                  Design: Situating Teens’ Expertise in Everyday Algorithm Auditing with Teach-
+ [50] Anu Kajamaa and Kristiina Kumpulainen. 2019. Young people, digital mediation,             ers and Researchers. In Proceedings of the 24th Interaction Design and Children
+      and transformative agency, special issue (part 2). Mind, Culture, and Activity 26,        (IDC ’25). Association for Computing Machinery, New York, NY, USA, 415–428.
+      4 (2019), 286–290. arXiv:https://doi.org/10.1080/10749039.2019.1690000 doi:10.            doi:10.1145/3713043.3728849
+      1080/10749039.2019.1690000                                                           [73] Donald A. Norman. 2013. The Design of Everyday Things: Revised and Expanded
+ [51] Sadhbh Kenny, Alissa N. Antle, Gillian Russell, Alexandra Kitson, and Annemiek            Edition. Hachette UK.
+      Veldhuis. 2025. Beyond the Algorithm: Speculative Approaches to Critical AI          [74] Donald A. Norman and Stephen W. Draper. 1986. User Centered System Design:
+      Literacies with Diverse Youth. Association for Computing Machinery, 89–105.               New Perspectives on Human-computer Interaction. Taylor & Francis.
+      doi:10.1145/3713043.3727052                                                          [75] Ofcom. 2023.       Children and parents: media use and attitudes report
+ [52] Baroness Kidron, Alexandra Evans, and Jenny Afia. 2018. Disrupted childhood.              2023. https://www.ofcom.org.uk/__data/assets/pdf_file/0027/255852/childrens-
+      The cost of persuasive design (2018).                                                     media-use-and-attitudes-report-2023.pdf
+ [53] Peter M. Krafft, Meg Young, Michael Katell, Karen Huang, and Ghislain Bugingo.       [76] David Oswell. 2013. The agency of children: From family to global human rights.
+      2020. Defining AI in policy versus practice. In Proceedings of the AAAI/ACM               Cambridge University Press.
+      Conference on AI, Ethics, and Society. 72–78.                                        [77] Isil Oygur Ilhan, Yunan Chen, and Daniel A. Epstein. 2023. Co-designing for
+ [54] Sebastian Krakowski. 2025. Human-AI agency in the age of generative AI.                   the Co-Use of Child-Owned Wearables. In Proceedings of the 22nd Annual ACM
+      Information and Organization 35, 1 (2025), 100560.                                        Interaction Design and Children Conference (IDC ’23). Association for Computing
+ [55] Nomisha Kurian. 2025. Developmentally aligned AI: a framework for translating             Machinery, New York, NY, USA, 603–607. doi:10.1145/3585088.3593868 event-
+      the science of child development into AI design. AI, Brain and Child 1, 1 (Aug.           place: Chicago, IL, USA.
+      2025). doi:10.1007/s44436-025-00009-z                                                [78] Micah DJ Peters, Christina M Godfrey, Patricia McInerney, Cassia Baldini Soares,
+ [56] Clifford H. Lee, Nimah Gobir, Alex Gurn, and Elisabeth Soep. 2022. In the Black           Hanan Khalil, and Deborah Parker. 2015. The Joanna Briggs Institute reviewers’
+      Mirror: Youth Investigations into Artificial Intelligence. ACM Trans. Comput.             manual 2015: methodology for JBI scoping reviews. (2015).
+      Educ. 22, 3 (2022). doi:10.1145/3484495                                              [79] Irene Picton and Christina Clark. 2024. Children and young people’s use of
+ [57] Leigh Levinson, Christena Nippert-Eng, Randy Gomez, and Selma Sabanović.                  generative AI to support literacy in 2024. (2024).
+      2024. Snitches Get Unplugged: Adolescents’ Privacy Concerns about Robots             [80] Carina Prunkl. 2024. Human autonomy at risk? An analysis of the challenges
+      in the Home are Relationally Situated. Association for Computing Machinery,               from AI. Minds and Machines 34, 3 (2024), 26.
+      423–432. doi:10.1145/3610977.3634946                                                 [81] Carl Ratner. 2000. Agency and Culture. Journal for The Theory of Social Behavior
+ [58] Meira Levinson. 1999. The demands of liberal education. OUP Oxford.                       (2000).
+ [59] Hannah Limerick, David Coyle, and James W. Moore. 2014. The Experience               [82] Richard M. Ryan and Edward L. Deci. 2000. Self-Determination Theory and
+      of Agency in Human-Computer Interactions: A Review. Frontiers in Human                    the Facilitation of Intrinsic Motivation, Social Development, and Well-Being.
+      Neuroscience 8 (Aug. 2014). doi:10.3389/fnhum.2014.00643                                  American Psychologist 55, 1 (2000), 68–78. doi:10.1037/0003-066X.55.1.68
+ [60] Madden, Mary, Calvin, Angela, Hasse, Alexa, and Lenhart, Amanda. 2024. The           [83] Jean Salac, Alannah Oleson, Lena Armstrong, Audrey Le Meur, and Amy J.
+      Dawn of the AI Era: Teens, Parents, and the Adoption of Generative AI at Home             Ko. 2023. Funds of Knowledge used by Adolescents of Color in Scaffolded
+      and School. Technical Report. Common Sense.                                               Sensemaking around Algorithmic Fairness. In Proceedings of the 2023 ACM
+ [61] Michal Maimaran. 2017. To increase engagement, offer less: The effect of
+      assortment size on children’s engagement. Judgment and Decision Making 12, 3
+Agency in Child–AI Interaction: A Review of How It Is Conceptualised, Studied, and Supported in HCI                       IDC ’26, June 22–25, 2026, Brighton, United Kingdom
+
+
+      Conference on International Computing Education Research - Volume 1 (ICER ’23).      [99] Maarten Van Mechelen, Line Have Musaeus, Ole Sejer Iversen, Christian Dindler,
+      Association for Computing Machinery, New York, NY, USA, 191–205. doi:10.                  and Arthur Hjorth. 2021. A systematic review of empowerment in child-
+      1145/3568813.3600110 event-place: Chicago, IL, USA.                                       computer interaction research. In Proceedings of the 20th annual ACM interaction
+ [84] Roger C. Schank. 1987. What is AI, anyway? AI magazine 8, 4 (1987), 59–59.                design and children conference. 119–130.
+      ISBN: 2371-9621.                                                                    [100] Annemiek Veldhuis, Priscilla Y. Lo, Sadhbh Kenny, and Alissa N. Antle. 2025.
+ [85] Marie-Monique Schaper, Rachel Charlotte Smith, Ole Sejer Iversen, Christopher             Critical Artificial Intelligence Literacy: A Scoping Review and Framework Syn-
+      Frauenberger, Netta Iivari, Anja Zeising, Mike Tissenbaum, Elizabeth Marie                thesis. International Journal of Child-Computer Interaction 43 (March 2025),
+      Bonsignore, and Jason Yip. 2023. Computational Empowerment and children:                  100708. doi:10.1016/j.ijcci.2024.100708
+      Expanding empowerment, agency and participation in computation. Interna-            [101] Ge Wang, Jun Zhao, Samantha-Kaye Johnston, Zhilin Zhang, Max Van Kleek,
+      tional Journal of Child-Computer Interaction 38 (2023), 100617. doi:10.1016/j.            and Nigel Shadbolt. 2024. CHAITok: A Proof-of-Concept System Supporting
+      ijcci.2023.100617                                                                         Children’s Sense of Data Autonomy on Social Media. Association for Computing
+ [86] Marie-Monique Schaper, Mariana Aki Tamashiro, Rachel Charlotte Smith,                     Machinery. doi:10.1145/3613904.3642294
+      Maarten Van Mechelen, and Ole Sejer Iversen. 2023. Five Design Recommenda-          [102] Ge Wang, Jun Zhao, Max Van Kleek, Roy Pea, and Nigel Shadbolt. 2025. FamiData
+      tions for Teaching Teenagers’ about Artificial Intelligence and Machine Learning.         Hub: A Speculative Design Exploration with Families on Smart Home Datafica-
+      Association for Computing Machinery, 298–309. doi:10.1145/3585088.3589366                 tion. Association for Computing Machinery. doi:10.1145/3706598.3713494
+ [87] Hanna Schneider, Malin Eiband, Daniel Ullrich, and Andreas Butz. 2018. Em-          [103] Ge Wang, Jun Zhao, Max Van Kleek, and Nigel Shadbolt. 2021. Protection or
+      powerment in HCI-A survey and framework. In Proceedings of the 2018 CHI                   punishment? relating the design space of parental control apps and perceptions
+      Conference on Human Factors in Computing Systems. 1–14.                                   about them to support parenting for online safety. Proceedings of the ACM on
+ [88] Amartya Sen. 2017. Well-being, agency and freedom the dewey lectures 1984.                Human-Computer Interaction 5, CSCW2 (2021), 1–26.
+      In Justice and the capabilities approach. Routledge, 3–55.                          [104] Ge Wang, Jun Zhao, Max Van Kleek, and Nigel Shadbolt. 2022. ’Don’t make
+ [89] Sumita Sharma, Noura Howell, Leena Ventä-Olkkonen, Netta Iivari, Grace                    assumptions about me!’: Understanding Children’s Perception of Datafication
+      Eden, Heidi Hartikainen, Marianne Kinnula, Eva Durall, Michael Nitsche, Jussi             Online. Proc. ACM Hum.-Comput. Interact. 6, CSCW2 (2022). doi:10.1145/3555144
+      Okkonen, Supratim Pait, Elisa Rubegni, Wouter Sluis-Thiescheffer, Lonneke           [105] Ge Wang, Jun Zhao, Max Van Kleek, and Nigel Shadbolt. 2023. 12 Ways to
+      van der Velden, and Uttishta Sreerama Varanasi. 2024. Promoting Criticality with          Empower: Designing for Children’s Digital Autonomy. In Proceedings of the 2023
+      Design Futuring with Young Children. Association for Computing Machinery.                 CHI Conference on Human Factors in Computing Systems (CHI ’23). Association
+      doi:10.1145/3679318.3685335                                                               for Computing Machinery, New York, NY, USA, 1–27. doi:10.1145/3544548.
+ [90] Ben Shneiderman and Pattie Maes. 1997. Direct Manipulation vs. Interface                  3580935
+      Agents. interactions 4, 6 (Nov. 1997), 42–61. doi:10.1145/267505.267514             [106] Ge Wang, Jun Zhao, Max Van Kleek, and Nigel Shadbolt. 2023. ‘Treat Me as Your
+ [91] Ekta Shokeen, Christian Dindler, and Ole Sejer Iversen. 2025. Sure, it works in           Friend, Not a Number in Your Database’: Co-Designing with Children to Cope
+      practice, but does it work in theory? Grounding the Protagonist Perspective               with Datafication Online. In Proceedings of the 2023 CHI Conference on Human
+      in Transformative Agency. In Proceedings of the 24th Interaction Design and               Factors in Computing Systems (Hamburg, Germany) (CHI ’23). Association for
+      Children. ACM, Reykjavik Iceland, 575–588. doi:10.1145/3713043.3728851                    Computing Machinery, New York, NY, USA, Article 95, 21 pages. doi:10.1145/
+ [92] Bryan Sokol, Stuart Hammond, J. Kuebli, and L. Sweetman. 2015. The develop-               3544548.3580933
+      ment of agency. 1 (Jan. 2015), 284–322. doi:10.1002/9781118963418.childpsy108       [107] Pei Wang. 2019. On defining artificial intelligence. Journal of artificial general
+ [93] Charles Taylor. 1985. Human agency and language. (1985).                                  intelligence 10, 2 (2019), 1–37. ISBN: 1946-0163 Publisher: De Gruyter Poland.
+ [94] Matti Tedre, Henriikka Vartiainen, Juho Kahila, Tapani Toivonen, Ilkka Jor-         [108] Leonora G. Weil, Stephen M. Fleming, Iroise Dumontheil, Emma J. Kilford,
+      manainen, and Teemu Valtonen. 2020. Machine Learning Introduces New Per-                  Rimona S. Weil, Geraint Rees, Raymond J. Dolan, and Sarah-Jayne Blakemore.
+      spectives to Data Agency in K—12 Computing Education. In 2020 IEEE Frontiers              2013. The development of metacognitive ability in adolescence. Consciousness
+      in Education Conference (FIE). 1–8. doi:10.1109/FIE44824.2020.9274138                     and cognition 22, 1 (March 2013), 264–271. doi:10.1016/j.concog.2013.01.004
+ [95] Gareth Terry. 2021. Doing Thematic Analysis. SAGE, 148–161.                               Place: United States.
+ [96] Tapani Toivonen, Ilkka Jormanainen, Matti Tedre, Radu Mariescu-Istodor, Teemu       [109] Amanda L. Williams and Michael J. Merten. 2014. Linking Community, Par-
+      Valtonen, Henriikka Vartiainen, and Juho Kahila. 2022. Interacting By Draw-               enting, and Depressive Symptom Trajectories: Testing Resilience Models of
+      ing: Introducing Machine Learning Ideas to Children at a K–9 Science Fair.                Adolescent Agency Based on Race/Ethnicity and Gender. Journal of Youth and
+      Association for Computing Machinery. doi:10.1145/3491101.3503574                          Adolescence 43, 9 (Sept. 2014), 1563–1575. doi:10.1007/s10964-014-0141-8
+ [97] Michael Tomasello. 2024. Agency and Cognition. Oxford University PressOxford,       [110] Lixiang Yan, Samuel Greiff, Ziwen Teuber, and Dragan Gašević. 2024. Promises
+      11–24. doi:10.1093/9780191998294.003.0002                                                 and challenges of generative artificial intelligence for human learning. Nature
+ [98] Ana Valdivia and Martina Tazzioli. 2023. Datafication Genealogies beyond                  Human Behaviour 8, 10 (2024), 1839–1850.
+      Algorithmic Fairness: Making Up Racialised Subjects. In Proceedings of the 2023     [111] Xiajie Zhang, Cynthia Breazeal, and Hae Won Park. 2023. A Social Robot Reading
+      ACM Conference on Fairness, Accountability, and Transparency (Chicago, IL, USA)           Partner for Explorative Guidance. Association for Computing Machinery, 341–
+      (FAccT ’23). Association for Computing Machinery, New York, NY, USA, 840–850.             349. doi:10.1145/3568162.3576968
+      doi:10.1145/3593013.3594047                                                         [112] Barry Zimmerman. 2000. Attaining Self-Regulation: A Social Cognitive Perspec-
+                                                                                                tive. In Handbook of Self-Regulation. Academic Press, 13–39. doi:10.1016/B978-
+                                                                                                012109890-2/50031-7
+

@@ -1,0 +1,569 @@
+Zetroem Vol 06. No 01 Tahun 2024                                                                     ISSN (Online) : 2656-081X
+
+
+
+     Sistem Identifikasi Minat dan Bakat Berbasis Multiple
+          Intteligence dan Simple Additive Weighting
+      1
+          Marta Fairus Hani Imami, *2Lutfi Hakim, 3Sepyan Purnama Kristanto, 4Yuniarta Syarifatul Umami
+                                    1
+                                      Teknik Informatika, Politeknik Negeri Banyuwangi, Banyuwangi
+                        2,3
+                              Teknologi Rekayasa Perangkat Lunak, Politeknik Negeri Banyuwangi, Banyuwangi
+                                 4
+                                   Pendidikan Guru Pendidikan Anak Usia Dini, Universitas Jember, Jember
+                               2
+                                lutfi@poliwangi.ac.id,3sepyan@poliwangi.ac.id, 4yuniarta.syaumi@unej.ac.id
+
+
+Abstract - Interests and talents identification in children is           perhitungan tersebut. Output yang didapatkan dari sistem ini
+generally carried out by psychologists who provide test services.        setelah anak melakukan konsultasi didapatkan tipe kecerdasan
+But the procedures used are still manual and take a long time to         yang paling dominan beserta penjelasan terkait kecerdasan
+get the results. In addition, the presence of psychologists is still     tersebut,   cara   penanganan,     ekstra  kurikuler    yang
+limited and uneven in all regions of Indonesia. Therefore, in this       direkomendasikan dan artikel yang berkaitan dengan tipe
+study, a system was developed to identify children's interests and       kecerdasan. Aplikasi ini dikembangkan dengan dua aktor yaitu
+talents based on multiple intelligences which was developed by           admin dan anak dimana dikembangkan dengan framework
+Howard Gardner with the Simple Additive Weighting method.                Laravel.
+This method is used to calculate the most dominant type of
+intelligence possessed by children based on a test device developed      Kata Kunci— sistem deteksi, sistem pakar, pendukung keputusan
+by psychologists using a Likert scale in the assessment of each          multi kriteria, framework Laravel, rapid application development
+question. Based on the results of testing carried out using black-
+box testing, it was found that all the features developed were 100%                            I. Pendahuluan
+valid based on all the scenarios tested. In addition, the test results
+between the calculations in the application and manual with excel        Anak dikaruniai dengan minat dan bakat yang berbeda diantara
+obtained a score of 100% valid which means that there is no              satu dengan yang lainnya. Mengenali minat dan bakat anak
+significant difference between the two calculations. The output          sejak usia dini sangat penting dilakukan untuk mempersiapkan
+obtained from this system after the child has consulted is that the      pendekatan pendidikan terhadap anak. Peran orang tua dituntut
+most dominant type of intelligence is obtained along with an             untuk lebih dahulu mengenali minat dan bakat, sehingga dapat
+explanation related to that intelligence, how to handle it,              mengarahkan dan membimbing agar minat dan bakat anaknya
+recommended extra-curricular activities and articles related to the
+                                                                         bisa berkembang secara maksimal. Begitu pula sang anak, anak
+type of intelligence. This application was developed with two
+actors, namely admin and child which was developed with the              dapat menggali dan mengasah bakat yang dimilikinya dimana
+Laravel framework.                                                       tentunya yang disukai olehnya. Sekolah juga menjadi wadah
+                                                                         untuk mengembangkan minat dan bakat peserta didiknya.
+Keywords — detection system, expert system, multi criteria decision      Selain itu, peran guru sebagai orang tua kedua bagi anak
+making, Laravel framework, rapid application development                 didiknya di sekolah memiliki peran penting dalam
+                                                                         pengembangan kemampuan anak didiknya.
+Abstrak— Identifikasi minat dan bakat pada anak umumnya                  Faktanya, masih banyak orang tua yang memaksakan kehendak
+dilakukan oleh psikolog yang membuka jasa tes. Tetapi prosedur           kepada anaknya. Hal ini terlihat dari minimnya kemampuan
+yang digunakan selama ini masih secara manual dan                        orang tua dalam mengeksplorasi minat dan bakat anak [1].
+membutuhkan waktu yang cukup lama untuk mendapatkan
+                                                                         Akibatnya, anak tersebut memilih minat dan bakat yang belum
+hasilnya. Selain itu, keberadaan psikolog masih terbatas dan tidak
+merata di seluruh daerah Indonesia. Oleh karena itu, pada
+                                                                         sesuai dengan fitrah anak. Dengan demikian, anak-anak merasa
+penelitian ini dilakukan pengembangan sistem untuk                       sulit untuk mengekspresikan keadaan psikologisnya dengan
+mengidentifikasi minat dan bakat anak berdasarkan multiple               baik. Keadaan ini menyebabkan kebingungan yang dialami
+intelligence yang dikembangkan oleh Howard Gardner dengan                oleh orang tua. Biasanya, orang tua akan mencari tahu keadaan
+metode Simple Additive Weighting. Metode ini digunakan untuk             psikologis anaknya dari seorang psikolog dan solusi untuk
+melakukan perhitungan tipe kecerdasan yang paling dominan                masalah tersebut. Sedangkan keberadaan psikolog di suatu
+yang dimiliki oleh anak berdasarkan perangkat uji yang                   daerah belum tentu merata sehingga hal ini menjadi salah satu
+dikembangkan oleh psikolog dengan menggunakan skala likert               faktor yang dapat mempersulit orang tua dalam menganalisa
+dalam penilaian masing-masing pertanyaan. Berdasarkan hasil              minat dan bakat anaknya.
+pengujian dilakukan dengan menggunakan black-box testing
+                                                                         Salah satu cara menganalisa minat dan bakat anak yakni dengan
+didapatkan bahwa semua fitur yang dikembangkan valid 100%
+berdasarkan semua skenario yang diujikan. Selain itu, hasil              menggunakan sebuah tes yang disebut dengan psikotes minat
+pengujian antara perhitungan pada aplikasi dan manual dengan             bakat yang umumnya menghabiskan waktu 3-4 jam [2]. Tujuan
+excel didapatkan skor 100% valid, sehingga dapat diartikan               orang tua atau lembaga pendidikan melakukan tes minat-bakat
+bahwa tidak ada perbedaan yang signifikan diantara kedua                 adalah untuk dapat melakukan diagnosa dan prediksi pada diri
+
+
+
+
+Zetroem Vol 01. No 01 Tahun 2019                                                                                                    1
+anak, sehingga dapat membantu menganalisis permasalahan           visual, kinestetik, musikal, interpersonal, dan naturalis [10]–
+yang dihadapi di masa dini secara lebih cermat. Setelah           [12], sistem ini juga memberikan rekomendasi profesi yang
+mendiagnosis, barulah psikolog atau orang tua atau pendidik       sesuai dengan tipikal delapan kecerdasan tersebut. Sistem ini
+memberikan prediksi treatment apa yang dapat diberikan untuk      juga dikembangkan berbasiskan web yang harapannya dapat
+mengasah minat-bakat anak secara tepat.                           mempermudah orang tua untuk mengidentifikasi minat dan
+Bentuk tes minat dan bakat sangat beragam tergantung              bakat anaknya.
+kebutuhan. Seiring dengan berkembangnya teknologi
+informasi, saat ini tes minat dan bakat dapat digantikan dengan                      II. Metode Penelitian
+menggunakan sistem pakar sebagai sarana tes pengenalan minat
+                                                                  Metode pengembangan sistem pada aplikasi ini menggunakan
+dan bakat anak. Sistem pakar atau pendukung keputusan
+                                                                  Rapid Application Development (RAD). Metode RAD
+merupakan salah satu bidang ilmu pada sistem cerdas yang
+                                                                  merupakan model proses pengembangan perangkat lunak yang
+membantu dalam pengambilan keputusan [3]. Pada penelitian
+                                                                  berfokus pada waktu pengerjaan yang relative pendek, singkat
+yang telah dilakukan oleh Mustafa, dkk dengan judul “Sistem
+                                                                  dan cepat. RAD menggunakan metode berulang dalam
+Manajemen Potensi Anak Sejak Dini Berdasarkan Teori
+                                                                  mengembangkan aplikasi dimana model kerja aplikasi disusun
+Kecerdasan Majemuk Menggunakan Metode Simple Additive
+                                                                  pada tahap awal pengembangan dengan tujuan menetapkan user
+Weighting (SAW)” pada tahun 2020 [4]. Dan membahas
+                                                                  dengan tepat (Pressman & Maxim, 2020). RAD diterapkan di
+masalah mengenai penentuan minat dan bakat pada anak
+                                                                  beberapa penelitian sebelumnya, seperti dalam pengembangan
+berdasarkan kecerdasan yang dimiliki. Menghasilkan nilai
+                                                                  aplikasi untuk bidang perikanan [13], [14] sistem pengelolaan
+rangking potensi kecerdasan anak yang didapatkan dari hasil
+                                                                  peternak dan kandang [15], [16] dan sebagainya. Berikut
+input data pernyataan kuesioner. Penelitian lain juga dilakukan
+                                                                  merupakan tahap-tahap pengembangan aplikasi yang
+oleh Sri Sureni yang mengembangkan sistem pakar untuk
+                                                                  ditunjukkan pada gambar berikut:
+menentukan minat dan bakat anak dengan Multiple Intelligence
+[5]. Penelitian tersebut diimplementasikan di SDIT Mutiara
+Islam Depok dengan menggunakan metode Forward Chaining.
+Penelitian lain juga dilakukan oleh Wulansari dkk yang
+mengembangkan sistem pakar menggunakan multiple
+intelligence dan metode forward chaining untuk menentukan
+potensi dari masing-masing siswa yang berguna untuk
+pengembangan karir [6]. Selain itu, multiple intelligence juga
+digunakan sebagai sarana tes untuk menentukan rekomendasi
+profesi yang sesuai berdasarkan tipe kecerdasan yang dimiliki.                      Gambar 1. Metodologi RAD
+Penelitian ini dilakukan oleh Muhsina dkk dengan
+mengembangkan sistem pakar menggunakan teorema Bayesian           A.        Tahap Analisa dan Desain
+[7].                                                              Tahapan ini merupakan tahapan pengumpulan kebutuhan
+Berdasarkan penelitian yang telah dilakukan didapatkan bahwa      secara lengkap dan dilakukan secara optimal, untuk
+sebagian besar dari penelitian yang telah dilakukan               mengidentifikasi tujuan dari sistem, berorientasi pada
+mengembangkan sistem pakar dengan multiple intelligence           pemecahan masalah. Pada tahapan ini terdiri dari dua sub
+menggunakan pendekatan seperti forward chaining, teorema          tahapan yakni tahapan analisa dan desain. Pada tahapan analisa
+bayesian, dan SAW. Penelitian terdahulu menyebutkan bahwa         dilakukan analisa kebutuhan sistem mulai dari kebutuhan
+multiple intelligence sangat efektif untuk sebagai pendukung      perangkat lunak sampai dengan kebutuhan data-data indikator
+untuk mendukung minat, bakat, dan karir seseorang. Penerapan      kecerdasan pada anak berdasarkan multiple intelligence.
+multiple intelligence juga diterapkan dalam kurikulum             Terkait dengan analisis kebutuhan sistem melingkupi analisis
+pendidikan anak usia dini dalam implementasi kurikulum            Bahasa pemrograman yang digunakan dan perangkat yang
+merdeka belajar dan efektif digunakan dalam mengidentifikasi      lainnya yang dibutuhkan. Sedangkan analisis kebutuhan data-
+kemampuan kecerdasan anak untuk mendorong proses                  data indikator melingkupi 40 ciri-ciri minat dan bakat. Data
+belajarnya [8]. Oleh karena itu, berdasarkan permasalahan yang    tersebut diperoleh dari buku karangan Bunda Lucy [9]. Selain
+telah diuraikan dan penelitian terdahulu maka pada penelitian     itu, juga digunakan data kecerdasan yang berjumlah 8
+ini dikembangkan sistem identifikasi minat dan bakat berbasis     kecerdasan yang meliputi: kecerdasan lingustik, kecerdasan
+multiple intelligence (kecerdasan majemuk) dengan                 naturalis, kecerdasan interpersonal, kecerdasan matematis
+menggunakan metode Simple Additive Weighting (SAW).               logis, kecerdasan interpersonal, kecerdasan musical,
+Sistem ini menggunakan perangkat uji pada anak berusia 6-9        kecerdasan visual-spasial, dan kecerdasan kinestetik. Masing-
+tahun pada perangkat uji yang dikembangkan oleh bunda Luci        masing kecerdasan tersebut memiliki indicator atau kriterianya.
+[9], sehingga pada sistem ini dikembangkan untuk pengujian        Untuk lebih lengkap, data indicator atau kriteria dapat dilihat
+pada siswa sekolah dasar. Selain output delapan kecerdasan        pada buku karangan bunda Lucy yang berjudul Panduan Praktis
+majemuk, yaitu kecerdasan linguistic, matematis-logis, spasial-   Tes Minat & Bakat Anak [9]. Selain kedua data tersebut, pada
+                                                                  tahapan ini juga menggunakan data kecerdasan, stimulasi dan
+
+
+
+
+Zetroem Vol 06. No 01 Tahun 2024                                                                                            2
+ekstrakurikuler yang direkomendasikan berdasarkan referensi       dan siswa, tabel kecerdasan untuk menyimpan macam-macam
+tipe kecerdasan yang paling menonjol berdasarkan hasil            kecerdasan sebagai kategori, tabel konsultasi digunakan untuk
+asesmen. Jenis kecerdasan dan stimulasinya diambil                menyimpan Riwayat konsultasi pengguna, tabel indicator
+berdasarkan referensi buku di atas, sedangkan pencocokan jenis    digunakan untuk menyimpan indikator dalam perangkat uji dan
+kecerdasan dan jenis ekstrakurikuler yang relevan dengan          tabel artikel digunakan untuk menyimpan artikel yang relevan
+kecerdasan tersebut didapatkan dari hasil wawancara dengan        dengan kecerdasan. Pada gambar 3 merupakan desain usecase
+pihak guru BK. Data kecerdasan dan ekstrakurikuler                diagram yang dimana menunjukkan pada sistem ini terdapat
+ditunjukkan pada tabel berikut:                                   dua role pengguna yaitu admin dan siswa. Berdasarkan desain
+                                                                  sistem yang ditunjukkan, sistem ini digunakan sepenuhnya
+   Tabel 1. Data Kecerdasan dan Ekstrakurikuler yang Relevan      pada siswa yang didampingi oleh orang tua untuk menentukan
+ Nama Kecerdasan        Ekstrakurikuler                           kecerderungan minat bakatnya berdasarkan multiple
+            Linguistik Ekstrakurikuler pusi, bahasa inggris dan   intelligence.
+                        tartil
+             Naturalis Ekstrakurikuler pramuka, dan Palang
+                        Merah Remaja (PMR)
+         Interpersonal Ekstrakurikuler bahasa inggris, dan
+                        tartil
+     Matematis-logis Ekstrakurikuler robotik, dan bina
+                        prestasi
+         Interpersonal Ekstrakurikuler band, menari, basket,
+                        PMR dan Futsal
+              Musikal Ekstrakurikuler menyanyi, band, dan al-
+                        banjari
+       Visual-Spasial Ekstrakurikuler membatik, menganyam,
+                        menggambar (cergam) melukis, dan
+                        robotik
+            Kinestetik Ekstrakurikuler menari, karate
+                        taekwondo, senam, fashion, dan
+                        membatik/menganyam/melukis.
+
+Setelah tahapan analisa kebutuhan, selanjutnya adalah tahap
+implementasi hasil analisa kebutuhan kedalam desain sistem.
+Pada penelitian ini, konsep sistem yang didapatkan dituangkan
+ke dalam desain use case diagram, Entity Relationship
+Diagram (ERD), flowchart perhitungan Simple Additive
+Weighting (SAW), dan Mockup.
+
+
+
+
+                                                                                    Gambar 3. Use Case Diagram
+
+                                                                  Selanjutnya, selain berdasarkan desain di atas, sistem ini juga
+                                                                  menggunakan perangkat uji multiple intelligence dan metode
+                                                                  Simple Additive Weighting (SAW). Berdasarkan alur
+                                                                  perhitungan metode SAW yang ditunjukkan pada flowchart
+                                                                  pada gambar 4, langkah-langkah yang dilakukan dari metode
+                                                                  SAW pada penelitian ini terdiri dari: 1) memulai program dan
+                                                                  selanjutnya menentukan alternatif (A) dan kriteria (C).
+                                                                  Alternatif pada sistem ini mengacu terhadap 8 tipe kecerdasan
+             Gambar 2. Entity Relationship Diagram                (multiple intelligence) yang ditunjukkan pada tabel 1,
+                                                                  sedangkan kriteria mewakili subset pertanyaan yang mewakili
+Pada gambar 2 di atas merupakan desain ERD yang terdiri dari      pada masing-masing alternatif (kecerdasan) yang mana semua
+tabel penyimpanan data, terdiri dari tabel admin, siswa,          perangkat pertanyaan mengacu pada pertanyaan pengujian
+kecerdasan, konsultasi, indikator, dan artikel. Untuk tabel       multiple intelligence pada buku karangan bunda Lucy [9]; 2)
+admin dan siswa digunakan untuk menyimpan data user admin         menginputkan nilai kriteria dari setiap alternatif dimana pada
+                                                                  penelitian ini menggunakan sistem penilaian skala likert, yaitu
+
+
+
+
+Zetroem Vol 06. No 01 Tahun 2024                                                                                            3
+sangat baik (40), cukup baik (30), kurang baik (20), tidak sama        kinerja sistem yang dibuat. Tahapan pengujian ini dilakukan
+sekali (10); 3) menenttukan bobot preferensi atau tingkat              untuk menguji kesesuaian sistem dengan kebutuhan pengguna
+kepentingan (W) pada setiap kriteria dan selanjutnya skor              akhir. Pengujian pada penelitian ini menggunakan pendekatan
+jawaban dari setiap pertanyaan dari masing-masing kriteria             Black-box testing dan pengujian pencocokan antara hasil
+dibagi dengan nilai maksimum yaitu 40; 4) Melakukan                    perhitungan di sistem dengan perhitungan secara manual
+normalisasi matriks keputusan dengan cara menghitung nilai             menggunakan excel.
+rating kinerja ternormalisasi (rij) dari alternatif Ai pada kriteria
+Cj membentuk matriks ternormalisasi R. Untuk rumus
+                                                                       D.      Implementasi
+menghitung matriks ternormalisasi (rij) seperti yang
+                                                                       Tahap implementasi sistem merupakan tahap dimana sistem
+ditunjukkan pada persamaan 1; 5) Hasil akhir diperoleh dari
+                                                                       yang telah dibangun dan melalui tahap uji coba,
+proses perangkingan yaitu penjumlahan dan perkalian matriks
+                                                                       diimplementasikan kepada pengguna. Penerapan sistem
+ternormalisasi (r) dengan vector bobot sehingga diperoleh nilai
+                                                                       dilakukan di SDN 4 Penganjuran Banyuwangi.
+terbesar yang dipilih sebagai alternatif terbaik (Ai) sebagai
+solusi dimana untuk menghitung ini digunakan persamaan 2.
+                                                                       E.       Evaluasi
+                                                                       Tahap evaluasi merupakan tahap evaluasi dari penggunaan
+                                                                       sistem. Setelah aplikasi dapat berjalan dengan baik, selanjutnya
+                                                                       diperlukan proses pemeliharaan dan pengembangan pada
+                                                                       aplikasinya.
+
+                                                                                       III. Hasil dan Pembahasan
+                                                                       Sistem identifikasi minat dan bakat yang dikembangkan dalam
+                                                                       penelitian ini berdasarkan kecerdasan majemuk (multiple
+                                                                       intelligence). Sistem yang dikembangkan menggunakan
+                                                                       metode Simple Additive Weighting (SAW). Pengembangan
+                                                                       sistem ini bertujuan untuk menggali, mengetahui, dan
+                                                                       mengasah minat dan bakat yang dimiliki oleh pelajar. Selain itu,
+                                                                       berdasarkan hasil konsultasi melalui aplikasi ini diharapkan
+                                                                       dapat bermanfaat bagi orang tua dan guru dalam
+                                                                       mengembangkan potensi kecerdasan yang dimiliki oleh anak.
+          Gambar 4. Flowchart Perhitungan Metode SAW                   Sistem yang dikembangkan berbasis web sehingga dapat
+                                                                       digunakan oleh pelajar melalui pendampingan oleh orang tua.
+B.        Pembuatan Sistem
+Tahapan pembuatan sistem adalah tahap implementasi desain
+ke dalam pengkodean. Tahapan ini terdiri dari tahapan
+pengkodingan, demonstrasi dan pembaruan sistem. Tahapan
+pengkodingan merupakan proses implementasi desain sistem
+ke dalam koding menggunakan bahasa pemrograman Hypertext
+Preprocessor (PHP) dengan framework laravel, implementasi
+ERD ke dalam basis data MySQL. Sedangkan tahapan
+demonstrasi merupakan proses pengujian sistem dengan teknik
+unit test untuk melakukan pengujian setiap baris kode yang
+dituliskan untuk mengetahui kekurangan dan kesalahan sistem
+koding. Dan untuk tahap pembaruan sistem merupakan tahapan                     Gambar 5. Gambaran Sistem yang Dikembangkan
+perbaikan sistem yang dibangun berdasarkan hasil pengujian
+unit test yang dilakukan. Tujuannya adalah untuk memperbaiki           Gambaran sistem yang dikembangkan seperti pada gambar 5
+penulisan baris kode yang mengalami kesalahan atau kendala.            menunjukkan bahwa pengguna yaitu anak (yang didampingi
+                                                                       guru atau orang tua) membuka aplikasi. Sebelum melakukan
+C.       Pengujian                                                     konsultasi, pengguna mengisi data diri siswa (nama, jenis
+Tahap pengujian sistem bertujuan untuk melihat kesalahan dan           kelamin, kelas, dan umum) yang nantinya data-data ini
+kekurangan pada aplikasi yang telah dibuat kepada pengguna.            disimpan pada basis data. Setelah mengisi data diri, pengguna
+Sehingga dapat memastikan apakah program berjalan dengan               selanjutnya melakukan konsultasi melalui aplikasi dengan
+baik dan tidak ada gangguan apapun yang dapat mempengaruhi             menjawab kuisioner yang ditampilkan. Jawaban dari kuisioner
+                                                                       tersebut nantinya disimpan pada basis data. Setelah mengisikan
+
+
+
+
+Zetroem Vol 06. No 01 Tahun 2024                                                                                                  4
+jawaban dari kuisioner tersebut, selanjutnya aplikasi             memberikan informasi tambahan terkait penjelasan dari
+melakukan perhitungan berdasarkan hasil jawaban tersebut          kecerdasan yang memiliki nilai tertinggi, cara mudah
+dengan menggunakan metode SAW. Semua aktivitas ini                mengembangkan tipe kecerdasan tersebut, rekomendasi ekstrak
+disimpan ke dalam basisdata dimana nantinya dari hasil            kurikuler di sekolah yang bisa diikuti sesuai dengan tipe
+konsultasi yang dilakukan dapat berguna untuk guru dan orang      kecerdasan yang dominan, serta artikel yang terkait dengan tipe
+tua dalam mendidikan anak sesuai dengan fitrahnya serta           kecerdasan tersebut.
+mengembangkan minat dan bakat yang dimiliki anak agar
+berkembang maksimal.
+Aplikasi yang dikembangkan ini dapat diakses oleh dua aktor
+yaitu anak dan Guru BK. Guru BK menjadi admin pada sistem
+ini. Anak yang didampingi oleh guru atau orang tua mengisi
+data diri dan melakukan konsultasi atau tes minat bakat dengan
+mengisi kuisioner yang diberikan kemudia disimpan untuk
+mengetahui hasil diagnosa kecerdasan yang dimiliki anak
+tersebut. Anak juga dapat melihat artikel dan informasi
+mengenai multiple intelligence. Sedangkan admin diharuskan
+untuk login kemudian akan dapat mengelola data yang
+dibutuhkan seperti data indikator, data kecerdasan, artikel dan   Gambar 7. Halaman Melakukan Konsultasi Melalui Pengisian
+histori konsultasi.                                               Kuisioner
+
+A.       Hasil Tampilan Aplikasi
+Tampilan aplikasi sistem identifikasi minat dan bakat yang
+dikembangkan memiliki antarmuka yang disesuaikan dengan
+kebutuhan pengguna. Pertama kali aplikasi dibuka, disuguhkan
+pada halaman beranda seperti yang ditampilkan pada gambar 5.
+Selanjutnya, pada halaman tersebut, pengguna bisa melakukan
+konsultasi melalui menu konsultasi dan admin bisa login
+melalui menu Login Admin. Setelah pengguna anak atau siswa
+klik menu konsultasi, maka akan diarahkan pada halaman
+konsultasi siswa seperti yang ditunjukkan pada gambar 6.
+Pengguna (dalam hal ini anak) dapat menjawab pertanyaan dan
+jawaban dari yang sudah disediakan oleh pengembang
+berdasarkan perangkat uji yang sudah dikembangkan oleh
+psikolog.
+
+
+
+
+                  Gambar 6. Halaman Beranda
+                                                                                 Gambar 8.Tampilan Hasil Konsultasi
+Selanjutnya, apabila pengguna telah menjawab semua
+pertanyaan yang telah disediakan, sistem akan melakukan
+                                                                  Pada halaman admin, pengguna dapat melakukan Kelola data
+perhitungan dengan menggunakan metode SAW. Hasil
+                                                                  siswa (pengguna), Kelola data kecerdasan, Kelola data
+pengisian pertanyaan atau konsultasi dari pengguna
+                                                                  indikator dari kecerdasan, Kelola artikel, dan Kelola data histori
+ditunjukkan dalam sebuah grafik radar yang menggambarkan
+                                                                  pengisian konsultasi yang dilakukan oleh pengguna anak
+bagian kecerdasan apa yang paling dominan yang dimiliki oleh
+                                                                  (siswa) seperti yang ditunjukkan pada gambar 9 dan 9. Dalam
+anak tersebut berdasarkan pertanyaan yang sudah dijawab.
+                                                                  aktor admin ini, hanya dipegang oleh guru dan dalam
+Selain menghasilkan output tersebut, pada sistem juga
+                                                                  penggunaannya, aktor ini dapat melakukan tambah, edit dan
+
+
+
+
+Zetroem Vol 06. No 01 Tahun 2024                                                                                               5
+hapus data sesuai dengan hak akses yang sudah ditentukan oleh   Raissa Putri Elisia Sadira Sasta. Setelah anak menjawab semua
+peneliti.                                                       pertanyaan yang telah disediakan, makan akan diperoleh data
+                                                                jawaban. Data jawaban diperoleh seperti pada tabel 2.
+
+                                                                      Tabel 2. Data Jawaban Setiap Kecerdasan (Alternatif)
+                                                                                                   Kriteria
+                                                                   Alternatif
+                                                                                   C1       C2       C3       C4         C5
+                                                                      Linguistik      40        30         40        30        30
+
+                                                                       Naturalis      40        40         30        30        30
+
+                                                                   Intrapersonal      30        20         40        30        40
+                                                                    Matematis –
+                                                                                      30        20         40        20        30
+                                                                         Logis
+                                                                   Interpersonal      30        10         30        30        30
+
+                                                                        Musikal       40        30         40        30        30
+                                                                       Visual –
+                                                                                      40        30         30        40        40
+                                                                        Spasial
+                                                                      Kinestik -
+                                                                                      40        30         30        40        30
+                                                                       Jasmani
+
+                                                                Kemudian menentukan matriks atau nilai ternormalisasi (rij)
+                                                                dari alternatif Ai pada kriteria Cj. Setiap kriteria akan dibagi
+                                                                oleh nilai maksimim pada kriteria tersebut. Sehingga akan
+                                                                membentuk nilai ternormalisasi R.
+
+                                                                 Nilai Maksimum Setiap Kriteria
+                                                                 “[“40”,”40”,”40”,”40”,”40”]”
+
+                                                                                   Tabel 3. Nilai Ternormalisasi (rij)
+                                                                                         40       40        40           40     40
+ Gambar 9. Tampilan Aplikasi pada Halaman Admin untuk Kelola      Nilai Max
+                                                                                        C1        C2        C3           C4    C5
+            data siswa, artikel dan histori konsultasi
+                                                                        Linguistik         1     0,75        1       0,75      0,75
+                                                                         Naturalis         1         1     0,75      0,75      0,75
+                                                                     Intrapersonal      0,75      0,5        1       0,75       1
+                                                                      Matematis –
+                                                                                        0,75      0,5        1           0,5   0,75
+                                                                           Logis
+                                                                     Interpersonal      0,75     0,25      0,75      0,75      0,75
+                                                                          Musikal          1     0,75        1       0,75      0,75
+                                                                        Visual –
+                                                                                           1     0,75      0,75          1      1
+                                                                          Spasial
+                                                                       Kinestik –
+      Gambar 10. Halaman Menambahkan Data Kecerdasan                                       1     0,75      0,75          1     0,75
+                                                                         Jasmani
+                                                                Hasil akhir nilai preferensi (Vi) diperoleh dari penjumlahan
+                                                                nilai R dikalikan dengan bobot kriteria (W). Bobot pada setiap
+B.      Hasil Implementasi Metode SAW                           kriteria (C) ditetapkan menjadi 20 dan kemudian dari hasil
+Algoritma perhitungan metode SAW diimplementasikan ke           tersebut didapatkan nilai preferensi (Vi) seperti yang
+dalam Bahasa pemrograman PHP dengan framework Laravel.          ditunjukkan pada tabel 4.
+Sistem yang telah dikembangkan diujicobakan kepada 30 siswa
+SDN 4 Penganjuran Banyuwangi. Pada pembahasan
+implementasi metode SAW ini, diambil sampel analisa
+perhitungan minat dan bakat pada salah satu anak yang bernama
+
+
+
+
+Zetroem Vol 06. No 01 Tahun 2024                                                                                                     6
+                    Tabel 4. Nilai Preferensi (Vi)                box ditujukan untuk mengetahui fungsionalitas dari sistem
+                                                        Total     apakah sesuai dengan scenario yang diujikan yang dinyatakan
+                    C1      C2    C3     C4     C5
+                                                        Akhir     dengan nilai valid atau tidak valid. Berdasarkan hasil pengujian
+      Linguistik     20     15     20    15     15       85       yang dilakukan dengan menggunakan metode black-box testing
+                                                                  didapatkan bahwa hasil pengujian dinyatakan valid 100% dari
+       Naturalis     20     20     15    15     15       85
+                                                                  semua scenario uji yang dilakukan. Untuk lebih lengkapnya,
+    Intrapersonal    15     10     20    15     20       80       hasil pengujian menggunakan black-box ditunjukkan pada tabel
+    Matematis –                                                   5.
+                     15     10     20    10     15       70                  Tabel 5. Hasil Pengujian Metode Black-Box
+         Logis
+    Interpersonal    15     5      15    15     15       65                    Langkah        Yang
+                                                                   Kasus Uji                                 Hasil Uji       Status
+                                                                               Penelitian     diharapkan
+        Musikal      20     15     20    15     15       85        Login       Pada           Masuk ke       Dapat           Valid
+       Visual –                                                    Admin       halaman        halaman        masuk ke
+                     20     15     15    20     20       90                    login admin sesuai role       tampilan
+         Spasial
+      Kinestik –                                                               mengisi                       beranda
+                     20     15     15    20     15       85                    username                      sesuai role
+        Jasmani
+                                                                               dan
+                                                                               password
+Berdasarkan hasil perhitungan, nilai yang diperoleh dirangking     Data        Pada           Admin dapat    Dapat           Valid
+dari yang terbesar ke yang terkecil sebagai hasil identifikasi     Kecerdas    halaman        menambah,      menambah,
+sistem terhadap pengisian kuisioner yang dilakukan oleh            an          beranda        menghapus,d menghapus,
+pengguna. Hasil akhir yang ditunjukkan pada simulasi Raissa        (admin)     menampilk      an merubah     dan
+Putri Elisia Sadira Sasta diperoleh kecerdasan visual – spasial                an data        data           memperbar
+menjadi kecerdasan paling dominan dengan skor 90; disusul                      kecerdasan     kecerdasan     ui data
+kecerdasan linguistik, naturalis, musical, kinestetik – jasmani                                              kecerdasan
+sebesar 85 poin; kecerdasan intrapersonal 80; kecerdasan           Data        Pada           admin dapat      Dapat         Valid
+matematis – logis sebesar 70 dan kecerdasan interpersonal          Indikator   halaman        menambah,        menambah,
+sebesar 60 pin. Dari hasil tersebut digunakan sebagai dasar        (admin)     data           menghapus,d      menghapus,
+                                                                               indikator      an merubah       dan
+untuk menentukan minat dan bakat sesuai dengan multiple
+                                                                               dapat          data indikator   memperbar
+intelligence yang paling dominan. Selain itu, berdasarkan hasil                menampilk                       ui data
+konsultasi pada sistem, nilai yang didapatkan direpresentasikan                an data                         indikator
+ke dalam sebuah Grafik radar pada gambar berikut.                              indikator
+                                                                   Data        Pada           Admin dapat      Dapat         Valid
+                                                                   Artikel     halaman        nemambah,        menambah,
+                                                                   (admin)     data artikel   menghapus,d      menghapus,
+                                                                               dapat          an merubah       dan
+                                                                               menampilk      data artikel     memperbar
+                                                                               an data                         ui data
+                                                                               artikel                         artikel
+                                                                   Data Diri   Pada           Masuk ke         Dapat         Valid
+                                                                   Siswa       halaman        halaman          masuk ke
+                                                                   (user)      data diri      sesuai role      halaman
+                                                                               siswa, anak                     pertanyaan/
+                                                                               mengisi                         kuesioner
+                                                                               nama, jenis                     sesuai role
+                                                                               kelamin,
+                                                                               kelas, dan
+                                                                               umur
+             Gambar 11. Grafik radar Hasil Konsultasi              Halaman     Pada           Anak dapat       Dapat         Valid
+                                                                   Konsultas   halaman        melihat hasil    melihat
+C.      Hasil Pengujian Sistem                                     i (user)    konsultasi     konsultasi       hasil
+Pengujian merupakan satu tahapan penting yang dilakukan                        anak dapat     yang telah       konsultasi
+untuk memeriksa apakah sistem yang dihasilkan dapat berjalan                   memulai        dilakukannya     yang telah
+sesuai dengan kebutuhan pengguna. Pada penelitian ini,                         konsultasi     dengan           dilakukanny
+menggunakan dua pendekatan atau teknik pengujian yaitu                         dengan         menjawab         a.
+menggunakan metode black-box testing dan pengujian                             menjawab       semua
+                                                                               semua          pertanyaan
+perbandingan antara hasil yang didapatkan di sistem dengan
+                                                                               pertanyaan     yang ada.
+hasil menggunakan perhitungan manual. Pada pengujian black-                    yang ada.
+
+
+
+
+Zetroem Vol 06. No 01 Tahun 2024                                                                                               7
+Selanjutnya, adalah dilakukan pengujian yang membandingkan        Sistem identifikasi minat dan bakat dengan multiple
+hasil yang didapatkan pada sistem dengan perhitungan manual       intelligence berbasis web dapat dikembangkan dengan
+yang dilakukan dengan menggunakan excel. Aplikasi diujikan        menambahkan beberapa pengembangan, yaitu menambahkan
+kepada 30 siswa SDN 4 Penganjuran dan didapatkan bahwa            kategori kelas dan gambaran masing-masing ataupun
+dari 30 data yang diuji juga mengahasilkan nilai yang valid,      keseluruhan, pertanyaan dibuatt lebih sedikit agar anak tidak
+tidak ada perbedaan yang signifikan antara hasil yang             bosan untuk menjawab pertanyaan, menggunakan metode lain
+didapatkan pada aplikasi dengan perhitungan manual yang           dalam perhitungannya agar dapat menjadi pembanding
+dilakukan dengan menggunakan Microsoft excel.                     keakuratan hasil yang didapatkan. Selain itu, untuk
+                                                                  mempermudah dalam pengembangan perangkat uji, ke depan
+D.       Analisis dengan Penelitian Sebelumnya
+                                                                  pertanyaan dalam sistem yang dikembangkan dapat dibuat lebih
+Pada penelitian ini, dikembangkan sistem pendukung
+                                                                  dinamis agar bisa menyesuaikan perkembangan perangkat uji
+Keputusan untuk mengidentifikasi bakat dan minat siswa yang
+                                                                  dari multiple intelligence.
+berusia 6-9 tahun berbasis multiple intelligence dan untuk
+perhitungan penentuan keputusan menggunakan metode SAW.
+                                                                                       V. Daftar Pustaka
+Keputusan akhir yang dihasilkan dari sistem ini adalah berupa
+tipe kecerdasan yang paling menonjol dari siswa dan               [1] D. Anzani, I. R. Panjaitan, I. Harahap, and ..., “Strategi
+disesuaikan dengan rekomendasi ekstra kurikuler yang                  Komunikasi        Interpersonal     Orang     Tua    dalam
+berkaitan dengan tipe kecerdasan tersebut seperti yang                Meningkatkan Minat dan Bakat Anak di Kelurahan Suka
+dijabarkan pada tabel 1. Sistem ini digunakan dalam penerapan         Raja, Kecamatan Medan Maimun, Kota Medan,” J.
+pengembangan minat dan bakat pada siswa Sekolah Dasar                 Pendidikan, Sejarah, dan Ilmu-ilmu Sos., vol. 5, no. 1, pp.
+(SD), sedangkan untuk penelitian sebelumnya yang dilakukan            105–112,           2021,         [Online].       Available:
+oleh Mustafa dkk [4] menerapkan teori kecerdasan majemuk              https://jurnal.uisu.ac.id/index.php/mkd/article/view/4230
+untuk manajemen potensi anak sejak dini, sedangkan ntuk               %0Ahttps://jurnal.uisu.ac.id/index.php/mkd/article/down
+penelitian yang dilakukan oleh Sureni dkk menggunakan                 load/4230/3953
+metode Forward Chaining untuk metode pengembangannya              [2] Nur’aeni, TES PSIKOLOGI : Tes Inteligensi dan Tes
+[5].
+                                                                      Bakat. Yogyakarta: Universitas Muhammadyah (UM)
+                                                                      Purwokerto       Press,     2012. [Online].      Available:
+                     IV. Kesimpulan
+                                                                      https://digilib.ump.ac.id/files/disk1/21/jhptump-ump-gdl-
+Berdasarkan penelitian yang telah dilakukan, didapatkan hasil         nuraenisps-1031-1-fulltek-u.pdf
+bahwa sistem deteksi minat bakat menggunakan metode Simple        [3] M. Muttaqin et al., Pengantar Sistem Cerdas. Medan:
+Additive Weighting dapat berjalan sesuai dengan yang                  Yayasan Kita Menulis, 2023.
+diharapkan. Hasil pengujian menggunakan black-box testing         [4] M. Mustafa, M. Mustafid, and R. R. Isnanto, “Sistem
+didapatkan bahwa semua fitur dari aplikasi dinyatakan 100%            Manajemen Potensi Anak Sejak Dini (SIMPONI)
+valid bisa berjalan. Sementara, untuk sistem identifikasi minat       Berdasarkan Teori Kecerdasan Majemuk Menggunakan
+bakat sendiri, didapatkan hasil bahwa sistem berjalan sesuai          Metode Simple Additive Weighting (SAW),” Infotek J.
+dengan hasil perhitungan yang sebenarnya. Melalui tahapan             Inform. dan Teknol., vol. 3, no. 2, pp. 194–203, 2020, doi:
+pengujian perbandingan antara perhitungan secara manual dan           10.29408/jit.v3i2.2250.
+hasil perhitungan pada sistem yang menghasilkan identifikasi      [5] S. Sureni, Herlawati, and H. Supendar, “Sistem Pakar
+tidak ada perbedaan yang signifikan. Hal ini dapat dikatakan          Minat Dan Bakat Anak Dengan Multiple Intelligences
+sistem identifikasi yang dikembangkan dengan menggunakan              Berbasis Web Pada Sdit Mutiara Islam Depok,” Techno
+metode Simple Additive Weighting (SAW) sesuai dengan yang
+                                                                      Nusa Mandiri, vol. 9, no. 1, p. 14, 2013.
+diharapkan. Hasil yang didapat berupa grafik radar yang
+                                                                  [6] R. E. Wulansari, R. H. Sakti, A. Ambiyar, M. Giatman, N.
+berisikan mengenai rekapitulasi penilaian dari 8 multiple-
+                                                                      Syah, and W. Wakhinuddin, “Expert System For Career
+intelligence, serta terdapat informasi tambahan terkait
+                                                                      Early Determination Based On Howard Gardner’s
+pendekatan yang perlu dilakukan, teknik pembelajaran dan
+ekstra kurikuler yang direkomendasikan berdasarkan                    Multiple Intelligence,” J. Appl. Eng. Technol. Sci., vol. 3,
+kecerdasan yang memiliki nilai tertinggi. Hal ini diharapkan          no. 2, pp. 67–76, 2022.
+anak dapat mengetahui minat dan bakat yang dimilikinya sesuai     [7] E. A. Muhsina and N. Nurochman, “Sistem Pakar
+dengan multiple intelligence dari dini agar dapat menggali dan        Rekomendasi Profesi Berdasarkan Multiple Intelligences
+mengasahnya secara optimal tanpa ada paksaan dari pihak               Menggunakan Teorema Bayesian,” JISKA (Jurnal Inform.
+manapun. Berdasarkan Selain itu, sistem ini harapannya dapat          Sunan Kalijaga), vol. 2, no. 1, pp. 16–25, 2017, doi:
+membantu orang tua dan guru untuk mempermudah dalam                   10.14421/jiska.2017.21-03.
+mengarahkan dan mendukung minat dan bakat yang dimiliki           [8] L. Indah Budyawati and Y. Syarifatul Umami, “Analysis
+anak atau muridnya sesuai dengan kecerdasan yang paling               of Early Childhood Education Curriculum in Jember
+menonjol dari setiap anak atau murid.                                 Regency and the Relevance of Multiple Intelligence-based
+
+
+
+
+Zetroem Vol 06. No 01 Tahun 2024                                                                                             8
+     Curriculum Development in the Era of ‘Merdeka                    Riset Inovatif (SENTRINOV) ke-8, 2022, vol. 8, no. 3.
+     Belajar,’” vol. 11, no. 3, pp. 11–22, 2022, [Online].       [14] L. Hakim, C. Al Kharraz, A. R. Maulida, S. P. Kristanto,
+     Available: http://www.pancaranpendidikan.or.id                   D. H. Kusuma, and I. P. S. Mecha, “Pemanfaatan Aplikasi
+[9] B. Lucy, Panduan Tes Minat dan Bakat Anak. Jakarta:               NelayanKita untuk Mendukung Digitalisasi Pengelolaan
+     Penebar Plus+, 2016.                                             Data Nelayan di Kecamatan Muncar Banyuwangi,” Arch.
+[10] H. Gardner, Frames od Mind: The Theory of Multiple               J. Pengabdi. Kpd. Masy., vol. 2, no. 1, pp. 98–113, Dec.
+     Intelligences. New York: Basic Books, 2011.                      2022, doi: 10.55506/arch.v2i1.53.
+[11] H. Gardner, Intelligence Reframed: Multiple Intelligences   [15] A. Hidayat et al., “Monitoring Suhu, Kelembapan, Dan
+     for the 21st Century. New York: Basic Books, 1999.               Berat Kandang Lebah Madu Terintegrasi Berbasis
+[12] K. Davis, J. Christodoulou, S. Seider, and H. Gardner,           Android,” Pros. Semin. Nas. Terap. Ris. Inov., vol. 6, no.
+     “The Theory of Multiple Intelligences,” in The Cambridge         1, pp. 1032–1039, 2020.
+     Handbook of Intelligence, Cambride, UK; New York:           [16] A. Hidayat, Subono, V. A. Wardhany, L. Hakim, A.
+     Cambride University Press, 2011, pp. 485–503. doi:               Sarirayndra, and A. S. Nugroho, “Sistem Pengelolaan
+     10.1017/9781108770422.028.                                       Peternak dan Kandang Lebah Madu Terintegrasi Berbasis
+[13] L. Hakim, C. AlKharraz, A. R. Maulida, S. P. Kristanto,          Web,” Semin. Nas. Terap. Ris. Inov. Ke-6, vol. 6, no. 1,
+     and D. H. Kusuma, “Pengembangan Aplikasi                         pp. 1024–1031, 2020.
+     NelayanKita Berbasis Web Menggunakan Metode Rapid
+     Application Development,” in Seminar Nasional Terapan
+
+
+
+
+Zetroem Vol 06. No 01 Tahun 2024                                                                                           9
+

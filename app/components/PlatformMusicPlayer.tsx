@@ -55,8 +55,9 @@ export default function PlatformMusicPlayer(){
       window.setTimeout(()=>{justDraggedRef.current=false},120);
       const container=containerRef.current;if(!container)return;
       const rect=container.getBoundingClientRect(),next=clampToViewport(rect.left,rect.top,rect.width,rect.height);
-      container.style.transform="";setPosition(next);
-      savePosition({x:next.x/window.innerWidth,y:next.y/window.innerHeight});
+      const normalized={x:next.x/window.innerWidth,y:next.y/window.innerHeight};
+      container.style.transform="";setPosition(normalized);
+      savePosition(normalized);
     };
     window.addEventListener("pointermove",move,{passive:false});
     window.addEventListener("pointerup",end);
@@ -111,12 +112,14 @@ export default function PlatformMusicPlayer(){
     const rect=container.getBoundingClientRect();
     const next=clampToViewport(rect.left,rect.top,rect.width,rect.height);
     container.style.transform="";
-    setPosition(next);
-    savePosition({x:next.x/window.innerWidth,y:next.y/window.innerHeight});
+    const normalized={x:next.x/window.innerWidth,y:next.y/window.innerHeight};
+    setPosition(normalized);
+    savePosition(normalized);
   }
 
   function startDrag(event:ReactPointerEvent<HTMLDivElement>){
     if(event.button!==0&&event.pointerType==="mouse")return;
+    if((event.target as HTMLElement).closest(".platform-music-panel"))return;
     const container=containerRef.current;if(!container)return;
     const rect=container.getBoundingClientRect();
     dragRef.current={
@@ -174,7 +177,7 @@ export default function PlatformMusicPlayer(){
       onClick={handleToggle}
     >
       <span className="platform-music-star" aria-hidden="true">
-        <img src="/assets/music/star-singer-jb-v2.png" alt=""/>
+        <img src="/assets/music/star-singer-jb-v2.png" alt="" draggable={false}/>
       </span>
       <span className="platform-music-copy"><b>星星唱机</b><small>{enabled?"正在唱歌啦":"点一下就能唱啦"}</small></span>
     </button>

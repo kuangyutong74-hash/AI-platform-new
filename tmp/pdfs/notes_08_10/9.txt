@@ -1,0 +1,1104 @@
+     Teachers, Parents, and Students’ Perspectives on Integrating
+         Generative AI into Elementary Literacy Education
+                     Ariel Han                                             Xiaofei Zhou                                Zhenyao Cai
+               hanjy3@uci.edu                                      xzhou50@ur.rochester.edu                       zhenyaoc@uci.edu
+        University of California, Irvine                            University of Rochester                  University of California, Irvine
+                United States                                            United States                               United States
+
+                 Shenshen Han                                               Richard Ko                                Seth Corrigan
+              shenshh@uci.edu                                           kor2@uci.edu                               scorrig1@uci.edu
+        University of California, Irvine                        University of California, Irvine             University of California, Irvine
+                United States                                           United States                                United States
+
+                                                                           Kylie Peppler
+                                                                     kpeppler@uci.edu
+                                                                University of California, Irvine
+                                                                        United States
+ABSTRACT                                                                           (CHI ’24), May 11–16, 2024, Honolulu, HI, USA. ACM, New York, NY, USA,
+The viral launch of new generative AI (GAI) systems, such as Chat-                 17 pages. https://doi.org/10.1145/3613904.3642438
+GPT and Text-to-Image (TTL) generators, sparked questions about
+how they can be efectively incorporated into writing education.                    1     INTRODUCTION
+However, it is still unclear how teachers, parents, and students per-              In early January 2023, The New York Education Department an-
+ceive and suspect GAI systems in elementary school settings. We                    nounced a ban on using generative AI chatbots (ChatGPT) in school
+conducted a workshop with twelve families (parent-child dyads)                     districts’ networks and devices over concerns about potential mis-
+with children ages 8-12 and interviewed sixteen teachers in order                  use and safety [90]. By May of that year, however, the department
+to understand each stakeholder’s perspectives and opinions on GAI                  dropped the ban, announcing plans to explore whether there were
+systems for learning and teaching writing. We found that the GAI                   potential possibilities to use the technology in the classroom [60, 91].
+systems could be benefcial in generating adaptable teaching mate-                  When new technology is introduced in educational settings, per-
+rials for teachers, enhancing ideation, and providing students with                ceptions often swing between excessive optimism and skepticism,
+personalized, timely feedback. However, there are concerns over au-                largely due to the uncertainty surrounding the actual usage of these
+thorship, students’ agency in learning, and uncertainty concerning                 systems in real-world scenarios [27, 87]. The ongoing discourse in
+bias and misinformation. In this article, we discuss design strategies             education around generative AI (GAI) emphasizes the need for com-
+to mitigate these constraints by implementing an adults-oversight                  prehensive research into its integration within educational contexts
+system, balancing AI-role allocation, and facilitating customization               [98].
+to enhance students’ agency over writing projects.                                    GAI, also known as Generative Adversarial Networks (GANs),
+                                                                                   GAI systems have gained signifcant attention within the HCI com-
+CCS CONCEPTS                                                                       munity [75, 109, 124]. The advances of generative AI (i.e., ChatGPT,
+• Human-centered computing → Empirical studies in HCI.                             Dall.e 2, Midjourney) open up a new horizon of open-context con-
+                                                                                   versation with an AI chatbot [4, 20, 74, 78], including generating
+KEYWORDS                                                                           novel outputs-such as images, text, music, or video-based on pat-
+Generative AI, Artifcial Intelligence, K-12 Education                              terns it learned from large datasets during its training [15]. The HCI
+                                                                                   research community has started to examine utilities and interaction
+ACM Reference Format:
+Ariel Han, Xiaofei Zhou, Zhenyao Cai, Shenshen Han, Richard Ko, Seth               techniques with these systems [63, 116], focusing on new inter-
+Corrigan, and Kylie Peppler. 2024. Teachers, Parents, and Students’ Perspec-       action styles [52, 125], Large Language Models’ (LLM) capacities
+tives on Integrating Generative AI into Elementary Literacy Education. In          [63], and how to adapt the systems to creative activities for adults
+Proceedings of the CHI Conference on Human Factors in Computing Systems            [43, 68]. While the advancements in GAI have captivated the HCI
+                                                                                   community with their ability to foster novel forms of open-context
+                                                                                   interaction, applying these technologies in educational settings,
+                                                                                   especially for elementary school students, presents a diferent set
+This work is licensed under a Creative Commons Attribution International
+4.0 License.                                                                       of challenges and opportunities.
+                                                                                      Technology integration in education requires understanding
+CHI ’24, May 11–16, 2024, Honolulu, HI, USA                                        practical realities rather than relying solely on technological ad-
+© 2024 Copyright held by the owner/author(s).
+ACM ISBN 979-8-4007-0330-0/24/05                                                   vancements, which call for balanced approaches that recognize the
+https://doi.org/10.1145/3613904.3642438                                            complexities of teaching and learning [87]. Recognizing the role
+CHI ’24, May 11–16, 2024, Honolulu, HI, USA                                                                                           Han, et al.
+
+
+of storytelling in child development [53] and its impact on critical     We aim to contribute to the HCI community by highlighting the
+skills like imagination and comprehension [69], it becomes clear         practical applications and limitations of GAI in education and by
+that integrating such advanced technologies in education demands         ofering insights that can guide the design and implementation
+a careful balance. This approach should respect both the potential       of GAI tools in a way that aligns with the needs and concerns of
+of GAI and the intricate nature of teaching and learning processes,      various educational stakeholders.
+ensuring that technological advancements are meaningfully and               Two main contributions are made by this work:
+efectively aligned with educational needs and realities. Consider-             • Our study provides a qualitative investigation of the efcacy
+ing the need to underscore the applicability of leveraging GAI in                of generative AI for writing projects, surfacing potential
+writing instruction for students, we conducted a study to examine                benefts and challenges in using LLM-driven chatbots in
+the diferent perspectives of stakeholders in K-6 education (i.e.,                educational settings. Our fndings demonstrate that GAI sys-
+teachers, parents, and students) regarding the integration of GAI                tems ofer opportunities for creating adaptive teaching ma-
+in elementary school literacy education. Our objective is to under-              terials tailored to students’ unique competencies in writing,
+stand stakeholders’ aspirations and concerns regarding the use of                broaden ideation and timely interaction through dynami-
+new systems in academic settings in a holistic manner by including               cally generated learning resources, and provide individual,
+both teachers and learners so that the HCI research community can                culturally relevant feedback. At the same time, using GAI
+use these insights to design and develop GAI-powered educational                 systems in writing carries signifcant limitations regarding
+applications that are safe and productive for elementary school                  authorship, agency, and potential misinformation.
+students writing.
+   In this study, we sought to answer the following questions:                 • We present design implications by investigating ways to har-
+                                                                                 ness generative AI in writing projects safely and efectively.
+     • How do stakeholders in elementary school settings–parents,
+                                                                                 We surface the challenges and difculties from stakeholders’
+       teachers, and students–perceive AI to support teaching and
+                                                                                 perspectives and provide insight into designing new sys-
+       learning writing projects, and what are their opinions of the
+                                                                                 tems. We propose design suggestions to enhance safety by
+       potential benefts and limitations of leveraging it? How do
+                                                                                 balancing fexibility and control through teacher-in-the-loop
+       values and motivations towards GAI systems difer among
+                                                                                 systems where teachers can prompt to curate AI agent ca-
+       stakeholders in education?
+                                                                                 pacity with prompt bank interfaces, designing the AI agent
+     • In what ways can GAI systems be designed so that they are                 persona as coach or/peer rather than an assistant, and design-
+       efective, engaging, and safe for teaching literacy for 2nd to             ing role-allocation among AI and students of which students
+       6th graders?                                                              have the freedom to write independently, edit, customize
+    To answer these questions, we conducted workshops with fam-                  themselves instead of having the AI agent generate on their
+ilies with children ages 8-12 (i.e., in 2nd through 6th grade) that              behalf.
+included semi-structured interviews with students and parents dur-
+ing and after the workshop. Also, we carried out 1:1 semi-structured     2     RELATED WORKS
+interviews with 16 teachers to better understand teachers’ moti-         In this section, we examine research literature related to the implica-
+vations, perspectives, and strategies for leveraging GAI in writing      tions of artifcial intelligence for education in HCI research, as well
+projects. In total, we report on insights from 40 participants who       as educational research related to artifcial intelligence applications
+present unique perspectives on GAI from three groups of stake-           for learning and teaching in educational settings.
+holders in education (i.e., 16 teachers, 12 parents, and 12 students).
+    From the study, stakeholders’ perceptions towards GAI systems        2.1     Tracing the Evolution of Technology in
+and their opinions of potential benefts and challenges related to
+writing surfaced three major themes: 1) teachers’ view as a part
+                                                                                 Education: Implications for Modern AI
+of digital citizenship development, 2) parents’ perception of new                Integration
+types of toys, games, and screen time, and 3) students’ perceptions      Refecting on the past usage and integration of new educational
+as smart and helpful companions. In addition to these major themes,      technologies in real-world educational settings can ofer valuable
+we highlight possible obstacles and concerns regarding authorship        insights for predicting and enhancing their efectiveness in learn-
+and ownership issues over writing outputs, challenges examining          ing environments [87]. To contextualize our investigation of the
+students’ agency in learning, and difculties in controlling bias and     potential applications and benefts of emerging GAI systems in
+hallucinated content created by GAI systems. Based on the fnd-           educational contexts, we trace the impact of Massive Open Online
+ings, we provide design implications to mitigate the shortcomings        Courses (MOOCs) and Intelligent Tutoring Systems (ITS). These
+of these systems in educational settings. This discussion includes:      technologies have been pivotal developments in the history of
+1) navigating the complexity of authorship in AI-assisted writing        scalable learning with implications for the educational sector. De-
+systems through examining a child-AI interaction chatlog, 2) en-         spite rapid technological advancements, the anticipated radical
+hancing student agency through role allocation and curating AI           transformation in education by innovative educational technology
+personas in GAI systems to promote independent writing and cul-          companies (e.g., Khan Academy, Udacity) has largely fallen short of
+tivating conversations aimed at fostering students’ unique voices,       expectations. Personalized learning platforms claim to tailor educa-
+and 3) balancing fexibility and control with teacher-in-the-loop         tion to individual student needs, but they often fall short in practice
+GAI-LLM systems that allow teachers to curate child-AI interaction.      due to the complexities of learning processes, efective pedagogies,
+Teachers, Parents, and Students’ Perspectives on Integrating Generative AI into Elementary Literacy Education              CHI ’24, May 11–16, 2024, Honolulu, HI, USA
+
+
+and the constraints of algorithmic customization [87]. Therefore,                         perceive them more as humanoid entities with lesser intelligence
+Reich 2020 argues that educational innovations must be deeply                             [115]. Additionally, Xu and Warschauer. [122] reported that most
+rooted in the realities of teaching and learning.                                         children view conversational agents (CAs) as having cognitive capa-
+   Reich [87]’s four dilemmas highlight the complexities of learning                      bilities via continuous communication but possess fewer psycholog-
+at scale platforms, emphasizing the need for a critical reassessment                      ical entities (i.e., having emotion). The fndings suggest possibilities
+in the context of emerging Generative AI (GAI) technologies. These                        of designing CA as a learning companion, incorporating social
+dilemmas include the preference for familiar tools, the unequal                           interaction and emotional feedback [122].
+benefts of new technologies, the challenge of nuanced assessment                             Despite this body of recent research, there is still a lack of clarity
+beyond binary right or wrong answers, and the issues of data pri-                         regarding the role of artifcial intelligence (including generative AI)
+vacy and equity [66]. As GAI systems ofer more natural and adapt-                         from educators, parents, and students’ standpoints. Additionally,
+able human-AI interactions, they present an opportunity to address                        further research is needed to investigate whether and how these
+these challenges, making AI-based educational tools more accessi-                         emerging technologies can improve the learning process of literacy
+ble and equitable for diverse learners.                                                   development in elementary school settings.
+   Recent advancements in Large Language Models (LLMs) enhance
+their ability to assess human reasoning in writing, moving beyond                         2.1.2 Emerging Trends and Challenges in Generative AI Applications
+the traditional right-or-wrong evaluation methods of current Intel-                       for Education. The rapid advancement of GAI, such as large lan-
+ligent Tutoring Systems (ITS). This progress ofers a more nuanced                         guage models (LLMs) and Text-to-Image (TTI), learn patterns and
+understanding of student logic and thinking, enabling personalized                        structures from existing data and generate new content [113]. These
+and adaptive feedback. Studies, such as those by Steiss et al. [98], are                  breakthroughs have led to a new generation of dialog systems that
+beginning to explore GAI’s potential in analyzing and understand-                         enable the possibility of leveraging the system to facilitate open-
+ing the nuances of students’ written work and reasoning processes,                        ended discussion and generate educational content for teaching
+which pose potential capabilities to integrate algorithmic guided                         and learning [79]. Ahmad et al. [2] examined the implications of
+instructions fexibly.                                                                     ChatGPT in the education sector, emphasizing the need to develop
+                                                                                          skills for using LLMs and GAI to be prepared for future job mar-
+2.1.1 Integrating Artificial Intelligence in Education. The use of ar-                    kets. This requires students to know how to prompt AI systems
+tifcial intelligence in education (AIED) has been explored through                        efectively and to be able to analyze the quality, originality, and
+the application of intelligent tutoring systems, conversational agents                    accuracy of the results [2].
+(CA), and chatbots. These technologies have enhanced teaching and                             Research on AI systems in literacy education (reading and writ-
+learning [11, 21, 55, 76, 84, 101, 117, 121], yet little of this prior work               ing) focuses on LLM-based chatbots for language learning [1, 128],
+addresses directly how AIED integrates holistically into educational                      scientifc writing [42], creative writing [24, 97, 126], and creative
+settings [21, 54]. An exception to this is Chiu et al. [22] systematic                    storytelling [50, 127]. For example, Gero et al. [42] studied how
+review of AI’s roles in education, which surfaces potential bene-                         LLM-powered co-writing platforms can enhance engagement and
+fts of AI for learning, including providing adaptive learning by                          idea generation with STEM graduate students. Yuan et al. [126]
+assigning tasks based on individual abilities that enhance academic                       studied adult hobbyist writers’ sense of ownership over AI-assisted
+performance and facilitating human-machine conversation to moti-                          writing and found that AI integration does not undermine writ-
+vate and engage students. However, Chiu. [22] pointed out the need                        ers’ feeling of ownership because writers use AI-generated text as
+for further studies that examine students’ educational outcomes                           an inspiration rather than taking it verbatim. Lee at al. [63] also
+with AI-based systems (such as chatbots or conversational AI).                            conducted studies with adult participants to understand the afor-
+   The HCI community has also provided insights into the per-                             dance of large language models (LMs). The authors aimed to guide
+ception of AI systems [106] among educational stakeholders, in-                           the design of LLM applications and developed a CoAuthor system,
+cluding teachers [65, 85], children [6, 16, 115, 118, 122], and parents                   which focuses on capturing and analyzing user engagement data.
+[39, 40, 105, 120]. To design AI tools and curriculums that align with                    This system tracks how users collaborate and construct stories,
+the values and contexts of stakeholders in education (i.e., teach-                        providing valuable information on user interactions and narrative
+ers, parents, and students), Lin and Brummelen. [65] conducted                            development within the context of LLM applications. The fndings
+co-design workshops with K-12 teachers to develop design rec-                             showed that CoAuthor enhances writing productivity, increasing
+ommendations for creating AI curriculums and tools aligned with                           the text writers produce. But Yuan et al. [126] and Lee et al. [63]
+teachers’ needs. Their fndings revealed how teachers value learn-                         also raised questions about writer’s feeling of ownership over their
+ing outcomes, student engagement, ease of use, and collaboration                          writing outputs and indicated the results were uncertain.
+when incorporating AI in the classroom. Design recommendations                                Recent GAI-powered educational applications ofer potential
+from the study emphasize the importance of designing AI tools to                          opportunities to leverage GAI systems in teaching and learning
+be adaptable to diverse contexts (e.g., diferent grades and subjects).                    (GPT-3, TTL) [17]. For example, Speak [5] uses GAI systems (GPT-3)
+   Outside the classroom, parents see technology (including AI) as                        to simulate smooth verbal conversation with learners to improve
+a way to enhance parent-child interactions by selecting content for                       English speaking profciency without age limit. Also, web appli-
+their children, showing a preference for customized content [127].                        cations and conversational agents (CA) have been developed to
+Children’s views on AI agents difer based on age and their per-                           support students’ reading comprehension through story creation
+formance in AI experience and interaction. Younger children often                         (i.e., Wanderly, OnceUponABot, AlexaBedtimeStory) mainly for
+perceive AI agents as intelligent toys, while their older counterparts                    families with children ages 5-12 [14, 71, 96]. MagicSchool.ai [3]
+CHI ’24, May 11–16, 2024, Honolulu, HI, USA                                                                                           Han, et al.
+
+
+is a web application that uses GAI systems to support efcient            generate unexpected and surprising story elements proved particu-
+lesson plans for teachers by suggesting and generating quizzes           larly efective. Findings imply fexibility, adaptability, collaboration,
+and scafolded lesson materials. Khan Academy recently launched           and surprise as crucial factors for the CreativeBot. Besides such
+an LLM-based AI agent, Khanmigo, that carries a text-based con-          conversational, drawing, or robotic interactions, researchers have
+versation with students as a tutor, as well as facilitating teachers’    developed diferent LLMs as supports for collaborative creative
+versions as teaching assistants, which assist teachers in creating       writing [77, 100], where creativity requires writing with a relevant
+lesson plans for a wide range of subjects (history, language arts,       purpose, understanding, judgment, and evaluative abilities in ways
+math, foreign language) across K-12 [61].                                that are deemed original and valuable to a community [26]. How-
+   However, it is still unclear how these new interactions, user         ever, by this defnition, by relying primarily on summation, LLMs
+experiences, and learning engagements afect learning outcomes            lack the intention to write and do not possess the self-feedback
+[10]. The current story creation apps powered by GAI systems             loop necessary to intentionally deviate from conventions, hindering
+produce whole stories for students, which raises a question about        their capacity [38]. Therefore, specifc interface elements need to be
+whether it could promote language learning or undermine creativity       designed to compensate for such limitations of LLMs. Beyond such
+[50]. Hence, further research is needed to ensure GAI-powered            inspection from the technical perspective, research is needed to
+learning tools are efective and age-appropriate.                         develop a more in-depth understanding of children’s, parents’, and
+                                                                         teachers’ needs and concerns around child-AI co-creative systems.
+
+                                                                         3     METHODOLOGY
+2.2     Child-AI interactive systems
+                                                                         In the previous sections, we outlined the adoption of AI technolo-
+Nowadays, an increasing number of children interact with AI-
+                                                                         gies in education and addressed a research gap resulting from a lack
+enhanced products daily. Researchers have explored the perspec-
+                                                                         of holistic understanding of teachers, learners, and their caregivers’
+tives of various stakeholders, including teachers, parents, and chil-
+                                                                         opinions. Considering potential stakeholders’ perceptions of GAI
+dren. Findings reveal that parents desire CA to foster children’s
+                                                                         systems may provide design implications to help guide the devel-
+social engagement and involve parents in in-home learning [41].
+                                                                         opment of GAI tools and systems for elementary school students.
+However, researchers raised concerns about the lack of open-ended
+                                                                         To elicit stakeholders’ perspectives on potential possibilities and
+and extended back-and-forth dialogue while considering CA to
+                                                                         limitations of a GAI-LLM chatbot system for writing, we conducted
+support children’s language development [119]. Enhancements are
+                                                                         a workshop with families with children ages 8 to 12 (parents, N=12
+also needed for human-AI collaboration to relieve the repair burden
+                                                                         and children N=12) that focused on how they used a text-to-image
+on families during their communication breakdowns with CA [11].
+                                                                         generator (i.e., Stable Difusion [31]) and a chatbot powered by
+As for children’s perspective, research eforts have been made to
+                                                                         LLM (i.e., ChatGPT [19]). Following the workshop, we conducted
+investigate children’s perception of their data utilized online [110],
+                                                                         1:1 interviews with teachers who specialized in teaching writing in
+children’s autonomy over the technology [111], and AI technolo-
+                                                                         elementary school settings (N=16). In total, we reported on insights
+gies’ infuence on child development. With the recent advance-
+                                                                         from 40 participants who interacted with both tools. Participants
+ment of GAI, such as LLM, daily life AI-enhanced products have
+                                                                         were recruited from our researcher’s network (mailing list and
+largely extended their power of human-AI collaboration, including
+                                                                         contacts) and snowball sampling. We sought to identify teachers,
+children-AI co-creation. This is also aligned with the rising desire
+                                                                         parents, and students’ motivations, challenges, and opinions with
+for AI literacy education outside of the computing domains [94],
+                                                                         the new systems, elicit their concerns, and identify their perceptions
+and in turn, challenges AI literacy education by equipping children
+                                                                         and strategies in writing using GAI platforms.
+with some basic AI literacy in both classroom and family scenarios
+[33, 99]. These all require a deeper understanding of stakeholders’
+needs and concerns around child-AI co-creation.                          3.1    Study Procedure
+   Existing child-AI co-creative systems encompass interactive sto-      3.1.1 Workshop with Families. In April 2023, we conducted a work-
+rytelling [126], creative writing [35], and drawing [127]. Wordcraft     shop with families with children ages 8 to 12 (2nd and 6th graders)
+[126] is a text editor fostering collaborative engagement between        (Table 2) in order to better understand students’ strategies and strug-
+users and LLM in storytelling. It facilitates open-ended conversa-       gles when interacting with the current state of LLM-based chat-
+tions related to the narrative, responds to users’ natural language      bots and text-to-image generators. Their parents’ and guardians’
+queries, and ofers suggestions to assist writers in overcoming           opinions and perceptions regarding using the systems for writing
+creative hurdles. The study with adult participants suggests incor-      projects were also considered. We focus on the 8 to 12 age group, rec-
+porating real-time requests and predefned controls to amplify the        ognizing the critical importance of this phase in developing reading
+co-creative experience. In the intersection of drawing and creative      and writing skills [48]. This period is pivotal as children transition
+storytelling, “StoryDrawer” aims to support children in creating         from learning to reading to reading to learning, a fundamental shift
+oral stories during visually immersive storytelling episodes [127].      highlighted in Loveless’s 2023 article. Early interventions during
+Results from the evaluation with children highlight the importance       this stage can greatly infuence a child’s educational path and future
+of encouraging collaboration and co-creation between children and        opportunities[47]. Given this, our study aims to investigate how en-
+the AI system rather than solely relying on the system to generate       hanced engagement with writing and literacy activities facilitated
+stories. CreativeBot is a robot designed to stimulate children’s cre-    by GAI platforms can positively or negatively impact learning in
+ativity through co-creative storytelling [35]. The robot’s ability to    these formative years.
+Teachers, Parents, and Students’ Perspectives on Integrating Generative AI into Elementary Literacy Education            CHI ’24, May 11–16, 2024, Honolulu, HI, USA
+
+
+                     Table 1: Workshop schedule                                           Table 2: Participants’ information for the family workshop
+
+ Time        Activity                                                                              Alias for parents   Age   Alias for students      Age
+ 15 min      Introduction (Icebreaking)                                                            P1                  37    S1                      9
+ 15 min      What is AI? (Discussion)                                                              P2                  39    S2                      10
+ 15 min      Let’s learn Generative AI                                                             P3                  36    S3                      10
+ 15 min      Break                                                                                 P4                  37    S4                      9
+ 15 min      Let’s learn GAI tools (ChatGPT and Stable Difusion)                                   P5                  42    S5                      8
+ 30 min      Let’s use generative AI to write a visual story                                       P6                  40    S6                      9
+ 15 min      Share your story (Refection)                                                          P7                  36    S7                      8
+                                                                                                   P9                  49    S8                      10
+                                                                                                   P10                 41    S9                      12
+                                                                                                   P11                 45    S10                     12
+    Parent participants (n=12) completed a screening survey before                                 P12                 38    S11                     11
+the workshop to ensure they were 18 or older and lived with chil-                                                            S12                     10
+dren ages between 8 to 12 years old. The average age of parent
+participants was 39.8 years old at the time of the workshop, of
+whom (10/12) were female and (2/12) were male. According to par-                          generating their visual story, one of the researchers conducted semi-
+ent reports, the mean age of the student participants was 9.8 years                       structured interviews with the parents. Interviews were recorded
+old, and (5/12) were girls. Eleven children (11/12) were identifed as                     using a voice recorder, no videos were taken during the workshop,
+Asian American, four children (4/12) spoke only English at home,                          but pictures were taken, and students’ artifacts were collected. We
+and the remainder were bilingual (6/12) or spoke English as a second                      sought to understand students’ opinions and their perceptions of
+language (2/12). All children possessed sufcient oral English prof-                       AI by posing the following questions [88]: What do you like or
+ciency for daily conversation. The median household income of the                         dislike about using ChatGPT and Stable Difusion for your creative
+twelve families is $118,749, with a range from a minimum of $29,999                       writing and visuals?, Have you found AI useful?, How can artifcial
+to a maximum of $200,000. Given the socioeconomic standards of                            intelligence help you? To understand parent’s opinions and their
+the West Coast, USA, this income bracket is typically classifed as                        perspectives on using the systems for their children, one of the
+upper-middle class [108]. It was the frst time the students had used                      researchers conducted semi-structured interviews with the parents
+GAI-LLM chatbot and Text-to-Image generators (TTL), while seven                           while students worked on creating visual stories. With parents, we
+parents (7/12) reported already using them. Family participants                           discussed the following topics: How do you think AI impacts your
+were compensated $25 for their time and efort.                                            child’s learning?, Do you want your child to use AI or learn about
+    The 2-hour, 1-day workshop was conducted in a library in a                            AI?, What is your overall impression of using AI for your child?
+Southern California metropolitan city. Accompanied by their par-                          Interviews were recorded using a voice recorder, no videos were
+ents, children were required to create a visual story using a text-                       taken during the workshop, but pictures were taken and students’
+to-image generator (i.e., Stable Difusion) and a chatbot powered                          artifacts were collected.
+by LLM (i.e., ChatGPT). During the writing project, we sought to
+understand the students’ strategies and their interactions with the                       3.1.2 Teachers’ interviews. Teacher interview data collection was
+system through observation by taking feld notes and voice record-                         conducted online between June to August 2023. Teachers were
+ing youths’ verbal expressions and semi-structured interviews [88].                       recruited using similar snowball recruitment eforts as the families,
+Given the California State Standards in elementary literacy educa-                        with the only criteria for eligibility being that they were either
+tion, we chose narrative writing activities for students [46] instead                     current or former K-12 teachers. The teachers we interviewed (n
+of giving students a specifc topic to write about; students wrote                         = 16) were elementary classroom teachers from 1st to 7th grades,
+creatively without limitations. The topic of the visual story was                         most of whom (14/16) work in public schools. Thirteen teachers
+open-ended, and students picked a topic based on their own in-                            (13/16) specialized in teaching writing and were afliated with the
+terests. To assist, several prompt examples were provided (e.g., “I                       National Writing Project (NWP) network. Teaching experience
+would like to write a topic of the story, how can I start?”, “Can you                     averaged 13.3 years (min=1.7 years, max=32 years). More detailed
+list fve story ideas?”) before they began writing. Students worked                        participant information can be found in Table 3. The majority of
+individually without their parents’ intervention unless they needed                       the teachers (8/16) are located in the United States (California and
+to access a required platform (i.e., Google Classroom, Google Docs).                      Pennsylvania), and four of them are in Asia (South Korea and China).
+Students used the systems under the supervision of researchers.                           The majority of the teachers (14/16) work in public schools, with
+    We created a Google Classroom for the workshop that served as                         only two working at private schools (see Table 3).
+an information resource as well as a repository for participants’ fn-                        The teacher interviews were conducted individually for up to
+ished visual stories. Students were allowed to use the Text-to-Image                      an hour via video conferencing due to geographical distances, with
+generator and LLM chatbot to develop their stories. One of the re-                        an average length of approximately one hour. We sought to elicit
+searchers ran the workshop, and the other researcher observed,                            their current teaching practices, struggles, and motivations when
+took feld notes and conducted semi-structured interviews with                             teaching writing to their students. Afterward, we introduced GAI
+children during and after the workshop. While students worked on                          systems (i.e., features and functionalities) and asked about their
+CHI ’24, May 11–16, 2024, Honolulu, HI, USA                                                                                           Han, et al.
+
+
+ Table 3: Participants’ information for the interview study               and accurately aligned with the transcripts. Following this, we uti-
+                                                                          lized qualitative data analysis software for an initial round of open
+      Alias   Grade Taught        Years of teaching   Location            coding, adhering to established qualitative research methodologies
+      T1      2nd grade           3 years             Nanjing, China      [93, 103]. We conducted an inductive approach to analyze inter-
+      T2      6th grade           2 years             Pennsylvania, USA   view data [102]. Following the inductive approach, two researchers
+      T3      3rd grade           5.8 years           Incheon, S.Korea    independently read the transcripts and identifed key themes and
+      T4      1st grade           32 years            California, USA     patterns within the text. This collaborative and iterative process
+      T5      5th grade           30 years            California, USA     of theme identifcation and analysis was instrumental in reaching
+      T6      3rd grade           13 years            California, USA     theoretical saturation [70]. Each researcher assigned the frst round
+      T7      2nd grade           24 years            California, USA     of low-level codes guided by our research questions (e.g., partici-
+      T8      6th grade           14 years            California, USA     pants’ opinions (stance) of the potential benefts and limitations of
+      T9      5th grade           15 years            California, USA     leveraging GAI; how their values and motivations difer) into each
+      T10     8th grade           20 years            California, USA     theme. In order to reduce overlap between themes, we repeated dis-
+      T11     6th grade           5.2 years           Seoul, S.Korea      cussions with researchers. We categorized the low-level codes into
+      T12     7th grade           1.7 years           California, USA     higher-level themes. The researchers regularly discussed (every
+      T13     6th grade           5.3 years           Seoul, S.Korea      week for two months for an hour each) and iterated to construct
+      T14     5th grade           6 years             Seoul, S.Korea      the themes. By systematically coding the data and constantly com-
+      T15     6th grade           3.4 years           Seoul, S.Korea      paring emerging themes, we were able to ascertain when no new
+      T16     5th grade           12.8 years          California, USA     themes were emerging from the data, indicating that theoretical
+                                                                          saturation had been achieved. We organized our results around
+                                                                          the main theme of the advantages and challenges of using LLM
+experiences and opinions about adapting them in educational set-          chatbots for educational purposes in K-6 settings, which emerged
+tings specifc to writing activities with their students. Most teachers    from this coding. We categorized codes into four high-level themes
+(10/16) already have experience with ChatGPT and relevant GAI             (i.e., perception, positive opinions, negative opinions, and sugges-
+systems (Midjourney), whereas the rest were unfamiliar with these         tions). The analysis contained nine mid-level themes (i.e., teachers’
+systems. Teachers who have used GAI systems continue to use it            perception of digital literacy development, parents’ perception of
+in their teaching practices since they frst tried, and their years of     toys and games, students’ perception as helpful companions, creat-
+teaching experience are averaged at 5.8 years, compared with 22.5         ing adaptive teaching content, timely interaction and broadening
+years for teachers who have never used GAI systems.                       ideation, personalized and culturally relevant feedback, lack of
+   In the interviews, the following topics were discussed:                context for students, problems with authenticity and authorship,
+     • The interviewee’s general practices, difculties in teaching,       hard to distinguish students’ agency, difcult to control biased and
+       and concerns for their students (e.g., “What is the hardest        misinformation) and 34 codes under each theme.
+       part in teaching writing in your class?”),
+     • Their experiences the state-of-the-art GAI systems (i.e., Chat-
+                                                                          3.3    Limitations
+       GPT, Stable Difusion) (e.g., “What is your level of familiarity
+       with Generative AI systems like ChatGPT and Stable Difu-           Our study focused on the context of educators and families in one
+       sion? “Have you ever used or willing to use the GAI systems        of the metropolitan cities on the West Coast, United States, as well
+       in your class or for yourself?”),                                  as mid-high socioeconomic families. It is possible that our fndings
+                                                                          do not represent the perspectives of all populations on LLM-based
+     • Their opinions of their intended usage of the GAI systems,
+                                                                          education chatbots for writing. Additionally, the majority of fam-
+       and their opinions and concerns about them (e.g., “Can you
+                                                                          ilies in the study were multilingual, primarily Asian-immigrated
+       tell me your thoughts about the GAI systems as students
+                                                                          families (7/12) whose children were born on the West Coast of
+       use them for writing?”, “Can you share your opinions on
+                                                                          the United States and attended public schools. Since our samples
+       whether or not GAI systems are benefcial or harmful for
+                                                                          lack a diverse cultural background, some of their perspectives and
+       students?”, “How do you envision these systems being used
+                                                                          opinions might be limited. The majority of parent participants were
+       by teachers or students?”)
+                                                                          mothers (11/12), and eight mothers (8/12) were stay-at-home with
+   A recording of all interviews was conducted with the consent of        an average age (of 39 years old); hence, their views and opinions
+the participants, and teacher participants were compensated $25           from the interviews are hard to represent all parents’ perspectives
+for their time and efort. Our study was approved by the authors’          towards GAI systems for their children’s writing project. Addition-
+institutions’ institutional review boards (IRBs).                         ally, considering the majority of teachers we interviewed are from
+                                                                          high-SES school districts, their teaching practices, motivations, and
+3.2     Data Analysis                                                     concerns are likely to difer from those of other teachers, so gen-
+The interview data was frst transcribed using an automatic tran-          eralizing their views is problematic. A future study should also
+scription program (Otter.ai) that maintained the original audio and       consider interviewing school district administrators, whose voices
+aligned it with the transcript. After thoroughly reviewing the tran-      are central to systemwide policy decisions.
+script, we transferred the transcript to a qualitative data analysis          Additionally, during the workshop, we missed the opportunity
+software (Atlas.ti) ensuring that the original audio was preserved        to collect chat logs to investigate students’ interaction techniques
+Teachers, Parents, and Students’ Perspectives on Integrating Generative AI into Elementary Literacy Education              CHI ’24, May 11–16, 2024, Honolulu, HI, USA
+
+
+with a chatbot. Similarly, while we reviewed the fnal output of                              “I think it has a lot of potential. I think there’s lots of excitement
+the students’ writing pieces, it would have been better to check                          for potential teachers in lesson planning. I don’t think it’s kind of
+the history of their editions in Google Docs in order to understand                       replacing any existing curricula. But I think it can be a tool to extend
+their contribution to the writing better, whether they simply copied                      the teaching as a part of the process.”
+and pasted from AI-generated text, or how much they wrote by                                 For instance, one respondent noted that the current GAI–LLM
+themselves. An analysis of the student’s perception of ownership                          chatbot lacks the capacity to be fully integrated into human con-
+and the actual percentage of contribution to the piece would be                           versations but can be useful for brainstorming ideas:
+valuable, as well. It may be worthwhile to investigate in the future                         “I don’t think Al has been adapted to fully understanding or an-
+if there are diferent ways to assess and measure students’ learning                       swering questions yet, but I have used it a ton as a student and a
+in AI-students co-writing projects in the classroom.                                      professional to brainstorm ideas. It’s like a friend with a wealth of
+                                                                                          information, like someone I bounce back ideas from.”
+4     FINDINGS                                                                               Our fndings indicate that teachers are willing to integrate new
+By analyzing qualitative interviews and observational notes, we                           systems (GAI) into their teaching pipeline along with digital literacy
+                                                                                          development. In addition, they stressed the importance of equipping
+uncovered multiple perspectives regarding the use of GAI in literacy
+                                                                                          their students with the ability to use GAI systems to develop their
+education. In this section, we report major fndings regarding our
+                                                                                          digital citizenship.
+participants’ opinions and experiences with GAI. We outline the
+values and perceptions of multiple stakeholders (see Figure 1), then
+elaborate on the fndings in the advantages and constraints of GAI                         4.1.2 Parental Caution: Atitudes Toward GAI Systems in Children’s
+for literacy education (see Figure 2). The fndings are categorized                        Literacy Education. On the whole, parents expressed more conser-
+by each stakeholder’s viewpoint to highlight how their values and                         vative attitudes, with (11/12) of respondents expressing skepticism
+perspectives difer. Following that, we categorize the themes into                         about the use of GAI systems in their children’s education. In spite
+teaching and learning and integrated stakeholders’ opinions, as                           of the fact that all participants in the parents’ interview (12/12)
+stakeholders often have insight into other stakeholder perspectives                       agreed that AI will be a part of their children’s lives as they grow,
+(e.g., teachers’ perspectives on students; and parents’ perspectives                      it is still important to know how to use it properly. For parents
+                                                                                          of children ages 8 to 12 years old, it is more important for their
+on their children).
+                                                                                          children to learn how to use GAIs responsibly and safely, which
+   We report major themes in our stakeholders’ perspectives and
+                                                                                          makes them more cautious about potential harm.
+opinions about using GAI in literacy education, particularly teach-
+ing and learning writing. GAI is perceived diferently by each stake-                          Seven parents expressed concern over uncertainty and data pri-
+holder, including 1) teachers’ view as a part of digital citizenship                      vacy when their children played games or watched videos with
+                                                                                          real-time chats with anonymous strangers on the internet; they
+development, 2) parents’ perception as new types of toys, games,
+                                                                                          found AI such as Alexa or Google Play to be safer. According to
+and screen time, and 3) students’ perceptions as smart and helpful
+companions.                                                                               P01,
+                                                                                              “My kids also play with Anonymous. I’m so worried because of the
+                                                                                          anonymous player, we don’t know if the person is good or bad. So, if
+4.1     Multifaceted Views on the Role of GAI in                                          my kids are going to play with anonymous players, I would choose to
+        Literacy Education                                                                play with AI because I think AI is at least safer than those harmful
+4.1.1 Adapting Digital Transformation: Teachers’ Perspective on                           people.”
+Integrating GAI in Digital Literacy Development. Our results indicate                         Also, we identifed a confict between their values and their per-
+that teachers acknowledge that their students will grow up in a                           ception of GAI systems. It is important for parents to prioritize
+society where emergent digital technology is an integral part of life.                    their children’s overall well-being and well-rounded development
+Nine teacher participants (9/16) expressed willingness to promote                         (i.e., soft skills, emotional, physical, and intellectual), not just hard
+the use of GAI to foster safer and healthier ways of using the                            skills and academic success (i.e., test scores and grades). Eight par-
+systems. Specifcally, T3 noted:                                                           ents (8/12) emphasized their focus on literacy education and their
+   “I do think that instead of rejecting it, we need to fgure out how it                  willingness to support it through child-centered approaches and
+works for us and what we need to do with it. I mean, our students are                     interest-driven experiences (e.g., purchasing books their children
+going to be using it, our co-workers are going to be using it, right? It’s                are interested in reading). However, these parents perceive GAI
+going to be in the world. So I do think we’re better of to fgure it out                   systems like ChatGPT and Text-to-image generators (TTL) as other
+than to reject it for sure.”                                                              types of games and toys that will increase their children’s screen
+   While over half of teachers tried to embrace the GAI systems                           time. P1 said:
+into their practices, (7/16) considered them as an essential part of                           “I mean, for kids, ChatGPT and Stable difusion are just another
+the digital citizenship development for both teachers and students,                       type of toys. It’s like they play Roblox or Minecraft or AI graphics.”
+agreeing to teach students about GAI systems as another tool that                             There also appeared to be a generation gap between parents
+they will need to learn how to use.                                                       and children over AI perception, mirroring the lack of confdence
+   Teachers pointed out that GAI systems can also be used to sup-                         for parents to introduce new technology to their children that has
+port educational processes [23], nine respondents (9/16) emphasized                       existed for decades [86]. Most parents (8/12) perceived the GAI
+that GAI systems like ChatGPT and Text-to-Image generators can                            systems as new to them, so they had difculty imagining how it
+be integrated into their instructional processes:                                         would afect young minds. For example, P03 and P04 mentioned:
+CHI ’24, May 11–16, 2024, Honolulu, HI, USA                                                                                               Han, et al.
+
+
+
+
+Figure 1: Summary of each stakeholder’s perspectives and opinions of GAI systems (top: teachers, middle: parents, bottom:
+students).
+
+   “I have no idea. Because I don’t know AI exactly, Because I didn’t           “I can use this to test out as many as my ideas. I think it’s really
+learn it when we were young, it’s hard to say it’s unnecessary because       efcient.”
+we don’t know it well. That’s the problem. So the parents like us from          We observed two primary difculties encountered by students
+the generation that we don’t even have AI.”                                  when they started the systems: 1) initial user prompts and 2) def-
+   While such expressions of distrust are rooted in a lack of knowl-         cient AI responses. Many students had difculty fguring out what
+edge and experience, some parents identifed that learning the new            to do due to the blank interfaces and lack of instruction and context
+system with their kids could serve as a learning opportunity for             on the website. Once we provided guidance on how to start (i.e.,
+them both. P08 highlights,                                                   an example prompt included “Can you generate fve story ideas
+   “So things are maybe an opportunity for parents to learn with a           for a children’s book?”), they began testing them and learning how
+kid at some time. Okay, so they get to know what AI is like and how          to use the system. Half (6/12) of the students also complained at
+to use AI.”                                                                  times that GAI had not generated the content they intended. As a
+   As such, even though all parents acknowledged that their chil-            result, we concluded that instructing and teaching prompt writing
+dren need to learn how to use GAI systems properly, most parents             would enhance efciency and adaptability [67]. Second, we found
+prioritized promoting critical thinking and problem-solving instead          that the randomness of the output generated by GAI systems can
+of introducing GAI systems to their children. Moreover, parents              be a double-edged sword. Despite the possibility of unexpected,
+(n=11, mothers) presented anxiety over adapting GAI systems for              sometimes inappropriate results (e.g., generating a dead animal),
+their children’s writing projects, which could limit their children’s        Seven students (7/12) saw these moments as chances to expand
+creative thinking. Hence, they were curious about fnding a way to            their ideation, as they are likely to view even unexpected outcomes
+leverage GAI systems for themselves as adults and using it for their         as part of the divergent process of their conception.
+children instead of directly giving them to their kids (i.e., creating
+word quizzes for their children).
+                                                                             4.2    Delineating Advantages: GAI’s
+4.1.3 Creative Allies with Caveats: Students’ Mixed Perceptions of                  Contributions to Literacy Education
+GAI Systems in Literacy Projects. For students, data from the work-          To elaborate on the fndings about the advantages of GAI in liter-
+shop revealed that they (9/12) regard chatbots and TTLs as creative,         acy education, we categorized the themes from our interviews and
+smart, and helpful companions in the process of creative visual              observations into teaching and learning aspects. In each section,
+story writing, as S1 mentioned:                                              all stakeholders’ perspectives are incorporated since stakeholder
+   “I initially thought that artifcial intelligence wouldn’t be able to do   perspectives represent other stakeholder perspectives (parents con-
+creative things because it doesn’t have a brain or mind, but it turned       cerned about their kids’ privacy, teachers’ views about their stu-
+out more diverse and creative than I expected, which surprised me.”          dents). Findings demonstrate that the advantages in teaching in-
+   The vast majority of students (11/12) were optimistic about using         clude enhancing efciency in teaching by enabling fast and easy
+the GAI in the process of creative writing, with (10/12) of students         construction of scafolded materials and content, including pre-
+pointing out the efciency of using the GAI-LLM chatbot and TTL               instruction (by developing diferent levels of materials tailored to
+generator to enable rapid prototypes, which broadened their choice           each student’s abilities), during instruction (by facilitating ques-
+of ideations. S7 highlighted,                                                tions and quizzes), and post-instruction (by developing a rubric). In
+Teachers, Parents, and Students’ Perspectives on Integrating Generative AI into Elementary Literacy Education             CHI ’24, May 11–16, 2024, Honolulu, HI, USA
+
+
+
+
+Figure 2: Summary of our fndings of potential afordances and limitations of GAI systems for writing projects in elementary
+school settings
+
+terms of how this afects user learning, GAI enables personalized                             The elementary school classroom teachers (14/16) stated that
+experiences that provide immediate feedback to support the needs                          their students have diferent literacy levels and interests, so a stan-
+of diverse learners (i.e., by facilitating a real-time GAI-powered tu-                    dardized curriculum makes it hard to tailor learning materials to
+toring system). Further, interacting with GAI encourages students                         each student’s unique abilities. In response, teachers imagined lever-
+to generate ideas around topics, add details, and apply culturally                        aging GAI systems like ChatGPT to generate scafold vocabularies
+relevant approaches (see Figure 2).                                                       and sentence levels tailored to each student’s unique level. Accord-
+                                                                                          ing to T13,
+4.2.1 Enhancing Pedagogical Eficiency: GAI in Crafing Customized                             “Can I use Generative AI to develop reading materials at diferent
+and Scafolded Mentor Texts. The teachers (16/16) all afrmed that                          levels for kids to read? I would love to be able to put in a topic and
+GAI systems can be used to create adaptive teaching materials                             get information coming out, such as climate change. What would be
+as part of their lesson planning. In particular, the majority of the                      even much better if you could layer on phonics? I can now do phonics
+teachers (13/16) who specialized in writing education highlighted                         instruction and help support within the realm of the science of reading.
+the potential for GAI systems to generate scafolded mentor texts                          Having such a tool would be a tremendous time-saver, simplifying the
+(i.e., texts that model for students what good writers do) that allow                     lengthy process of sourcing and summarizing appropriate materials
+students to adapt and learn from the authors’ writing style (i.e.,                        for diverse classroom needs.”
+words, sentences, or paragraphs). T7 highlighted,                                            Other teachers emphasized that they can use GAI systems to
+    “A lot of the craft of writing comes from looking at examples and                     generate mentor texts because they can evaluate the quality of the
+fnding out what the experts did and using what we’ve learned in our                       texts and ensure the content is accurate. As one instructor pointed
+own pieces. Let’s say we’ve studied this particular sentence deeply,                      out, teachers are able to determine whether the GAI-generated
+and then we won’t just imitate it; we fnd it out on our own and then                      content is appropriate or not. As T6 pointed out,
+try it on. Then, the kids change that for themselves. I use a ton of                         “Recently, I used Generative AI to create a mentor text, saving a lot
+mentor texts.”                                                                            of time. Since teachers have a solid understanding of the topic, we can
+    However, nine teachers (9/16) pointed out the difculties of fnd-                      verify the facts and integrate them into our teaching process. There’s
+ing and incorporating mentor texts that can be seamlessly inte-                           defnite learning potential in this approach."
+grated into their curriculum at the appropriate level for all students.                      This implies the potential opportunity for teachers to use the GAI
+T3 mentioned,                                                                             systems to generate scafolded mentor texts and teaching materials
+    “Using mentor text is really a lot of teacher work to design it and                   for diferent levels of students’ capacity.
+fgure it out. And what if I could generate mentor sentences and have
+everything ready to go. I would love that. That is one of the ways that                   4.2.2 Scaling Individual Atention: GAI in Providing Timely and
+we can use it to help us develop some of the mentor texts that we have                    Tailored Writing Feedback. Elementary school teachers pointed out
+spent hours looking for.”                                                                 their unique challenges as public school teachers. Due to the large
+CHI ’24, May 11–16, 2024, Honolulu, HI, USA                                                                                                 Han, et al.
+
+
+number of students in a single class and with only one teacher to          learning, which was Japanese. As a parent of an immigrant child,
+deal with the class, teachers pointed out the difculties of providing      she wanted her daughter to remain fuent in her mother language.
+immediate and helpful feedback that support students in writing.           Also, parents who immigrated from Asia mentioned that they are
+T9 emphasized,                                                             willing to use GAI systems to create culturally salient fable stories
+    “I think providing individual feedback is a really time-consuming      that ft their children’s interests. According to P04,
+thing. It is difcult to individualize education for all subjects.”            “So maybe parents will ask to know something about some tradi-
+    One of the teachers (T1), a director who has specialized in teach-     tional stories about their own culture, but they don’t have the actual
+ing writing in the writing center at one of the California school          book or the graphic reference, like some Asian stories in China, about
+districts for the past 30 years, stressed the importance of developing     maybe a dragon or something, maybe parents will ask, do you know
+ideas and adding details. T1 stated,                                       how to draw a Chinese dragon? And AI will say the Chinese dragon
+    “I think for me, it seems like the area where kids need the most       looked like a really long snake with some hair on the head. Also, they
+support is actually generating ideas for writing and adding details.       speak diferent languages. I think language translation will also be
+Students might give you a sentence or two and say I’m done. But if         another activity, like my kids having Korean friends from Korea. So
+teachers or AI ask them to add more details, that could enhance their      they want to share some Korean as well.”
+writing. Such as asking, ’Can you tell me more about this?’—we can            The fnding indicates that the potential advantages of using GAI
+encourage them to expand their writing. Students frequently fnd it         systems are to help teachers create lessons using culturally relevant
+challenging to elaborate on their own without such guidance.”              materials, such as songs, videos, and images (i.e., traditional stories
+    Our fndings suggest that teachers can leverage GAI to pro-             by countries’ traditional holidays). By doing so, teachers can cre-
+vide immediate feedback regarding students’ writing progress from          ate a more culturally inclusive classroom and foster cross-cultural
+ideation, grammar checkers, and adding detail. For example, T4             understanding. Additionally, parents, especially those from mul-
+highlighted,                                                               ticultural families, could bridge the communication gap between
+    “I would love for AI to be able to do this for my students. Could AI   each other and encourage a sense of belonging and a strong family
+give high-quality feedback on the spot to student writing? So I would      relationship through a better understanding of each other’s cultural
+love for the AI assistant to say, oh, you only used the word pretty. Is    values.
+there another way to explain it? Can you provide some examples of
+your opinions? Can you explain more about your character?.”
+                                                                           4.3    Navigating the Gray Areas: Challenges and
+    In this regard, interacting with GAI systems (i.e., LLM chatbot,
+TTI generators) helps students expand their ideas by enabling rapid               Constraints of GAI in Literacy Education
+prototypes that broaden their options. As one of the students (S10)        Our research indicates that GAI systems in academic settings may
+stated,                                                                    pose challenges related to academic integrity, such as issues of
+    “Since AI provides many options, I can pick the one I like best. I     authorship, authenticity, and originality. Additionally, there are
+think it is good for me to come up with more ideas because AI has          concerns about how these systems may impact student agency and
+given me suggestions I never thought of, even when I get unexpected        autonomy in writing processes. A notable risk is the potential for
+results, which actually makes me think of better ideas. Thanks to AI,      GAI systems to generate biased or inaccurate content stemming
+I think the process went much faster.”                                     from their inherent randomness and uncertainty.
+    According to our fndings, using GAI systems would beneft
+teachers and students. Teachers can reduce the efort they need to          4.3.1 Ethical Qandaries, and Accountability in GAI-LLM Writing
+provide individual attention to students, and students will be able        systems. Nine teachers (9/16) expressed concerns about introducing
+to receive feedback on their story creation through GAI systems            GAI systems to their students due to the possibility of afecting
+conversation.                                                              the originality of their students’ work. To teachers, AI-generated
+                                                                           work can be a problem for kids to misrepresent themselves. As T06
+4.2.3 Culturally Inclusive Pedagogy: GAI’s Capabilities for Cultur-        stressed,
+ally Relevant Literacy Feedback. The other aspect of using GAI for             “So it’s like, if you are using this as a tool, you’re taking this work
+personalized learning is to provide culturally relevant feedback and       from somewhere, right? Make it your own and claim it your own. I
+ideas [80]. Teachers and parents were particularly intrigued about         think that the problem is that you took AI, and you didn’t give AI the
+the possibility of translating languages and providing examples of         credit. If you’re going to use AI, then that’s who should be credited for
+diferent cultures with GAI systems. Teachers intend to utilize GAI         the work of GPT because there’s almost a moral issue for me, looking
+systems to generate culturally tailored examples they might not be         at Chat GPT. And thinking about where that information comes from.”
+familiar with during lesson planning. T15 stated,                              By extension, teachers are anxious about GAI systems because
+   “If I’m giving an assignment, and I’m trying to give examples, I        if students use ChatGPT to generate their own work, it could un-
+only know the examples I know. And I have my cultural bias, I have         dermine students’ reasoning. For instance, T16 emphasized,
+my background, my limited experience. But if I get to ChatGPT to               “I mean, teachers are particularly anxious about maintaining the
+generate more examples of active and passive voice, it’s gonna save a      quality of writing and are worried about students’ work ethic and
+lot of time. And again, I can incorporate things from diferent interest    creativity. Additionally, there’s a signifcant concern regarding pla-
+levels, cultures, and vocabulary levels.”                                  giarism and cheating."
+   In our workshop, one of the parents shared that she used Chat-              Some teachers, in response, suggested using ChatGPT rather
+GPT to generate word problems for her child’s home language                than generating text as an output for students’ writing, asking
+Teachers, Parents, and Students’ Perspectives on Integrating Generative AI into Elementary Literacy Education              CHI ’24, May 11–16, 2024, Honolulu, HI, USA
+
+
+students questions to promote the students’ thought processes. As                         autonomy, provide them with appropriate guidance and support,
+T12 mentioned,                                                                            and ensure that the systems are suitable for children’s age groups.
+   “Here’s one thing is, instead of writing the whole next part. It asked
+me, you know, like, choose your own adventure? Do you want it to be
+this kind of problem or that kind of problem? What comes next?”                           4.3.3 Erratic Outputs: Limitations and Concerns in Deploying GAI
+   As far as implementation plans were concerned, seven teachers                          for Literacy Education. Like any generative AI chatbot or voice
+(7/16) emphasized the need for the school districts and educators to                      assistant–such as Siri, Alexa, or Microsoft’s ill-fated Tay [107]–
+establish a new framework for adapting GAI systems to students’                           some individuals intentionally try to corrupt or manipulate GAI-
+learning, with (6/12) teachers also pointing out the necessity to                         produced responses, particularly in online settings. This behavior
+establish diferent assessment methods.                                                    can take various forms, including providing chatbots with inappro-
+   The fndings demonstrate the importance of designing the GAI                            priate or harmful content to elicit inappropriate responses, pushing
+systems to promote students’ reasoning by providing students with                         the boundaries of what the chatbot can understand or respond to
+the opportunity to use their own critical thinking skills and creative                    by inputting nonsensical or unusual queries to see how the chat-
+solutions. Additionally, educators must develop a new means of                            bot reacts, or intentionally feeding chatbots with biased or false
+assessing and evaluating students’ writing projects. For instance,                        information to manipulate the responses and promote a particu-
+teachers can focus on students’ learning processes rather than their                      lar agenda, ideology, or misinformation. The potential for such
+outcomes, asking their thoughts and opinions instead of asking                            student-AI interactions was not lost on our teachers. T12 stressed,
+them to write a certain number of words or paragraphs. This can                              “I can imagine there will be kids who want to test the limits and
+help to identify areas of strength and weakness in the students’                          get the chatbot to say inappropriate things back to them. So, I mean,
+writing and help them to develop their writing skills.                                    there’s that part of it.”
+                                                                                             For instance, in our workshop, we observed students generating
+                                                                                          images around inappropriate political scenes (i.e., a Hitler statue),
+4.3.2 The Agency Dilemma: Unpacking Student Agency in the Com-                            pointing to the need for developers of educational chatbot systems
+plex Role of GAI in Student Literacy. There has been difculty deter-                      to implement safeguards and moderation mechanisms to minimize
+mining the level of agency students have over their writing outputs                       the impact of such intentional abuse. These safeguards may include
+when using GAI, particularly when it comes to disambiguating                              content fltering, moderation of user inputs, and continuous im-
+how much students write (i.e., the ideas, the sentence, the para-                         provement of the chatbot’s response mechanisms to detect and
+graph, the word choice) versus what GAI suggests and generates.                           handle inappropriate or harmful content [36, 81, 92]. Less malicious
+From the writing workshop, we observed that many students (8/12)                          but still disruptive are instances where a GAI system produces sur-
+just copied and pasted directly from GAI-generated outputs into a                         real or nonsensical responses to user prompts. GAI hallucination,
+Google Doc (i.e., “I’m done, I like the story, so why should I change                     also known as AI-generated hallucination or AI-induced halluci-
+it?”), raising the question of how to design the system to promote                        nation, refers to a phenomenon where generative models produce
+the craft of writing, such as idea generation, voice and style, audi-                     content that may resemble hallucinations in humans, including im-
+ence awareness, revising, and more. Perceiving cutting and pasting                        ages, text, or other sensory data that are typically unintended and
+as a refection of a lack of agency by their children, parents were                        often nonsensical (i.e., a dead animal without a head). AI hallucina-
+skeptical about the impact GAI would have on their children. Most                         tion occurs when a machine learning model generates content that
+parents (9/12) pointed out the importance of establishing funda-                          doesn’t align with the intended output [13, 18]. It can result from
+mental knowledge frst (i.e., comprehension and critical thinking                          the model’s overftting to its training data, exposure to unusual or
+skills) before introducing such automated systems as ChatGPT. As                          biased data, or other factors that cause the model to produce strange
+P07 mentioned,                                                                            or distorted outputs. A student (S02) pointed out an unexpected
+    “How do my kids learn if AI generates everything for them? And                        result had been generated from the GAI systems and stated,
+do they know enough about the content of what they’re asking the                             “If I do it without artifcial intelligence, I can do it with my hands
+AI? I think learning is trial and error by doing things by themselves,                    exactly as I thought, but if I use artifcial intelligence, I think it can
+and kids need to have the foundation to be able to build upon to access                   be seen as a disadvantage in that it is expressed slightly diferently
+that new AI.”                                                                             than my intention.”
+    Other parents consider that AI system access should determined                           In instances where GAI-produced content is inaccurate but seem-
+by age-appropriate standards, as P11 stated,                                              ingly plausible, parents (10/12) argued it is important to consider
+    “I think the current version is defnitely not for kids age 8 or 9, it’s               whether or not students know AI-provided information is accurate.
+too open-ended, my kid is too young and it’s more important to learn                      Several parents cited the need for educational AI deployments to
+foundation knowledge frst, I think that there is learning that has to                     be prefaced with fundamental education to develop critical think-
+happen with that.”                                                                        ing, comprehension, and problem-solving skills so their child can
+    In accordance with the previous section, one of the key questions                     critically analyze and scrutinize information:
+raised by adult participants was aspects of student autonomy (their                          “And do they know enough about the content of what they’re asking
+ownership and agency over their writing project). The issue raises                        the AI? How do we know if kids ask the right question, and how do we
+the challenge of designing child-AI interaction so that children can                      know if the information provided by AI is correct or not for students?
+control their own learning processes, not just be led by AI. Hence,                       I think kids frst learn through credited resources and develop that
+it is essential to develop AI-driven systems that respect children’s                      fundamental knowledge, at least by middle school.”
+CHI ’24, May 11–16, 2024, Honolulu, HI, USA                                                                                            Han, et al.
+
+
+   Based on our fndings, we identifed several challenges with               Consequently, new breakthrough systems like GPTs [79] will re-
+current GAI systems, including the originality of students’ writing      quire thorough evaluation in terms of safety, efectiveness, and their
+projects (academic integrity), the agency of students in writing         ability to foster trust and community integration before they gradu-
+processes (learning), and the generation of misinformation due           ally become embedded in societal norms. Organizations such as the
+to the randomness of the GAI systems. These challenges are not           Institute of Education Sciences (IES) and Digital Promise, among
+distinctive from one another; rather, they are interconnected and        others, are beginning to form communities of educators to explore
+need to be addressed collectively. In section 6, we discuss design       the possibilities these systems ofer and to critically examine their
+implications that address the challenges mentioned above.                applicability for teaching and learning [7, 56]. Consequently, it is an-
+                                                                         ticipated that these technologies will be integrated into educational
+5     DISCUSSION                                                         systems gradually rather than afecting a radical transformation in
+From the study, we examined the potential advantages and chal-           teaching and learning methodologies immediately.
+lenges of using GAI systems for literacy education in K-6 settings       5.1.1 Double-Edged Sword of GAI in Education. From the study, we
+from multiple stakeholders’ perspectives. We discovered how each         found educators were drawn to use the GAI systems for instruction
+stakeholder’s views difer: for teachers, generative AI systems are       and in the way that creating lesson plans (e.g., pre-, during, and
+a new type of digital citizenship development; for parents, these        post-instruction) can be made easier using AI-scafolded content
+GAI systems are another type of toys or games; for students, these       creation. Meanwhile, students found they could leverage the sys-
+are smart, helpful companions.                                           tems to receive individualized and timely feedback. At the same
+   In our discussion, we delve into the complexities of integrat-        time, parents pointed out the GAI systems’ capabilities to facili-
+ing cutting-edge educational technologies into learning settings,        tate interest-driven learning, particularly about culturally relevant
+scrutinizing their impact on the design of GAI learning systems.         approaches in writing projects [9, 83].
+Additionally, we outline three key design considerations essential          The use of GAI in educational settings presents a complex blend
+for developing efective GAI-based educational applications.              of benefts and drawbacks, which are not mutually exclusive but
+                                                                         rather exist simultaneously, refecting a double-edged nature. GAI
+5.1     Unpacking the Complexity of Technology                           facilitates open dialogue and free-form conversation, enabling the
+        Integration in Education                                         exploration of culturally diverse topics and translation capabilities.
+Despite substantial investments in educational technology, there         This openness enriches the educational experience by fostering
+is often a notable gap between the anticipated and actual usage of       a broader understanding of various cultures and languages. On
+these tools in classroom environments [27]. Teachers’ varying levels     the other hand, the same openness of GAI systems can lead to
+of comfort and profciency with technology signifcantly infuence          potential challenges, including the development of biased perspec-
+its application in teaching. Resource limitations also pose signifcant   tives and the generation of inaccurate or ’hallucinated’ results [32].
+challenges, with issues like inadequate training, support, and access    Such issues underscore the critical need for careful moderation
+to current and functional technology impeding efective utilization       and strategic oversight, such as the implementation of customized
+[27]. Reich (2020) underscores the importance of addressing the          models [30] (e.g., incorporating more diverse races into the image
+broader social, cultural, and pedagogical complexities in education,     data set to train TTL) so that the system does not generate a partic-
+which he deems more crucial than mere technological advancement          ular ethnicity or race. Such precautions are crucial to harness the
+[87].                                                                    benefts of GAI while minimizing its risks for educational settings.
+    The recent LLMs have brought breakthroughs of open-ended
+conversational systems, which perform open-domain dialog with            5.2    Recommendations for System Designers
+any topics [51] and it ofers the capability to be fne-tuned [82],               and Developers
+enhancing its performance to align with specifc domains and in-          As part of this discussion, we propose the design considerations
+structional objectives [112, 129]. Unlike traditional MOOC plat-         of GAI-powered writing platforms to inform the designing of safe
+forms, which rely on human-guided instructions, educators can            and accessible GAI systems for elementary school settings. To capi-
+now train the LLM with specialized datasets and employ prompt            talize on the perceived benefts of educational uses of GAI while
+engineering techniques [114] to enable AI to construct instruc-          mitigating the concerns from our stakeholder groups, educational
+tional content autonomously. Furthermore, students’ educational          GAI platforms should: 1) provide guardrails to protect students’
+behavior data, which includes their challenges and areas of prof-        authorship issues in GAI-powered writing, 2) aford appropriate
+ciency, can be fed back into the LLM for evaluation. This allows         role allocation to AI and students, and 3) support customizable
+for algorithmically-guided decisions about where to begin instruc-       teacher-in-the-loop systems to enhance the trustworthiness and
+tion based on each student’s capabilities. Eventually, educational       content-focus of GAI systems.
+systems will likely converge three distinct approaches within an
+integrated system—combining direct instruction, algorithm-guided         5.2.1 Navigating the Complexity of Authorship and Ownership in
+learning, and AI facilitation. This system will not only instruct and    AI-Assisted Writing Systems. Our fndings highlighted that teachers
+guide but also foster open-ended exploration and collaboration be-       are concerned about their students’ authorship and integrity of
+tween students and AI agents. Therefore, it is important to examine      their writing output, particularly when GAI generates the majority
+the possibility that these GAI systems can be integrated with new        of the content for students [25, 28, 64]. Even though studies have
+pedagogical approaches.                                                  examined GAI-LLM-powered writing systems, such as Gero et al.
+Teachers, Parents, and Students’ Perspectives on Integrating Generative AI into Elementary Literacy Education            CHI ’24, May 11–16, 2024, Honolulu, HI, USA
+
+
+[42], Lee et al. [63], and Yuan et al. [126], focus on investigating                      write their own creative ideas, giving students control over the
+language models’ capacity rather than users’ capabilities and their                       writing process. Nguyen. [76] discusses the benefts of designing
+perspectives (including those with diferent cognitive levels, abili-                      prompts that enable chatbots to foster systemic thinking (such as
+ties, and ages). Furthermore, there is a lack of studies focusing on                      idea generation and questioning). Specifcally, Nguyen. [76] exam-
+educational settings for K-6, which aim to mitigate specifc prob-                         ined textual conversational agents’ (chatbot) role design (personas)
+lems they face (i.e., authorship, plagiarism, assessment) [104]. Gero                     and its impact on students’ system thinking process in group discus-
+et al. [42], and Lee et al. [63] have identifed that there is no one-                     sions. The fndings suggested more transactive exchanges with less
+size-fts-all solution when it comes to users’ sense of ownership and                      knowledgeable peer agents (versus interacting with expert agents)
+authorship over AI-assisted writing processes due to uncertainty                          as students felt more social and engaging. This fnding suggests
+over authorship of language model-generated texts itself. Conse-                          that designing an age-appropriate agent role/ persona can impact
+quently, there is a need for further research into writers’ ownership,                    conceptual understanding, enhancing learning outcomes. The cur-
+authorship, and plagiarism, in addition to developing new methods                         rent capacity of prompting LLMs ofers possibilities to optimize the
+for assessing and measuring writers’ progress [29, 58, 59].                               free-form LLM-based chatbot dialogues for that purpose.
+   To better understand what guardrails and guidelines need to
+be implemented into the development of GAI-LLM-powered co-                                5.2.3 Balancing Flexibility and Control GAI-LLM Systems for Ed-
+writing systems for K-6 students, future research on students’ ca-                        ucator and Parent Oversight. Our fndings indicated that teachers
+pacity, especially on measuring learning processes and assessment                         and parents expressed concern about students’ interaction with
+of the writing (e.g., how they interact with GAI-LLM like ChatGPT),                       misinformation and biased content due to the system’s randomness.
+would be benefcial.                                                                       To mitigate the uncertainty associated with GAI LLM systems, it
+   To navigate the authorship and ownership of AI-assisted writing                        is essential to design a system that balances fexibility and control
+systems like ChatGPT, we propose building a system based on                               with adults-in-the-loop systems [49, 72, 128]. Yuan et al. [126] ex-
+the LLM that facilitates cloud-based infrastructure. The database                         amined some of the methods that oversee the writing processes by
+stores students’ utterances in separation from AI-generated texts.                        providing suggestion options for users and ofering prompt design
+To diferentiate between student-generated content and machine-                            features from the back end. However, deciding and accepting the
+generated text, the platform will employ text-similarity analysis                         suggestions and writing prompts could be challenging for a certain
+[57]. This method allows educators to compare student writing                             age group and intellectual level or English profciency [69].
+with AI output, ofering insights into the extent of AI reliance on                           Hence, we propose designing an ’educators’ view’ that allows
+student work.                                                                             educators and/or parents to easily ’prompt’ and curate GAI-based
+                                                                                          chatbots’ conversation to facilitate a secure mode of student-AI
+5.2.2 Enhancing Student Agency through Role Allocation in GAI                             interaction for writing. For example, the new systems will allow
+Systems Design. We observed that when students encountered open-                          educators to prompt GAI systems to carry on their lessons, similar
+ended GAI systems’ interfaces (i.e., ChatGPT and Stable Difusion)                         to the current tool that designs a chatbot with fow-based interfaces,
+without context, they had difculty writing prompts in a way that                          such as Voicefow [8]. Our suggestion is to develop fow-based
+produced appropriate results. Hence, we argue for designing GAI-                          interfaces [37] (or block-based interfaces [12]) for educators, where
+LLM co-writing platforms that mimic natural conversation, pro-                            each node or block can translate into a prompt, which will create
+viding students with concrete context at the beginning of their                           dialogue as teachers intend, continue writing project instructions,
+interaction and ofering options for choosing topics of choice and                         and construct conversation for students. By doing so, the system
+characters to support child-centered and interest-driven learning                         will provide educators control over a certain level of uncertainty
+experiences [34, 83].                                                                     the current GAI-LLM-based chatbot might have and provide open-
+   According to the workshop with students and teacher interviews,                        ended fexibility, with low foors and high ceilings [89].
+promoting students’ agency as writers is essential [62], especially                          The majority of teachers (12/16) we interviewed expressed dif-
+for enhancing learning experiences. As a result, students should be                       culty adapting to new tools and AI applications (due to their heavy
+given opportunities to participate in writing projects and promote                        workload). Therefore, interfaces should be as simple (and easy to
+independent writing actively. This can be accomplished by allowing                        use) as teachers already know. To design the system, we recommend
+students to customize and edit their own writing. To facilitate safer                     actively collaborating with teachers, co-designing the processes
+and more efcient GAI systems in education without compromising                            and interfaces through multiple steps of studies starting with need-
+their integrity, system developers and Edtech designers need to                           fndings and card-sorting [95] to understand their unique languages
+establish a division of tasks, setting up boundaries of roles between                     and mental model to create an appropriate conceptual model that
+the AI agent for educators and students. By designing an AI agent                         aligns with educators’ goals [65]. With that series of user tests and
+persona and curating Child-AI conversations, this can be achieved                         gathering feedback from teachers and students, it is possible to
+by encouraging idea generation, adding story detail, and elaborating                      refne the system and optimize its functionalities for educational
+from the perspective of students. AI agents should be designed to                         purposes.
+help students think critically and creatively and to encourage them
+to ask questions through conversation [6, 123]. For instance, system                      5.3      Directions for the future work
+developers allocate AI’s persona as a coach or/peer rather than an                        For future research directions aimed at broadening the scope and
+assistant– that means rather than having AI generate writing on                           generalizability of our fndings, we advocate for an expanded inves-
+students’ behalf, designing AI agents that encourage students to                          tigation into GAI utilization. This should involve a comprehensive
+CHI ’24, May 11–16, 2024, Honolulu, HI, USA                                                                                                          Han, et al.
+
+
+analysis of system logs and behavioral data within GAI platforms.         ACKNOWLEDGMENTS
+This includes leveraging GAI platforms for collecting back-end            We would like to express our gratitude to the participants for their
+educational data to analyze students’ learning progress such as           invaluable contributions to our study. Special thanks to Daniel Ep-
+their reliance on AI, writing quality, and the nature of AI-student       stein, Elena Agapie, and Aure Schrock for their insightful feedback
+interactions. By engaging a wider participant base and adopting a         and discussions. This research was made possible by the generous
+longitudinal study approach, we can deepen our understanding of           support of the VITAL Prize Challenge award.
+how GAI tools infuence user interactions, experiences, and learn-
+ing outcomes over time.
+   To promote accelerated learning through GAI-powered learn-
+                                                                          REFERENCES
+ing tools, further research could also include A/B testing, using
+                                                                            [1] Forest Agostinelli, Mihir Mavalankar, Vedant Khandelwal, Hengtao Tang, Dezhi
+multidimensional metrics to evaluate student writing. These met-                Wu, Barnett Berry, Biplav Srivastava, Amit Sheth, and Matthew Irvin. 2021.
+rics include Production: the amount of writing users generate over              Designing Children’s New Learning Partner: Collaborative Artifcial Intelli-
+                                                                                gence for Learning to Solve the Rubik’s Cube. In Proceedings of the 20th An-
+time and per session within the system, Narrativity: the extent to              nual ACM Interaction Design and Children Conference (Athens, Greece) (IDC
+which a text tells a story with characters, events, places, and things,         ’21). Association for Computing Machinery, New York, NY, USA, 610–614.
+Syntactic Complexity: the complexity of the text’s syntactic struc-             https://doi.org/10.1145/3459990.3465175
+                                                                            [2] Norita Ahmad, San Murugesan, and Nir Kshetri. 2023. Generative Artifcial
+ture, Vocabulary: sophistication and concreteness of students’ word             Intelligence and the Education Sector. Computer 56, 6 (June 2023), 72–76.
+choice, Grammatical Correctness: the extent to which students’ texts            https://doi.org/10.1109/MC.2023.3263576 Conference Name: Computer.
+adhere to grammar norms [44, 45, 73]. By integrating these AI and           [3] MagicSchool ai. 2023. AI for teachers - lesson planning and more! https:
+                                                                                //www.magicschool.ai/
+database systems, designers and researchers will be better equipped         [4] Open AI. 2023. OpenAI API. https://platform.openai.com
+to understand the details of student interaction with AI in writing,        [5] Speak ai. 2023. The speaking app that actually talks. https://www.speak.com/
+                                                                            [6] Mehdi Alaimi, Edith Law, Kevin Daniel Pantasdo, Pierre-Yves Oudeyer, and
+aiding in the development of more efective educational tools. This              Hélène Sauzeon. 2020. Pedagogical Agents for Fostering Question-Asking Skills
+approach enriches insights into AI’s educational applications and               in Children. In Proceedings of the 2020 CHI Conference on Human Factors in
+also sets a foundation for future studies focused on the nuanced                Computing Systems (Honolulu, HI, USA) (CHI ’20). Association for Computing
+                                                                                Machinery, New York, NY, USA, 1–13. https://doi.org/10.1145/3313831.3376776
+dynamics of AI-assisted learning.                                           [7] Colin Angevine, Karen Cator, Babe Liberman, Kim Smith, and Viki Young. 2019.
+                                                                                Designing a Process for Inclusive Innovation: A Radical Commitment to Equity.
+                                                                                Technical Report. Digital Promise. https://doi.org/10.51388/20.500.12265/86
+                                                                            [8] Voicefow application. 2023. Build amazing conversational assistants. https:
+                                                                                //www.voicefow.com/
+                                                                            [9] Brittany Aronson and Judson Laughter. 2016. The Theory and Practice of
+                                                                                Culturally Relevant Education: A Synthesis of Research Across Content Areas.
+                                                                                Review of Educational Research 86, 1 (March 2016), 163–206. https://doi.org/10.
+6    CONCLUSION                                                                 3102/0034654315582066
+In this paper, we explored the stakeholders in education’s percep-         [10] David Baidoo-Anu and Leticia Owusu Ansah. 2023. Education in the Era of
+                                                                                Generative Artifcial Intelligence (AI): Understanding the Potential Benefts of
+tions and opinions regarding the advantages and limitations of                  ChatGPT in Promoting Teaching and Learning. https://doi.org/10.2139/ssrn.
+leveraging GAI systems in literacy education for elementary school              4337484
+students. Through qualitative studies, conducting workshops and            [11] Erin Beneteau, Olivia K. Richards, Mingrui Zhang, Julie A. Kientz, Jason Yip,
+                                                                                and Alexis Hiniker. 2019. Communication Breakdowns Between Families and
+interviews with teachers, parents, and students of 40 total partic-             Alexa. In Proceedings of the 2019 CHI Conference on Human Factors in Computing
+ipants, we found that the GAI systems can be used to generate                   Systems (Glasgow, Scotland Uk) (CHI ’19). Association for Computing Machinery,
+                                                                                New York, NY, USA, 1–13. https://doi.org/10.1145/3290605.3300473
+adaptive lesson plan materials such as mentor text for teachers            [12] Google Blockly. 2023), publisher=Google.          https://developers.google.com/
+for them to tailor according to each student’s needs and skill level            blockly
+(through scafolding and their interests). The GAI system afords            [13] Rishi Bommasani, Drew A Hudson, Ehsan Adeli, Russ Altman, Simran Arora,
+                                                                                Sydney von Arx, Michael S Bernstein, Jeannette Bohg, Antoine Bosselut, Emma
+culturally relevant and timely feedback that broadens ideation for              Brunskill, et al. 2021. On the opportunities and risks of foundation models.
+writing projects. We also discovered the limitations of the systems             arXiv preprint arXiv:2108.07258 (2021).
+in determining the authenticity of students’ writing projects, dif-        [14] Once Upon a Bot. 2023. Once upon a bot. https://onceuponabot.com/
+                                                                           [15] Tom B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan,
+culties determining students’ agency over their writing outcomes,               Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda
+and concerns regarding the safety and accuracy of the content.                  Askell, Sandhini Agarwal, Ariel Herbert-Voss, Gretchen Krueger, Tom Henighan,
+                                                                                Rewon Child, Aditya Ramesh, Daniel M. Ziegler, Jefrey Wu, Clemens Winter,
+Based on the fndings, we provide implications for future studies to             Christopher Hesse, Mark Chen, Eric Sigler, Mateusz Litwin, Scott Gray, Benjamin
+navigate authorship and ownership of AI-assisted writing projects               Chess, Jack Clark, Christopher Berner, Sam McCandlish, Alec Radford, Ilya
+that students produce. We also drew design suggestions to miti-                 Sutskever, and Dario Amodei. 2020. Language Models are Few-Shot Learners.
+                                                                                https://doi.org/10.48550/arXiv.2005.14165 arXiv:2005.14165 [cs].
+gate the concerns regarding the safety and accuracy of content.            [16] Bengisu Cagiltay, Bilge Mutlu, and Joseph E Michaelis. 2023. “My Unconditional
+First, we recommend promoting student agency through role allo-                 Homework Buddy:” Exploring Children’s Preferences for a Homework Compan-
+cation over AI and humans, allowing more room for students to                   ion Robot. In Proceedings of the 22nd Annual ACM Interaction Design and Children
+                                                                                Conference (Chicago, IL, USA) (IDC ’23). Association for Computing Machinery,
+customize and edit their own writing. Second, we propose facili-                New York, NY, USA, 375–387. https://doi.org/10.1145/3585088.3589388
+tating teacher-in-the-loop systems where educators and parents             [17] Miguel A Cardona, Roberto J Rodríguez, and Kristina Ishmael. 2023. Artifcial
+                                                                                Intelligence and the Future of Teaching and Learning. (2023).
+can control the lessons by prompting AI to carry on their lessons          [18] Nicholas Carlini, Florian Tramer, Eric Wallace, Matthew Jagielski, Ariel Herbert-
+based on their design. Our study highlights an opportunity to foster            Voss, Katherine Lee, Adam Roberts, Tom Brown, Dawn Song, Ulfar Erlingsson,
+collaboration between researchers in the HCI, Education, GAI, and               et al. 2021. Extracting training data from large language models. In 30th USENIX
+                                                                                Security Symposium (USENIX Security 21). 2633–2650.
+NLP communities to design a GAI-powered platform for literacy              [19] ChatGPT. 2023. Chatgpt. https://openai.com/chatgpt
+education.                                                                 [20] ChatGPT. 2023. Introducing ChatGPT. https://openai.com/blog/chatgpt
+Teachers, Parents, and Students’ Perspectives on Integrating Generative AI into Elementary Literacy Education                       CHI ’24, May 11–16, 2024, Honolulu, HI, USA
+
+
+ [21] Lijia Chen, Pingping Chen, and Zhijian Lin. 2020. Artifcial Intelligence in            [43] Katy Ilonka Gero, Tao Long, and Lydia B Chilton. 2023. Social Dynamics of AI
+      Education: A Review. IEEE Access 8 (2020), 75264–75278. https://doi.org/10.                 Support in Creative Writing. In Proceedings of the 2023 CHI Conference on Human
+      1109/ACCESS.2020.2988510 Conference Name: IEEE Access.                                      Factors in Computing Systems (Hamburg, Germany) (CHI ’23). Association for
+ [22] Thomas K. F. Chiu, Qi Xia, Xinyan Zhou, Ching Sing Chai, and Miaoting Cheng.                Computing Machinery, New York, NY, USA, Article 245, 15 pages. https:
+      2023. Systematic literature review on opportunities, challenges, and future                 //doi.org/10.1145/3544548.3580782
+      research recommendations of artifcial intelligence in education. Computers             [44] Arthur C. Graesser, Danielle S. McNamara, Zhiqang Cai, Mark Conley, Haiying
+      and Education: Artifcial Intelligence 4 (Jan. 2023), 100118. https://doi.org/10.            Li, and James Pennebaker. 2014. COH-metrix measures text characteristics at
+      1016/j.caeai.2022.100118                                                                    multiple levels of language and discourse. The Elementary School Journal 115, 2
+ [23] Irene-Angelica Chounta, Emanuele Bardone, Aet Raudsep, and Margus Pedaste.                  (2014), 210–229. https://doi.org/10.1086/678293
+      2022. Exploring teachers’ perceptions of Artifcial Intelligence as a tool to           [45] Arthur C. Graesser, Danielle S. McNamara, and Jonna M. Kulikowich. 2011. Coh-
+      support their practice in Estonian K-12 education. International Journal of                 Metrix: Providing Multilevel Analyses of Text Characteristics. Educational Re-
+      Artifcial Intelligence in Education 32, 3 (2022), 725–755. https://doi.org/10.1007/         searcher 40, 5 (June 2011), 223–234. https://doi.org/10.3102/0013189X11413260
+      s40593-021-00243-5                                                                          Publisher: American Educational Research Association.
+ [24] Elizabeth Clark, Anne Spencer Ross, Chenhao Tan, Yangfeng Ji, and Noah A.              [46] Steve Graham, Alisha Bollinger, Carol Booth Olson, Catherine D’Aoust, Charles
+      Smith. 2018. Creative Writing with a Machine in the Loop: Case Studies on                   MacArthur, Deborah McCutchen, and Natalie Olinghouse. 2012. Teaching
+      Slogans and Stories. In 23rd International Conference on Intelligent User Interfaces        Elementary School Students to Be Efective Writers: A Practice Guide. NCEE
+      (Tokyo, Japan) (IUI ’18). Association for Computing Machinery, New York, NY,                2012-4058. What Works Clearinghouse (2012).
+      USA, 329–340. https://doi.org/10.1145/3172944.3172983                                  [47] Steve Graham, Karen R Harris, Sharlene A Kiuhara, and Evan J Fishman. 2017.
+ [25] Debby RE Cotton, Peter A Cotton, and J Reuben Shipway. 2023. Chatting and                   The relationship among strategic writing behavior, writing motivation, and
+      cheating: Ensuring academic integrity in the era of ChatGPT. Innovations in                 writing performance with young, developing writers. The Elementary School
+      Education and Teaching International (2023), 1–12.                                          Journal 118, 1 (2017), 82–104.
+ [26] Mihaly Csikszentmihalyi. 2009. Flow: The Psychology of Optimal Experience.             [48] Steve Graham and Dolores Perin. 2007. Writing next-efective strategies to
+      Harper Collins. Google-Books-ID: QVjPsd1UukEC.                                              improve writing of adolescents in middle and high schools.
+ [27] Larry Cuban. 2001. Oversold and underused: Computers in the classroom. Harvard         [49] Adit Gupta and Christopher J MacLellan. 2021. Designing Teachable Systems
+      university press.                                                                           for Intelligent Tutor Authoring. (2021).
+ [28] Geofrey M Currie. 2023. Academic integrity and artifcial intelligence: is              [50] Ariel Han and Zhenyao Cai. 2023. Design Implications of Generative AI Systems
+      ChatGPT hype, hero or heresy?. In Seminars in Nuclear Medicine. Elsevier.                   for Visual Storytelling for Young Learners. In Proceedings of the 22nd Annual
+ [29] Nassim Dehouche. 2021. Plagiarism in the age of massive Generative Pre-trained              ACM Interaction Design and Children Conference (Chicago, IL, USA) (IDC ’23).
+      Transformers (GPT-3). Ethics in Science and Environmental Politics 21 (2021),               Association for Computing Machinery, New York, NY, USA, 470–474. https:
+      17–23.                                                                                      //doi.org/10.1145/3585088.3593867
+ [30] Paul DelSignore. 2023. Train your own image model using Leonardo                       [51] Minlie Huang, Xiaoyan Zhu, and Jianfeng Gao. 2020. Challenges in Building
+      AI. https://medium.com/the-generator/train-your-own-image-model-using-                      Intelligent Open-Domain Dialog Systems. ACM Trans. Inf. Syst. 38, 3, Article 21
+      leonardo-ai-7a7e92d1a387                                                                    (apr 2020), 32 pages. https://doi.org/10.1145/3383123
+ [31] Stable Difusion. 2023. Stable difusion online. https://stabledifusionweb.com/          [52] Bernd Huber, Daniel McDuf, Chris Brockett, Michel Galley, and Bill Dolan. 2018.
+ [32] Carmen Drahl. 2023. Ai was asked to create images of black African docs                     Emotional Dialogue Generation using Image-Grounded Language Models. In
+      treating White Kids. how’d it go? https://www.npr.org/sections/goatsandsoda/                Proceedings of the 2018 CHI Conference on Human Factors in Computing Systems
+      2023/10/06/1201840678/ai-was-asked-to-create-images-of-black-african-                       (CHI ’18). Association for Computing Machinery, New York, NY, USA, 1–12.
+      docs-treating-white-kids-howd-it-                                                           https://doi.org/10.1145/3173574.3173851
+ [33] Stefania Druga, Fee Lia Christoph, and Amy J Ko. 2022. Family as a Third Space         [53] Seth Hunter, Jeevan Kalanithi, and David Merrill. 2010. Make a Riddle and
+      for AI Literacies: How do children and parents learn about AI together?. In                 TeleStory: designing children’s applications for the siftables platform. In Pro-
+      Proceedings of the 2022 CHI Conference on Human Factors in Computing Systems.               ceedings of the 9th International Conference on Interaction Design and Children
+      1–17.                                                                                       (IDC ’10). Association for Computing Machinery, New York, NY, USA, 206–209.
+ [34] Daniel C Edelson and Diana M Joseph. 2012. The interest-driven learning design              https://doi.org/10.1145/1810543.1810572
+      framework: motivating learning through usefulness. In Embracing Diversity in           [54] Anealka Aziz Hussin. 2018. Education 4.0 made simple: Ideas for teaching.
+      the Learning Sciences. Routledge, 166–173.                                                  International Journal of Education and Literacy Studies 6, 3 (2018), 92–98.
+ [35] Maha Elgarf, Sahba Zojaji, Gabriel Skantze, and Christopher Peters. 2022. Cre-         [55] Gwo-Jen Hwang, Haoran Xie, Benjamin W Wah, and Dragan Gašević. 2020. Vi-
+      ativeBot: a Creative Storyteller robot to stimulate creativity in children. In              sion, challenges, roles and research issues of Artifcial Intelligence in Education.
+      Proceedings of the 2022 International Conference on Multimodal Interaction (ICMI            , 100001 pages.
+      ’22). Association for Computing Machinery, New York, NY, USA, 540–548.                 [56] IES. 2023. Institute of Education Sciences. https://ies.ed.gov/ncer/projects/
+      https://doi.org/10.1145/3536221.3556578                                                     program.asp?ProgID=13
+ [36] Joel E Fischer. 2023. Generative AI Considered Harmful. In Proceedings of              [57] Aminul Islam and Diana Inkpen. 2008. Semantic Text Similarity Using Corpus-
+      the 5th International Conference on Conversational User Interfaces (Eindhoven,              Based Word Similarity and String Similarity. ACM Trans. Knowl. Discov. Data 2,
+      Netherlands) (CUI ’23). Association for Computing Machinery, New York, NY,                  2, Article 10 (jul 2008), 25 pages. https://doi.org/10.1145/1376815.1376819
+      USA, Article 7, 5 pages. https://doi.org/10.1145/3571884.3603756                       [58] Mohammad Khalil and Erkan Er. 2023. Will ChatGPT get you caught? Rethinking
+ [37] Vue Flow. 2023. vuefow: the customizable Vue3 Flowchart Library. https:                     of plagiarism detection. arXiv preprint arXiv:2302.04335 (2023).
+      //vuefow.dev/                                                                          [59] Michael R King and ChatGPT. 2023. A conversation on artifcial intelligence,
+ [38] Giorgio Franceschelli and Mirco Musolesi. 2023. On the creativity of large                  chatbots, and plagiarism in higher education. Cellular and Molecular Bioengi-
+      language models. arXiv preprint arXiv:2304.00008 (2023).                                    neering 16, 1 (2023), 1–2.
+ [39] Radhika Garg, Hua Cui, Spencer Seligson, Bo Zhang, Martin Porcheron, Leigh             [60] Alyson Klein. 2023. 180 Degree Turn: NYC District Goes From Ban-
+      Clark, Benjamin R. Cowan, and Erin Beneteau. 2022. The Last Decade of HCI                   ning ChatGPT to Exploring AI’s Potential.                 Education Week (Oct.
+      Research on Children and Voice-Based Conversational Agents. In Proceedings of               2023). https://www.edweek.org/technology/180-degree-turn-nyc-schools-
+      the 2022 CHI Conference on Human Factors in Computing Systems (New Orleans,                 goes-from-banning-chatgpt-to-exploring-ais-potential/2023/10
+      LA, USA) (CHI ’22). Association for Computing Machinery, New York, NY, USA,            [61] DiCerbo Kristen. 2023. Khan Academy explores the potential for GPT-4 in a
+      Article 149, 19 pages. https://doi.org/10.1145/3491102.3502016                              limited pilot program. https://openai.com/customer-stories/khan-academy
+ [40] Radhika Garg and Subhasree Sengupta. 2020. Conversational Technologies for             [62] Natalia Kucirkova. 2019. Children’s agency by design: Design parameters for
+      In-Home Learning: Using Co-Design to Understand Children’s and Parents’                     personalization in story-making apps. International Journal of Child-Computer
+      Perspectives. In Proceedings of the 2020 CHI Conference on Human Factors in                 Interaction 21 (2019), 112–120. https://doi.org/10.1016/j.ijcci.2019.06.003,doi=
+      Computing Systems (Honolulu, HI, USA) (CHI ’20). Association for Computing                  {10.1016/j.ijcci.2019.06.003},publisher={Elsevier}
+      Machinery, New York, NY, USA, 1–13. https://doi.org/10.1145/3313831.3376631            [63] Mina Lee, Percy Liang, and Qian Yang. 2022. CoAuthor: Designing a Human-AI
+ [41] Radhika Garg and Subhasree Sengupta. 2020. Conversational technologies                      Collaborative Writing Dataset for Exploring Language Model Capabilities. In
+      for in-home learning: using co-design to understand children’s and parents’                 Proceedings of the 2022 CHI Conference on Human Factors in Computing Systems
+      perspectives. In Proceedings of the 2020 CHI conference on human factors in                 (CHI ’22). Association for Computing Machinery, New York, NY, USA, 1–19.
+      computing systems. 1–13.                                                                    https://doi.org/10.1145/3491102.3502030
+ [42] Katy Ilonka Gero, Vivian Liu, and Lydia Chilton. 2022. Sparks: Inspiration             [64] Weng Marc Lim, Asanka Gunasekara, Jessica Leigh Pallant, Jason Ian Pallant,
+      for Science Writing Using Language Models. In Proceedings of the 2022 ACM                   and Ekaterina Pechenkina. 2023. Generative AI and the future of education:
+      Designing Interactive Systems Conference (Virtual Event, Australia) (DIS ’22).              Ragnarök or reformation? A paradoxical perspective from management educa-
+      Association for Computing Machinery, New York, NY, USA, 1002–1019. https:                   tors. The International Journal of Management Education 21, 2 (2023), 100790.
+      //doi.org/10.1145/3532106.3533533                                                           https://doi.org/10.1016/j.ijme.2023.100790
+CHI ’24, May 11–16, 2024, Honolulu, HI, USA                                                                                                                              Han, et al.
+
+
+ [65] Phoebe Lin and Jessica Van Brummelen. 2021. Engaging Teachers to Co-Design             [91] Kalhan Rosenblatt. 2023. New York City public schools remove chatgpt
+      Integrated AI Curriculum for K-12 Classrooms. In Proceedings of the 2021 CHI                ban. https://www.nbcnews.com/tech/chatgpt-ban-dropped-new-york-city-
+      Conference on Human Factors in Computing Systems (CHI ’21). Association for                 public-schools-rcna85089
+      Computing Machinery, New York, NY, USA, 1–12. https://doi.org/10.1145/                 [92] Daniel Russell, Q. Vera Liao, Chinmay Kulkarni, Elena L. Glassman, and
+      3411764.3445377                                                                             Nikolas Martelaro. 2023. Human-Computer Interaction and AI: What Prac-
+ [66] Maria Lindh and Jan Nolin. 2016. Information we collect: Surveillance and                   titioners Need to Know to Design and Build Efective AI System from a Hu-
+      privacy in the implementation of google apps for education. European Ed-                    man Perspective. In Extended Abstracts of the 2023 CHI Conference on Hu-
+      ucational Research Journal 15, 6 (2016), 644–663. https://doi.org/10.1177/                  man Factors in Computing Systems (Hamburg, Germany) (CHI EA ’23). Asso-
+      1474904116654917                                                                            ciation for Computing Machinery, New York, NY, USA, Article 545, 3 pages.
+ [67] Vivian Liu and Lydia B Chilton. 2022. Design Guidelines for Prompt Engineering              https://doi.org/10.1145/3544549.3574170
+      Text-to-Image Generative Models. In Proceedings of the 2022 CHI Conference             [93] Johnny Saldaña. 2013. The coding manual for qualitative researchers (2nd ed ed.).
+      on Human Factors in Computing Systems (CHI ’22). Association for Computing                  SAGE, Los Angeles. OCLC: ocn796279115.
+      Machinery, New York, NY, USA, 1–23. https://doi.org/10.1145/3491102.3501825            [94] Ismaila Temitayo Sanusi, Solomon Sunday Oyelere, Henriikka Vartiainen, Jarkko
+ [68] Vivian Liu, Han Qiao, and Lydia Chilton. 2022. Opal: Multimodal Image Gener-                Suhonen, and Markku Tukiainen. 2023. A systematic review of teaching and
+      ation for News Illustration. In Proceedings of the 35th Annual ACM Symposium                learning machine learning in K-12 education. Education and Information Tech-
+      on User Interface Software and Technology (UIST ’22). Association for Computing             nologies 28, 5 (2023), 5967–5997.
+      Machinery, New York, NY, USA, 1–17. https://doi.org/10.1145/3526113.3545621            [95] Katie Sherwin. 2018. Card sorting: Uncover users’ mental models for better
+ [69] Becton Loveless. 2023. Learning to Read to Read to Learn. Myth or Reality?                  information architecture. https://www.nngroup.com/articles/card-sorting-
+      https://www.educationcorner.com/learning-to-read-to-read-to-learn.html                      defnition/
+ [70] Jacqueline Low. 2019. A pragmatic defnition of the concept of theoretical              [96] Rashi Shrivastava. 2022. Amazon Alexa wants to put your child to bed with
+      saturation. Sociological Focus 52, 2 (Jan 2019), 131–139. https://doi.org/10.1080/          generative ai storytelling. https://www.forbes.com/sites/rashishrivastava/
+      00380237.2018.1544514                                                                       2022/12/07/amazon-alexa-wants-to-put-your-child-to-bed-with-generative-
+ [71] Wander ly. 2023. Wanderly: Magical adventures for curious children. https:                  ai-storytelling/?sh=29b2266eb5b9
+      //app.wander.ly/                                                                       [97] Nikhil Singh, Guillermo Bernal, Daria Savchenko, and Elena L. Glassman. 2022.
+ [72] Christopher J MacLellan, Rob Sheline, and Erik Harpstead. 2019. A Human-                    Where to Hide a Stolen Elephant: Leaps in Creative Writing with Multimodal
+      Centered Approach to Designing Teachable Systems. (2019).                                   Machine Intelligence. ACM Trans. Comput.-Hum. Interact. (feb 2022). https:
+ [73] Danielle S. McNamara, Scott A. Crossley, and Philip M. McCarthy. 2010. Linguis-             //doi.org/10.1145/3511599 Just Accepted.
+      tic Features of Writing Quality. Written Communication 27, 1 (Jan. 2010), 57–86.       [98] Jacob Steiss, Tamara Tate, Steve Graham, Jazmin Cruz, Michael Hebert, Jiali
+      https://doi.org/10.1177/0741088309351547 Publisher: SAGE Publications Inc.                  Wang, Youngsun Moon, Waverly Tseng, et al. 2023. Comparing the Quality of
+ [74] Midjourney. 2023. Midjourney. https://www.midjourney.com/app/                               Human and Chatgpt Feedback on Students’ Writing. (2023).
+ [75] Michael Muller, Lydia B Chilton, Anna Kantosalo, Charles Patrick Martin, and           [99] Jiahong Su, Davy Tsz Kit Ng, and Samuel Kai Wah Chu. 2023. Artifcial intelli-
+      Greg Walsh. 2022. GenAICHI: Generative AI and HCI. In Extended Abstracts                    gence (AI) literacy in early childhood education: The challenges and opportuni-
+      of the 2022 CHI Conference on Human Factors in Computing Systems (CHI EA                    ties. Computers and Education: Artifcial Intelligence 4 (2023), 100124.
+      ’22). Association for Computing Machinery, New York, NY, USA, 1–7. https:             [100] Ben Swanson, Kory Mathewson, Ben Pietrzak, Sherol Chen, and Monica Di-
+      //doi.org/10.1145/3491101.3503719                                                           nalescu. 2021. Story centaur: Large language model few shot learning as a
+ [76] Ha Nguyen. 2023. Role design considerations of conversational agents to facili-             creative writing tool. In Proceedings of the 16th Conference of the European
+      tate discussion and systems thinking. Computers & Education 192 (Jan. 2023),                Chapter of the Association for Computational Linguistics: System Demonstrations.
+      104661. https://doi.org/10.1016/j.compedu.2022.104661                                       244–256.
+ [77] Eric Nichols, Leo Gao, and Randy Gomez. 2020. Collaborative storytelling with         [101] Fati Tahiru. 2021. AI in education: A systematic literature review. Journal of
+      large-scale neural language models. In Proceedings of the 13th ACM SIGGRAPH                 Cases on Information Technology (JCIT) 23, 1 (2021), 1–20.
+      Conference on Motion, Interaction and Games. 1–10.                                    [102] David R Thomas. 2006. A general inductive approach for analyzing qualitative
+ [78] OpenAI. 2022. DALL·E 2. https://openai.com/dall-e-2/                                        evaluation data. American journal of evaluation 27, 2 (2006), 237–246.
+ [79] OpenAI. 2023. Introducing gpts. https://openai.com/blog/introducing-gpts              [103] Atlas ti. 2023. The #1 software for qualitative data analysis. https://atlasti.com/
+ [80] Django Paris and H Samy Alim. 2017. Culturally sustaining pedagogies: Teaching        [104] Levent Uzun. 2023. ChatGPT and academic integrity concerns: Detecting arti-
+      and learning for justice in a changing world. Teachers College Press.                       fcial intelligence generated content. Language Education and Technology 3, 1
+ [81] Pat Pataranutaporn, Valdemar Danry, Lancelot Blanchard, Lavanay Thakral,                    (2023).
+      Naoki Ohsugi, Pattie Maes, and Misha Sra. 2023. Living Memories: AI-Generated         [105] Jessica Van Brummelen, Maura Kelleher, Mingyan Claire Tian, and Nghi Nguyen.
+      Characters as Digital Mementos. In Proceedings of the 28th International Con-               2023. What Do Children and Parents Want and Perceive in Conversational
+      ference on Intelligent User Interfaces (Sydney, NSW, Australia) (IUI ’23). As-              Agents? Towards Transparent, Trustworthy, Democratized Agents. In Proceed-
+      sociation for Computing Machinery, New York, NY, USA, 889–901. https:                       ings of the 22nd Annual ACM Interaction Design and Children Conference (Chicago,
+      //doi.org/10.1145/3581641.3584065                                                           IL, USA) (IDC ’23). Association for Computing Machinery, New York, NY, USA,
+ [82] Andrew Peng, Michael Wu, John Allard, Logan Kilpatrick, and Steven Heidel.                  187–197. https://doi.org/10.1145/3585088.3589353
+      2023. https://openai.com/blog/gpt-3-5-turbo-fne-tuning-and-api-updates                [106] Maarten Van Mechelen, Rachel Charlotte Smith, Marie-Monique Schaper, Mari-
+ [83] Kylie Peppler. 2013. New Opportunities for Interest-Driven Arts Learning in a               ana Tamashiro, Karl-Emil Bilstrup, Mille Lunding, Marianne Graves Petersen,
+      Digital Age. Wallace Foundation (2013).                                                     and Ole Sejer Iversen. 2023. Emerging Technologies in K–12 Education: A Future
+ [84] Igor Pesek, Novica Nosović, and Marjan Krašna. 2022. The Role of AI in the                  HCI Research Agenda. ACM Trans. Comput.-Hum. Interact. 30, 3, Article 47 (jun
+      Education and for the Education. In 2022 11th Mediterranean Conference on                   2023), 40 pages. https://doi.org/10.1145/3569897
+      Embedded Computing (MECO). IEEE, 1–4.                                                 [107] James Vincent. 2016. Twitter taught Microsoft’s AI chatbot to be a racist
+ [85] Sara Polak, Gianluca Schiavo, and Massimo Zancanaro. 2022. Teachers’ Perspec-               asshole in less than a Day. https://www.theverge.com/2016/3/24/11297050/tay-
+      tive on Artifcial Intelligence Education: An Initial Investigation. In Extended Ab-         microsoft-chatbot-racist
+      stracts of the 2022 CHI Conference on Human Factors in Computing Systems (New         [108] Jessica Walrack, Barri Segal, and Susannah Snider. 2023. Where do I fall in
+      Orleans, LA, USA) (CHI EA ’22). Association for Computing Machinery, New                    the American Economic Class System? https://money.usnews.com/money/
+      York, NY, USA, Article 431, 7 pages. https://doi.org/10.1145/3491101.3519866                personal-fnance/family-fnance/articles/where-do-i-fall-in-the-american-
+ [86] Marc Prensky. 2001. Digital natives, digital immigrants part 2: Do they really              economic-class-system
+      think diferently? On the horizon 9, 6 (2001), 1–6.                                    [109] Ge Wang, Kaiwen Sun, Ayça Atabey, Kruakae Pothong, Grace C Lin, Jun Zhao,
+ [87] Justin Reich. 2020. Failure to disrupt: Why technology alone can’t transform                and Jason Yip. 2023. Child-Centred AI Design: Defnition, Operation, and
+      education. Harvard University Press.                                                        Considerations. In Extended Abstracts of the 2023 CHI Conference on Human
+ [88] Léonie J Rennie and Tina Jarvis. 1995. Three approaches to measuring children’s             Factors in Computing Systems. 1–6.
+      perceptions about technology. International Journal of Science Education 17, 6        [110] Ge Wang, Jun Zhao, Max Van Kleek, and Nigel Shadbolt. 2022. ’Don’t make
+      (1995), 755–774.                                                                            assumptions about me!’: Understanding Children’s Perception of Datafcation
+ [89] Mitchel Resnick, Brad Myers, Kumiyo Nakakoji, Ben Shneiderman, Randy                        Online. Proceedings of the ACM on Human-Computer Interaction 6, CSCW2
+      Pausch, and Mike Eisenberg. 2005. Design Principles for Tools to Support                    (2022), 1–24.
+      Creative Thinking. Report of Workshop on Creativity Support Tools 20 (Jan.            [111] Ge Wang, Jun Zhao, Max Van Kleek, and Nigel Shadbolt. 2023. ‘Treat me as
+      2005).                                                                                      your friend, not a number in your database’: Co-designing with Children to
+ [90] Kalhan Rosenblatt. 2023. CHATGPT banned from New York City public schools’                  Cope with Datafcation Online. In Proceedings of the 2023 CHI Conference on
+      devices and Networks. https://www.nbcnews.com/tech/tech-news/new-york-                      Human Factors in Computing Systems. 1–21.
+      city-public-schools-ban-chatgpt-devices-networks-rcna64446                            [112] Lu Wang, Munif Ishad Mujib, Jake Williams, George Demiris, and Jina Huh-Yoo.
+                                                                                                  2021. An evaluation of generative pre-training model-based therapy chatbot
+Teachers, Parents, and Students’ Perspectives on Integrating Generative AI into Elementary Literacy Education                   CHI ’24, May 11–16, 2024, Honolulu, HI, USA
+
+
+      for caregivers. arXiv preprint arXiv:2107.13115 (2021).                                    Flexible Parental Involvement. In Proceedings of the 2022 CHI Conference on
+[113] Suchen Wang, Yueqi Duan, Henghui Ding, Yap-Peng Tan, Kim-Hui Yap, and                      Human Factors in Computing Systems (CHI ’22). Association for Computing
+      Junsong Yuan. 2022. Learning transferable human-object interaction detector                Machinery, New York, NY, USA, 1–21. https://doi.org/10.1145/3491102.3517479
+      with natural language supervision. 2022 IEEE/CVF Conference on Computer              [129] Hao Zhou, Minlie Huang, Tianyang Zhang, Xiaoyan Zhu, and Bing Liu. 2018.
+      Vision and Pattern Recognition (CVPR) (2022). https://doi.org/10.1109/cvpr52688.           Emotional Chatting Machine: Emotional Conversation Generation with Inter-
+      2022.00101                                                                                 nal and External Memory. Proceedings of the AAAI Conference on Artifcial
+[114] Jules White, Quchen Fu, Sam Hays, Michael Sandborn, Carlos Olea, Henry                     Intelligence 32, 1 (Apr. 2018). https://doi.org/10.1609/aaai.v32i1.11325
+      Gilbert, Ashraf Elnashar, Jesse Spencer-Smith, and Douglas C. Schmidt. 2023.
+      A Prompt Pattern Catalog to Enhance Prompt Engineering with ChatGPT.
+      https://doi.org/10.48550/arXiv.2302.11382 arXiv:2302.11382 [cs].
+[115] Randi Williams, Hae Won Park, and Cynthia Breazeal. 2019. A is for Artifcial
+      Intelligence: The Impact of Artifcial Intelligence Activities on Young Children’s
+      Perceptions of Robots. In Proceedings of the 2019 CHI Conference on Human
+      Factors in Computing Systems (Glasgow, Scotland Uk) (CHI ’19). Association
+      for Computing Machinery, New York, NY, USA, 1–11. https://doi.org/10.1145/
+      3290605.3300677
+[116] Tongshuang Wu, Michael Terry, and Carrie J. Cai. 2022. AI Chains: Trans-
+      parent and Controllable Human-AI Interaction by Chaining Large Language
+      Model Prompts | Proceedings of the 2022 CHI Conference on Human Factors in
+      Computing Systems. https://dl.acm.org/doi/abs/10.1145/3491102.3517582
+[117] Ying Xu, Stacy Branham, Xinwei Deng, Penelope Collins, and Mark Warschauer.
+      2021. Are Current Voice Interfaces Designed to Support Children’s Lan-
+      guage Development?. In Proceedings of the 2021 CHI Conference on Human
+      Factors in Computing Systems (<conf-loc>, <city>Yokohama</city>, <coun-
+      try>Japan</country>, </conf-loc>) (CHI ’21). Association for Computing Ma-
+      chinery, New York, NY, USA, Article 633, 12 pages. https://doi.org/10.1145/
+      3411764.3445271
+[118] Ying Xu, Stacy Branham, Xinwei Deng, Penelope Collins, and Mark Warschauer.
+      2021. Are Current Voice Interfaces Designed to Support Children’s Language
+      Development?. In Proceedings of the 2021 CHI Conference on Human Factors in
+      Computing Systems (CHI ’21). Association for Computing Machinery, New York,
+      NY, USA, 1–12. https://doi.org/10.1145/3411764.3445271
+[119] Ying Xu, Stacy Branham, Xinwei Deng, Penelope Collins, and Mark Warschauer.
+      2021. Are Current Voice Interfaces Designed to Support Children’s Language
+      Development?. In Proceedings of the 2021 CHI conference on human factors in
+      computing systems. 1–12.
+[120] Ying Xu, Kunlei He, Valery Vigil, Santiago Ojeda-Ramirez, Xuechen Liu, Julian
+      Levine, Kelsyann Cervera, and Mark Warschauer. 2023. “Rosita Reads With My
+      Family”: Developing A Bilingual Conversational Agent to Support Parent-Child
+      Shared Reading. In Proceedings of the 22nd Annual ACM Interaction Design and
+      Children Conference (Chicago, IL, USA) (IDC ’23). Association for Computing
+      Machinery, New York, NY, USA, 160–172. https://doi.org/10.1145/3585088.
+      3589354
+[121] Ying Xu and Mark Warschauer. 2019. Young Children’s Reading and Learning
+      with Conversational Agents. In Extended Abstracts of the 2019 CHI Conference on
+      Human Factors in Computing Systems (CHI EA ’19). Association for Computing
+      Machinery, New York, NY, USA, 1–8. https://doi.org/10.1145/3290607.3299035
+[122] Ying Xu and Mark Warschauer. 2020. What Are You Talking To?: Understanding
+      Children’s Perceptions of Conversational Agents. In Proceedings of the 2020
+      CHI Conference on Human Factors in Computing Systems (Honolulu, HI, USA)
+      (CHI ’20). Association for Computing Machinery, New York, NY, USA, 1–13.
+      https://doi.org/10.1145/3313831.3376416
+[123] Özge Nilay Yalçin, Sebastien Lalle, and Cristina Conati. 2022. An Intelligent
+      Pedagogical Agent to Foster Computational Thinking in Open-Ended Game
+      Design Activities. In 27th International Conference on Intelligent User Interfaces
+      (Helsinki, Finland) (IUI ’22). Association for Computing Machinery, New York,
+      NY, USA, 633–645. https://doi.org/10.1145/3490099.3511124
+[124] Daijin Yang, Yanpeng Zhou, Zhiyuan Zhang, and Toby Jia-Jun Li. 2022. AI
+      as an Active Writer: Interaction strategies with generated text in human-AI
+      collaborative fction writing. ACM IUI Workshop (2022).
+[125] Qian Yang, Aaron Steinfeld, Carolyn Rosé, and John Zimmerman. 2020. Re-
+      examining Whether, Why, and How Human-AI Interaction Is Uniquely Difcult
+      to Design. In Proceedings of the 2020 CHI Conference on Human Factors in Com-
+      puting Systems (CHI ’20). Association for Computing Machinery, New York, NY,
+      USA, 1–13. https://doi.org/10.1145/3313831.3376301
+[126] Ann Yuan, Andy Coenen, Emily Reif, and Daphne Ippolito. 2022. Wordcraft:
+      Story Writing With Large Language Models. In 27th International Conference on
+      Intelligent User Interfaces (IUI ’22). Association for Computing Machinery, New
+      York, NY, USA, 841–852. https://doi.org/10.1145/3490099.3511105
+[127] Chao Zhang, Cheng Yao, Jianhui Liu, Zili Zhou, Weilin Zhang, Lijuan Liu, Fang-
+      tian Ying, Yijun Zhao, and Guanyun Wang. 2021. StoryDrawer: A Co-Creative
+      Agent Supporting Children’s Storytelling through Collaborative Drawing. In
+      Extended Abstracts of the 2021 CHI Conference on Human Factors in Computing
+      Systems (CHI EA ’21). Association for Computing Machinery, New York, NY,
+      USA, 1–6. https://doi.org/10.1145/3411763.3451785
+[128] Zheng Zhang, Ying Xu, Yanhao Wang, Bingsheng Yao, Daniel Ritchie, Tong-
+      shuang Wu, Mo Yu, Dakuo Wang, and Toby Jia-Jun Li. 2022. StoryBuddy: A
+      Human-AI Collaborative Chatbot for Parent-Child Interactive Storytelling with
+

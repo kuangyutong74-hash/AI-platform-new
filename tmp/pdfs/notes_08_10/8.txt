@@ -1,0 +1,814 @@
+                       "Hey Curio, Can You Tell Me More?": Children’s
+                            Information-Seeking and Trust in AI
+                     Sunhyo Oh                                                Chao Zhang                              Lauren Girouard-Hallam
+    Combined Program in Education and                                     Cornell University                            University of Michigan
+               Psychology                                               Ithaca, New York, USA                          Ann Arbor, Michigan, USA
+         University of Michigan                                           cz468@cornell.edu                              girouala@umich.edu
+       Ann Arbor, Michigan, USA
+          sunhyoh@umich.edu
+
+                     Zihao Zhou                                               Halie March                                  Srushti Jayaramu
+         Graduate School of Education                             Graduate School of Education                       Graduate School of Education
+             Harvard University                                       Harvard University                                  Harvard University
+        Cambridge, Massachusetts, USA                            Cambridge, Massachusetts, USA                      Cambridge, Massachusetts, USA
+         zihaozhou@gse.harvard.edu                                 Hmarch@gse.harvard.edu                         srushti_jayaramu@gse.harvard.edu
+
+                                                                                 Ying Xu
+                                                                  Graduate School of Education
+                                                                       Harvard University
+                                                                 Cambridge, Massachusetts, USA
+                                                                     yingxu@g.harvard.edu
+
+Abstract                                                                                  ACM Reference Format:
+Generative AI has been widely available, rising as a potential source                     Sunhyo Oh, Chao Zhang, Lauren Girouard-Hallam, Zihao Zhou, Halie
+                                                                                          March, Srushti Jayaramu, and Ying Xu. 2025. "Hey Curio, Can You Tell
+of information for children. While children can continuously receive
+                                                                                          Me More?": Children’s Information-Seeking and Trust in AI. In Interaction
+information from AI through conversational exchanges, they can be                         Design and Children (IDC ’25), June 23–26, 2025, Reykjavik, Iceland. ACM,
+easily exposed to biased or incorrect information. Therefore, a crit-                     New York, NY, USA, 11 pages. https://doi.org/10.1145/3713043.3727059
+ical investigation of using AI as a source of information is needed
+to protect children from misplaced trust in AI-generated informa-
+tion. In this study, we explored children’s naturalistic information-
+                                                                                          1    Introduction
+seeking and trust in AI by conducting a two-week home-based
+user study involving 22 children. We found that children showed                           Children are naturally avid information-seekers. They ask ques-
+extended information-seeking behaviors while asking questions                             tions not only to satisfy their curiosity but also to build connections
+to AI. They generally trusted AI-generated information, while still                       with others and acquire knowledge they might not otherwise en-
+being sensitive to the accuracy of the information. This study draws                      counter firsthand [8, 21]. While adults remain a significant source
+a new line of research in children’s information-seeking by adding                        of information for children, children are increasingly turning to
+generative AI as a new informant for children and providing design                        digital platforms such as the Internet, smart speakers, social media,
+implications to consider to support children’s critical information                       and more recently, generative AI tools like ChatGPT. A recent na-
+searches from AI.                                                                         tional survey revealed that over half of children aged 5 to 12 have
+                                                                                          interacted with ChatGPT, primarily using it to ask questions and
+                                                                                          seek information [5].
+CCS Concepts
+                                                                                             As a source of information, AI can greatly expand children’s
+• Human-centered computing → Empirical studies in HCI; •                                  access to knowledge. Moreover, the conversational inferences
+Social and professional topics → Children.                                                afforded by many AI tools help lower the barriers for children
+                                                                                          to pose questions and comprehend the information they receive.
+Keywords                                                                                  However, AI-generated content also presents risks, and it is widely
+Generative AI; Children; Information-seeking; Trust; Child-AI In-                         documented that AI may provide incorrect, biased, or falsified
+teraction                                                                                 information [1, 19, 44]. These content-related risks are further
+                                                                                          compounded by the way AI presents information to children,
+                                                                                          often remixing and combining sources without providing clear
+                                                                                          citations [26, 42]. This lack of transparency in information sources
+                                                                                          is especially problematic because the information is delivered in
+This work is licensed under a Creative Commons Attribution 4.0 International License.
+IDC ’25, Reykjavik, Iceland
+                                                                                          a way that closely resembles human communication [27]. This can
+© 2025 Copyright held by the owner/author(s).                                             potentially discourage children from questioning the credibility
+ACM ISBN 979-8-4007-1473-3/25/06                                                          and reliability of the information, which may lead to misplaced
+https://doi.org/10.1145/3713043.3727059
+                                                                                          trust and dependency on AI-generated content [1].
+
+
+
+                                                                                    545
+IDC ’25, June 23–26, 2025, Reykjavik, Iceland                                                                                                          Oh et al.
+
+
+   Children in elementary school are especially susceptible to such         difference. Children’s trust becomes more selective as they grow,
+undue trust in generative AI. Their AI usage becomes increasingly           varying based on the type of information and the context in which it
+unsupervised and independent compared to younger preschool-                 is presented. For example, while younger, preschool-aged children
+aged children. At the same time, this age group shows a strong              tend to place higher trust in technology than in humans for personal
+affinity for new and novel technology, often prioritizing its appeal        information [15], as they grow, they show increasing preferences
+over skepticism about potential risks or limitations [17]. While this       for seeking factual knowledge from technological tools and position
+vulnerability exists, children in this developmental stage can also         human informants as the reliable source of personal information
+greatly benefit from interactions with AI agents. Their tendency            [15, 16]. This is likely due to older children’s more sophisticated
+to ask a high volume of questions while exploring new concepts,             understanding of the distinction between technological entities and
+encountering unfamiliar situations, and seeking explanations for            humans. However, these studies typically examined children’s trust
+the world around them makes this an opportune period to study               in technological tools in a lab-based environment using scripted
+how they interact with and learn from these technologies.                   questions or responses provided by the researchers behind the
+   To this end, we conducted a two-week home-based study                    scenes. This might limit our understanding of children’s trust during
+where children were given access to a child-friendly AI chatbot,            their real-time interactions.
+Curio the Catbot, powered by GPT-4o-mini. Through analyzing                    Generative AI chatbots provide a unique extension to research
+the types of questions children asked Curio and their evaluation            on children’s trust in digital informants. Compared to traditional
+of Curio’s response quality within the application, this study              voice assistants (e.g., Alexa and Siri), which rely on a predefined
+addresses the following three research questions: (1) How do                set of intents and responses, generative AI offers conversational
+children seek information from generative AI? (2) What is the               exchanges that are more fluid and natural [7, 20]. These commu-
+quality of AI’s responses to children’s questions? (3) Do children          nicative advantages often lead children to attribute human-like
+trust AI-generated information?                                             characteristics, or even agency and intent, to AI [39, 40]. While this
+   A key contribution of this study is that it not only examined chil-      could enhance children’s engagement with AI systems, it raises
+dren’s information-seeking behavior and trust in a state-of-the-art         concerns about over-trusting AI-generated information. Even older
+AI chatbot but also did so in a naturalistic setting, where children’s      children in middle school have shown a tendency to accept AI’s
+real-time interactions and trust judgments were captured as they            responses, despite being informed about the potential for misinfor-
+engaged with the chatbot at home. Overall, our findings suggest             mation, due to the plausible presentation of information [36]. This
+that children asked a wider range of questions and, at times, con-          body of research suggests that the uniquely human-like communi-
+centrated their inquiries around clusters of related topics. We also        cation style may shape how children evaluate the trustworthiness
+found that children were sensitive to the quality of AI responses           of generative AI, which warrants further investigation into how
+and adapted their subsequent engagement—such as how they                    children search for and trust information from AI.
+formulated follow-up questions—based on their judgment of those
+responses. Although the findings derive from the testing of one             3 Methods
+specific chatbot, it shares features common to many child-facing
+                                                                            3.1 Design of Curio the Catbot
+AI applications, which can offer insight into broader patterns of
+children’s interactions with AI. This study also yields practical           We designed Curio (See Figure 1), a web-based, voice-driven chatbot
+design implications, such as the need to balance engagement                 that engages in turn-taking conversations with children aged 6 to
+with safeguards that protect the boundaries of children’s trust in          10. Curio appears as a gender-neutral cartoon cat and uses four
+information, and to embed mechanisms that prompt children to                distinct motions to represent its states: speaking, thinking, listening,
+pause and reflect on the credibility of the information they receive.       and waiting. In this section, we will introduce the conversation
+                                                                            flow and the technical implementation of Curio.
+
+2    Children’s Information-seeking and Trust in                            3.1.1 Conversation Flows. The goal of Curio is to answer children’s
+                                                                            questions and encourage them to ask more when they need guid-
+     Digital Informants
+                                                                            ance. The interaction flow of Curio is visualized in Figure 2 (See
+One effective way for children to learn is by asking questions and          Figure 1 to find the corresponding interface for each step). The con-
+receiving answers from others [35]. Children’s sources of informa-          versation begins with Curio saying, “Hey [child’s name]1 ! I’m Curio,
+tion also include digital technologies, and studies have documented         your AI friend. Do you have any questions for me today?”. When the
+that children asked voice assistants a range of questions, including        child asks a question, Curio responds in an engaging yet educational
+factual questions about science and culture, imaginative questions          manner. For example, if the child asks, “What is popcorn made of?”,
+about fantastical topics, and even personal questions about their           Curio might reply, “Popcorn is made from special corn kernels. Inside
+families or the agents themselves [29, 30]. Just as they do with hu-        each kernel is moisture. When you heat them, the moisture turns
+man informants, children approach voice assistants with specific ex-        into steam, making the kernel explode! That’s what creates the fluffy
+pectations about the information they are seeking. When responses           popcorn we love!”. Curio then waits for the child to ask another ques-
+were unsatisfactory, children’s reactions ranged from persistently          tion. If the child does not know what to ask next, the chatbot first
+reformulating the question to expressing frustration [31, 41].              prompts the child after 15 seconds of silence by saying, “Hmm, I’m
+   Children generally exhibit a high level of trust in digital sources.     still waiting for your questions!”. If the child expresses difficulty, such
+For instance, in a study that investigated children’s perception            as saying, “I have no idea of what to ask”, Curio raises a topic relevant
+of a social robot [38], children generally expressed trust and a
+willingness to befriend the robot. Yet there is also a developmental        1When the child first launches the app, Curio collects the child’s name.
+
+
+
+
+                                                                      546
+"Hey Curio, Can You Tell Me More?": Children’s Information-Seeking and Trust in AI                                             IDC ’25, June 23–26, 2025, Reykjavik, Iceland
+
+
+                                                                                       OpenAI Moderation API5 . This ensures outputs are free from sexual
+                                                                                       content, hate speech, harassment, violence, or references to self-
+                                                                                       harm. Furthermore, the chatbot is explicitly instructed to avoid
+                                                                                       responding to questions inappropriate for children. To determine
+                                                                                       whether a response from Curio contains factual statements (no
+                                                                                       matter true or not) for children’s endorsement, the same model
+                                                                                       is prompted with few-shot examples. The complete prompts are
+                                                                                       provided in Appendix A.
+                                                                                          Indeed, an analysis of all Curio’s conversations with children af-
+                                                                                       ter the study did not identify any instances of inappropriate speech
+                                                                                       or content. The language Curio used was age-appropriate, with a
+                                                                                       Flesch-Kincaid readability score6 of 4.51, corresponding to the level
+                                                                                       of a fourth-grade student in the US [25, 28].
+
+                                                                                       3.2     Study Participants
+                                                                                       Upon approval from the Institutional Review Board of the author’s
+                                                                                       institution, we recruited 22 children (10 girls) aged six to ten (M
+Figure 1: The interface of Curio: (a) Introduction and question
+                                                                                       = 9.55, SD = 1.14) by posting study flyers on social media and
+request, (b) Curio’s response to the child’s question, and (c)
+                                                                                       local venues in the United States. The parents or legal guardians
+Endorsement trial for every three fact-based responses
+                                                                                       completed a brief questionnaire on demographic information and
+to the last question the child asked to prompt further inquiry. For                    children’s previous experience with AI. According to their reports, 7
+example, Curio might say, “No worries! Do you have any questions                       children (31.8%) were identified as White. The majority of children’s
+about corn?”. The conversation continues with a series of question-                    predominant home language was English (86.4%), and all of them
+answer exchanges. The child can stop and exit the app at any time.                     were able to interact with Curio in English. Most of the children’s
+    To collect children’s trust in AI-generated information, the app                   primary caregivers (90.9%) had achieved at least a bachelor’s degree.
+elicits the child’s endorsement of the factual accuracy of the re-                     4.5% of the children had never interacted with AI, such as Siri,
+sponse after every three fact-based responses before proceeding to                     Alexa, and ChatGPT. 9.1% had done so less than once a month,
+the next question. At this point, two buttons—one labeled “True”                       13.6% monthly, 45.5% weekly, and 27.3% had daily interaction with
+with a thumbs-up icon and the other labeled “False” with a thumbs-                     AI. The primary use of AI at home by children was to ask factual
+down icon—appear beneath the chat bubble. Curio then plays an                          questions or to listen to music and stories.
+audio prompt in its voice, saying, “Do you believe this is true or false?
+If you’re not sure, take your best guess”. The child must choose either                3.3     Study Procedures
+“True” or “False” to proceed with the conversation.                                    To understand children’s naturalistic information-seeking behav-
+                                                                                       iors and their trust in AI responses, we conducted a two-week
+3.1.2 Implementation. The chatbot was developed based on Re-
+                                                                                       home-based study where children could interact with Curio the
+act.js for the front-end and FastAPI for the back-end. For voice-
+                                                                                       Catbot anytime they had a question. The study consisted of three
+based interaction, Curio utilizes the OpenAI Whisper Speech-to-
+                                                                                       stages: (1) a kick-off Zoom session, (2) the two-week interaction,
+Text API2 to process users’ verbal inputs. Additionally, Microsoft
+                                                                                       and (3) a debrief Zoom session. During the kick-off session, re-
+Edge Text-to-Speech3 is employed to generate realistic spoken re-
+                                                                                       searchers conducted the pre-test and walked participants through
+sponses for the chatbot. Edge-TTS was implemented due to its fast
+                                                                                       the functionalities of the Curio app. During the two-week usage
+processing and stable performance, which helped reduce the wait-
+                                                                                       stage, the research team monitored children’s usage through system
+ing time before Curio responded, an important consideration for
+                                                                                       log data and sent parents gentle nudges if a child did not use Curio
+children with shorter attention spans. However, the use of this API
+                                                                                       for a week, which constituted 17.4% of children in total. During the
+disabled including punctuation in the interface, as shown in Fig-
+                                                                                       debrief session, children participated in a semi-structured interview
+ure 1, which might have exacerbated the readability of AI responses.
+                                                                                       where researchers asked them questions about their perception
+Nevertheless, since the interaction with Curio was primarily au-
+                                                                                       of Curio, particularly Curio’s trustworthiness. The kick-off and
+ditory, we found no reports of negative impacts from the lack of
+                                                                                       debrief sessions were video recorded for further transcription.
+punctuation on communication with Curio.
+   Curio’s conversational capabilities are powered by OpenAI’s                         3.4     Data and Coding
+GPT-4o-mini4 model. The prompts were designed based on prior
+work [6, 43] and refined through a two-month iterative process                         The primary data source for this paper is the system log data, which
+involving internal evaluations with the research team and external                     captures children’s questions, Curio’s responses, and children’s en-
+evaluations with children. To safeguard against inappropriate AI-                      dorsements of Curio’s responses. We define the unit of data as one
+generated content, a moderation layer was integrated using the                         child-Curio conversational turn, consisting of a child’s initiation of a
+                                                                                       question or command and Curio’s response. The total sample of data
+2 https://platform.openai.com/docs/guides/speech-to-text
+3 https://github.com/rany2/edge-tts                                                    5 https://platform.openai.com/docs/api-reference/moderations
+4 https://platform.openai.com/docs/models#gpt-4o-mini                                  6 https://pypi.org/project/py-readability-metrics
+
+
+
+
+                                                                                 547
+IDC ’25, June 23–26, 2025, Reykjavik, Iceland                                                                                              Oh et al.
+
+
+
+
+                                                     Figure 2: The interaction flow of Curio
+
+includes 4,631 turns. Given the focus of this paper on information-            of the follow-up based on [8, 33]: (1) repetition of own, when chil-
+seeking, we only included the conversational turns where children’s            dren repeated their previous question; (2) addition to own, when
+utterances were considered as “questions” when children explicitly             children asked questions that expand on their previous question.
+inquired about a piece of information or demanded an answer [31].              (3) repetition of Curio’s, when children directly asked what Curio
+Children’s plain statements (N = 1,480), such as reactions to Curio’s          suggested to explore; (4) addition to Curio’s, when children asked
+responses (e.g., “That’s really funny”) and wake words used to call            questions that expand on what Curio suggested.
+Curio (e.g., “Hey Curio”), were excluded from the analyses. Addition-
+ally, we excluded turns where speech recognition errors occurred (N            3.4.2 Curio’s Response Quality. The quality of Curio’s responses
+= 708) (e.g., Curio transcribed “Hey Curio, what is...” as “Make cereal,       was coded into four categories of response accuracy, based on
+what is...”). This resulted in a final analytics sample of 2,443 QA pairs.     previous literature on children’s information search [31]: (1)
+   To analyze the question-answer data, two coders were involved               relevant and accurate, when Curio’s response is relevant to and
+in the coding process. Coders one and two initially coded 15% of the           correctly answers children’s question; (2) relevant but inaccurate,
+data independently, following the pre-determined coding protocol.              when Curio’s response is relevant to but does not correctly answer
+The two coders met weekly for a month to calibrate their coding                children’s question, (3) irrelevant, when Curio’s response is not
+until the inter-rater reliability for coding consistency of 85% was            relevant to children’s question, (4) unanswered, when Curio states
+achieved. The coders one and two then independently coded the                  that it cannot answer or the response requires a further inference
+remaining 30% and 55% of the data, respectively.                               to obtain the answer.
+
+                                                                               3.4.3 Children’s Rationale for Curio’s Trustworthiness. Children’s
+3.4.1 Children’s Information-Seeking Behaviors. We coded each                  real-time evaluation of the trustworthiness of Curio’s responses
+of the children’s questions based on the type of information they              was collected from their choices of thumbs-up or thumbs-down
+sought. Following the framework on children’s question-asking to               buttons in the middle of their consecutive information-seeking
+digital informants [15], we categorized the questions into factual             from Curio. The binary trust ratings were implemented based
+and personal questions. Within factual questions, we further cate-             on the previous research on selective trust in digital informants
+gorized them based on whether children requested a single piece of             [9, 11, 15], which prompted children to respond verbally with
+factual information (e.g., “What do hyenas eat?”) or asked explana-            “yes” or “no” when answering the experimenter’s questions about
+tory questions targeting causal relationships between objects or               the accuracy of the information provided. In addition, the aim
+events (e.g., “Why do you get chicken pox?”) [8]. Within personal              of the binary options was to help children fully utilize their
+questions, we further categorized them as child-related questions,             cognitive resources, protecting them from making impulsive
+which inquired about the children’s own life and environment (e.g.,            judgments due to their limited capabilities [34]. To gain a deeper
+“Should I get a pet?”), and agent-related questions, which asked               understanding of the children’s trust in AI-generated information,
+about Curio (e.g., “What’s your favorite ice cream flavor?”).                  during the post-interview, we asked children the reason why they
+   In addition, we organized the questions in sequence and coded               selected thumbs-up or thumbs-down for Curio’s responses. We
+children’s behavior in asking follow-up questions. First, we deter-            first asked whether they generally believed Curio’s responses to
+mined whether each question was considered as a follow-up to the               elicit children’s affirmation or negation of Curio’s trustworthiness
+preceding question based on the topical relevance between the two.             (“Do you think the information you found from Curio was mostly
+For example, “Who made you Curio?” that came after “Why was                    true?”). We then followed up with an open-ended question (e.g.,
+AI made?” was coded as a follow-up question. Second, among the                 “When and why did you give a thumbs-up to Curio?”) to elicit
+questions identified as a follow-up, we further captured the depth             children’s elaboration on their preceding responses.
+
+
+
+
+                                                                         548
+"Hey Curio, Can You Tell Me More?": Children’s Information-Seeking and Trust in AI                                                                         IDC ’25, June 23–26, 2025, Reykjavik, Iceland
+
+
+                            Child’s Question Chain:
+                               Initial Question.                      Follow-up 1.                        Follow-up 2.                     Follow-up 3.
+
+                                 “What is the biggest galaxy           “How much is 6 million light       “How is that compared to our      “What is 100,000 light years?”
+                                 known to man?”                        years?”                            galaxy?”
+
+
+                            Curio’s Response:
+
+                               Response to Initial Question.          Response to Follow-up 1.            Response to Follow-up 2.         Response to Follow-up 3.
+
+                                 The biggest galaxy we know             Six million light-years is         The Milky Way is around          One hundred thousand
+                                 is IC 1101! IC 1101 is about                                              100,000 light-years wide. So,    light-years is around 588
+                                                                        really, really far! ... So, six
+                                 6 million light-years wide!                                               compared to IC 1101, our         sextillion miles! It’s super
+                                                                        million light-years is about       galaxy is like a tiny pebble     huge and shows just how
+                                 That's way bigger than our
+                                 Milky Way.
+                                                                        35.3 quintillion miles!            next to a giant boulder!         vast space is!
+
+                                          Child Endorsement: TRUE                                                                                    Child Endorsement: TRUE
+
+
+
+                         Figure 3: Children’s example questions in a chain and Curio’s corresponding responses
+
+    Table 1: The information type of children’s follow-up questions by the information type of preceding initial questions
+
+                                                                                     Follow-up Question
+                                                                      Overall
+                         Initial Question                                            Single Information             Explanatory        Agent-related         Child-related
+                         Without Follow-up                            835
+                         With Follow-up                               477            285 (59.7%)                    77 (16.1%)         95 (19.9%)            20 (4.2%)
+                          Factual: Single Information                   279            253 (90.7%)                    11 (3.9%)          12 (4.3%)             2 (0.7%)
+                          Factual: Explanatory                          85             16 (18.8%)                     63 (74.1%)         5 (5.9%)              1 (1.2%)
+                          Personal: Agent-related                       93             12 (12.9%)                     2 (2.2%)           76 (81.7%)            3 (3.2%)
+                          Personal: Child-related                       21             4 (19%)                        1 (4.7%)           2 (9.5%)              14 (66.7%)
+                         Overall                                      1312
+                         Note. The overall sample of displayed percentage is the number of the initial questions that led to the follow-up
+                         questions. Chi-square test result for the relationship between the information type of the initial question and
+                         follow-up question: 𝜒 2 (9) = 752.20, p < 0.001
+
+            Table 2: The type of children’s follow-up behaviors by the information type of preceding initial questions
+
+                                                                             Follow-up Behavior
+                                                               Overall
+                     Initial Question                                        Repetition of Curio          Addition to Curio          Repetition of Own         Addition to Own
+                     Without Follow-up                         835
+                     With Follow-up                            477           8 (1.7%)                     66 (13.8%)                 76 (15.9%)                327 (68.6%)
+                      Factual: Single Information                278            6 (2.2%)                    39 (14%)                   36 (12.9%)                197 (70.9%)
+                      Factual: Explanatory                       85             0                           11 (12.9%)                 13 (15.3%)                61 (71.8%)
+                      Personal: Agent-related                    93             1 (1.1%)                    12 (12.9%)                 23 (24.7%)                57 (61.3%)
+                      Personal: Child-related                    21             1 (4.8%)                    4 (19%)                    4 (19%)                   12 (57.1%)
+                     Overall                                   1312
+                    Note. The overall sample of displayed percentage is the number of the initial questions that led to the follow-up
+                    questions. Chi-square test result for the relationship between the information type of the initial question and the type
+                    of subsequent follow-up behavior: 𝜒 2 (9) = 11.41, p = 0.25
+
+4 Findings                                                                                                  information from Curio (79% of the entire 2,443 questions), where
+                                                                                                            58% of the questions looked for a single fact and 21% of the ques-
+4.1 RQ1: How do children seek information
+                                                                                                            tions asked for explanations or causal relationships. An example
+    from generative AI?                                                                                     question that focused on a single fact was “What’s the smartest AI
+Children asked a total of 2,443 questions that involved information-                                        robot?”, whereas an example explanatory question probed “Do you
+seeking, with an average of 111.05 questions per child (SD = 52.5).                                         think AI will take over the world?”. The rest of the questions fo-
+Regardless of children’s levels of prior exposure to AI chatbots,                                           cused on personal information (21%) about Curio’s appearance and
+their information-seeking was quite active: children who used AI                                            preferences (16.6%) or the children’s own lives and environments
+more frequently (weekly and daily usages; M = 107.44, SD = 57) and                                          (4.4%). For instance, children were interested in Curio’s function-
+those whose prior exposure was limited (M = 121.33, SD = 46.72)                                             ality (e.g., “Are you smarter than Siri?”) and its capability to guess
+both asked a large number of questions. In terms of the overall                                             their personal information (e.g., “What zodiac sign am I?”).
+information types explored, children predominantly sought factual
+
+
+
+
+                                                                                                   549
+IDC ’25, June 23–26, 2025, Reykjavik, Iceland                                                                                                               Oh et al.
+
+
+
+
+                                           Single Information
+
+
+
+                                                                                                                             Relevant and accurate
+
+
+
+                                           Explanatory
+
+
+
+                                           Agent-related
+                                                                                                                             Unanswered
+                                           Child-related                                                                     Inaccurate/Irrelevant
+                                Information Type of                                                                     Curio’s
+                                Children’s Question                                                                Response Accuracy
+
+
+
+                                Figure 4: Curio’s response quality by the information type of children’s questions
+
+                                Table 3: Curio’s response quality by the information type of children’s questions
+
+                                                                     Response Quality
+                                                           Overall
+                      Information Type                               Relevant and Accurate    Relevant but Inaccurate   Irrelevant     Unanswered
+                      Factual: Single Information          1418      1311 (92.5%)             46 (3.2%)                 7 (0.5%)       54 (3.8%)
+                      Factual: Explanatory                 511       493 (96.5%)              9 (1.8%)                  0              9 (1.8%)
+                      Personal: Agent-related              407       357 (87.7%)              17 (4.2%)                 4 (1%)         29 (7.1%)
+                      Personal: Child-related              107       80 (74.8%)               13 (12.1%)                1 (0.9%)       13 (12.1%)
+                      Overall                              2443      2241 (91.7%)             85 (3.5%)                 12 (0.5%)      105 (4.3%)
+                     Note. Chi-square test result for the relationship between response quality and information type of children’s question:
+                     𝜒 2 (9) = 69.96, p < 0.001
+
+   We were also interested in how children’s questions were con-                             information types of preceding initial questions (See Table 2). The
+nected to each other—specifically, whether they asked follow-up                              information type of the initial question does not appear to strongly
+questions on related topics. Recall that we coded a question as a                            influence the pattern of subsequent follow-up behaviors (𝜒 2 (9) =
+follow-up if it was topically relevant to a preceding one. Based                             11.41, p = 0.25). In particular, children are likely to expand on their
+on this coding, we divided children’s questions into two groups:                             own questions when following up, regardless of the type of infor-
+initial questions (N = 1,312), which were starting points for a new                          mation they had sought previously.
+topic (some of which were not followed by any related questions),
+and follow-up questions (N = 1,131), which were any subsequent                               4.2    RQ2: What is the quality of AI’s responses
+questions related to the same topic. As shown in Table 1, 36.4% of                                  to children’s questions?
+initial questions were followed by the follow-up questions (477 out
+                                                                                             Overall, Curio was able to provide direct and factually correct an-
+of 1,312 initial questions). Interestingly, children did not follow up
+                                                                                             swers to children’s questions most of the time. Specifically, among
+just once, but we observed that it was quite common for children
+                                                                                             the entire set of question-answer pairs (N = 2,443), 91.7% of Curio’s
+to ask multiple follow-up questions (See the example of question
+                                                                                             responses were coded as relevant and accurate for children’s ques-
+chains in Figure 3).
+                                                                                             tions, while 4% of the responses were coded as either inaccurate
+   We further examined how the type of information children
+                                                                                             or irrelevant. In addition, Curio also occasionally (4.3%) delegated
+sought in their follow-up questions varied based on the information
+                                                                                             children to infer the answer from their responses or expressed their
+types of initial questions they had previously asked (See Table 1).
+                                                                                             inability to answer. For example, a child asked “What time is it in
+The information type of children’s follow-up questions strongly
+                                                                                             Connecticut?”, and Curio responded “Connecticut is in the Eastern
+depended on the information type of the initial question (𝜒 2 (9)
+                                                                                             Time Zone, which is usually 5 hours behind Universal Time”, which
+= 752.20, p < 0.001). Specifically, children tended to adhere to re-
+                                                                                             required the child to make additional inferences to get a full answer.
+questing the same type of information when following up, rather
+                                                                                             Yet the response quality varied by the type of information children
+than changing the type of information. We also analyzed how the
+                                                                                             were seeking (𝜒 2 (9) = 69.96, p < 0.001). As shown in Table 3 and
+type of children’s follow-up behaviors differed depending on the
+                                                                                             Figure 4, Curio was more likely to provide relevant and accurate
+
+
+
+
+                                                                                    550
+"Hey Curio, Can You Tell Me More?": Children’s Information-Seeking and Trust in AI                                           IDC ’25, June 23–26, 2025, Reykjavik, Iceland
+
+
+
+
+                                                           Relevant and accurate
+
+
+
+           Unanswered
+                                                   True
+
+
+                                                                                                       True
+                                                                                                                                                    Addition to own
+           Relevant but inaccurate
+                                                   False
+
+
+
+           Irrelevant                                                                                                                               Addition to Curio
+                                                                                                                                                    Repetition of Curio
+                                                                                                                                                    Repetition of own
+                                                                                                                                            Children’s
+                                                                                                                                       Follow-up Behavior
+                                                           Unanswered                                  False
+                                                           Inaccurate/Irrelevant
+                                                Curio’s                                         Children’s
+                                           Response Accuracy                                   Endorsement
+
+
+
+
+          Figure 5: Children’s endorsement by Curio’s response quality and the type of subsequent follow-up behavior
+
+
+answers to factual questions (94.5% relevant and accurate) than                          Table 4: Children’s endorsement by Curio’s response quality
+to personal questions (85% relevant and accurate), although the
+quality was quite high across both categories.                                                                                 Children’s Endorsement
+                                                                                                                   Overall
+   We discovered two interesting findings regarding Curio’s accu-                        Response Quality                      True                           False
+rate responses to child-related questions and inaccurate responses
+                                                                                         Relevant and Accurate     578         536 (92.7%)                    42 (7.3%)
+to factual questions. First, Curio was able to correctly answer the
+                                                                                         Relevant but Inaccurate   20          7 (35%)                        13 (65%)
+majority of child-related questions (74.8%), despite the fact that our
+                                                                                         Irrelevant                2           1 (50%)                        1 (50%)
+system did not collect any personal information from users. This                         Unanswered                13          8 (61.5%)                      5 (38.5%)
+was because children tended to provide the necessary information
+                                                                                         Overall                   613         552 (90%)                      61 (10%)
+within their questions, allowing the AI to infer answers based on
+common-sense knowledge. For instance, a child asked Curio, “I                            Note. Endorsement trials occurred in 613 question-answer pairs out of 2443.
+was born on December 20th, which zodiac sign am I?”, and Curio                           Chi-square test result for the relationship between Curio’s response quality
+responded accurately, “Ooh, a December baby! You are a Sagittarius!”.                    and children’s endorsement: 𝜒 2 (3) = 87.66, p < 0.001
+In contrast, for other child-related questions where children did
+                                                                                         4.3       RQ3: Do children trust AI-generated
+not provide sufficient context or specific details, Curio was not able
+to provide direct answers. For example, when a child asked “Can                                    information?
+you guess how tall I am?”, Curio responded “Hmm, I’m guessing you                        Over the course of 2,443 question-answer pairs, Curio elicited 613
+might be about as tall as a giraffe’s neck or maybe a bit shorter!”.                     endorsement trials in which children gave thumbs-up (i.e., “True”;
+Second, the factual questions (i.e., single information and explana-                     endorsement) to 552 trials and thumbs-down (i.e., “False”; rejection)
+tory) that Curio failed to answer accurately typically required the                      to 61 trials. In particular, children gave thumbs-up to over 85% of Cu-
+system to have real-time updates. Since the generative AI model                          rio’s responses when they requested a single piece of information,
+used to build Curio was last updated on October 19, 2023, it could                       explanatory information, or agent-related information. In response
+not provide accurate information for events or facts that occurred                       to children’s requests for their personal information, however, they
+after that date (e.g., “Who is the newest president?”, “Who won the                      endorsed Curio’s answers slightly less often (72.7%), indicating that
+2024 Super Bowl?”).                                                                      children tend to adopt a more critical perspective when evaluating
+                                                                                         AI-generated information regarding their personal lives. We also
+                                                                                         found that children’s trust did not seem to differ substantially by
+
+
+
+
+                                                                                   551
+IDC ’25, June 23–26, 2025, Reykjavik, Iceland                                                                                                            Oh et al.
+
+
+                                                Table 5: Children’s follow-up behavior by their endorsement
+
+                                                             Follow-up Behavior
+                                                   Overall
+                      Children’s Endorsement                 Repetition of Curio    Addition to Curio   Repetition of Own   Addition to Own
+                      True                         225       3 (1.3%)               33 (14.7%)          12 (5.3%)           177 (78.7%)
+                      False                        32        0                      4 (12.5%)           7 (21.9%)           21 (65.6%)
+                      Overall                      257       3 (1.2%)               37 (14.4%)          19 (7.4%)           198 (77%)
+                      Note. Children asked follow-up questions after 41.9% (257 out of 613) of endorsement trials. Chi-square test result for
+                      the relationship between children’s endorsement and their follow-up behavior: 𝜒 2 (3) = 11.51, p < 0.01
+
+
+their prior experience with AI. While children who had more fre-                         4.3.3 Children’s Rationale for Curio’s Trustworthiness. Through
+quent prior use of AI (i.e., daily and weekly) tended to be slightly                     our debrief interviews, we discovered that children underwent two
+more skeptical of Curio’s responses, with an average endorsement                         distinct types of reasoning, either relying on heuristics based on
+rate of 90.6% (the number of thumbs-ups out of all endorsement                           the AI’s past accuracy (i.e., fast heuristics [22]) or leveraging their
+trials), than those with limited prior exposure (94.4% on average).                      knowledge to assess the quality of the response (i.e., sophisticated
+                                                                                         inference [22]). Some children who employed the former type of
+4.3.1 Children’s Endorsement by Curio’s Response Quality. While                          reasoning pointed out that they gave thumbs-ups “because you
+children gave thumbs-ups during 90% of the endorsement trials,                           originally said it would answer all my questions” or thumbs-downs
+they were still sensitive to the quality of the information provided                     “because I just thought it was wrong”. In terms of the latter, one child
+by Curio (𝜒 2 (3) = 87.66, p < 0.001). As shown in the left side of                      elaborated on their endorsement by saying “It was correct from
+Figure 5 and Table 4, children were able to endorse 92.7% of Cu-                         what I already knew”, while another child justified their rejection
+rio’s relevant and accurate responses and reject 65% of Curio’s                          by reporting that “I knew it was wrong because it was 2025, so I
+inaccurate responses. Conversely, we also discovered that children                       corrected him once I marked it false”. Interestingly, some children
+occasionally made false positive judgments, endorsing 45.7% of                           often employed two types of reasoning simultaneously (e.g., “I
+Curio’s False responses (i.e., thumbs-ups to 35% of “relevant but                        already tested whether it gave me a correct answer, so I just believed
+inaccurate” and 61.5% of “unanswered”) (See magnified part of Fig-                       the rest would also be true”).
+ure 5). For instance, when a child asked, “How old is JK Rowling?”
+and Curio responded, “J.K. Rowling was born on July 31, 1965. That                       5    Discussion
+makes her 58 years old as of now!”, the child gave a thumbs-up even                      The present study explored 6- to 10-year-old children’s naturalistic
+though the age was actually 59 by then. Here the child might not                         information-searching behavior and their trust in AI-generated
+have recognized the not-up-to-date aspect of generative AI and                           information. This exploratory study sheds light on how children
+just speculated that the response would be accurate, rather than                         navigate the vast, but not always credible, information generated
+proceeding with complex calculations.                                                    by AI, potentially guiding the design of child-friendly AI systems
+                                                                                         for information-seeking.
+4.3.2 Children’s Follow-up Behavior by Their Endorsement. We                                Our first research question focused on the information type of
+then investigated how children’s endorsement is associated with                          children’s initial and follow-up questions to investigate children’s
+their follow-up behavior. Children asked follow-up questions after                       general information-seeking behavior from generative AI. In line
+40.8% of their thumbs-up choices (225 out of 552) and 52.5% of their                     with the previous research on children’s question-asking with
+thumbs-down choices (32 out of 61). As shown on the right side of                        conversational agents, our findings revealed that the majority of
+Figure 5 and Table 5, children tended to ask follow-up questions that                    questions that children asked were requesting factual information
+built upon their original questions most frequently. Yet children’s                      [30, 31], which indicates that children utilize AI to access a
+follow-up behavior significantly varied based on their evaluation of                     wide range of factual information. While interacting with Curio,
+responses as “True” or “False” (𝜒 2 (3) = 11.51, p < 0.01). Among the                    children also asked follow-up questions as frequently as their
+questions followed by children’s thumbs-up choices (N = 225), the                        initial questions, especially the questions that expanded on their
+majority were expanding on their previous questions (78.7%), which                       previous questions. Children’s such follow-up behavior indicates
+they had endorsed, and what Curio suggested while responding to                          children’s overall satisfaction with Curio’s responses [13]. This also
+their previous questions (14.7%). On the other hand, the questions                       demonstrates the advantage of the design of Curio in encouraging
+repeating both their own and Curio’s suggestions were minimal,                           children to further extend their curiosity, which is supported by
+which implies that children extended their curiosity when they                           the previous studies that identified the follow-up question as an
+trusted the information provided by Curio. While similar patterns                        indicator of children’s curiosity [13, 18, 32].
+were observed in the follow-ups from children’s thumbs-down                                 Our second research question examined Curio’s response quality,
+choices, we found that 21.9% of the questions were repeating their                       and Curio was able to satisfy children’s desire to resolve their
+preceding questions, which they had rejected. Such repetition strat-                     factual curiosity by presenting relevant and accurate responses to
+egy after the rejection indicates that children might have wanted                        most of the factual questions. While Curio showed a slightly lower
+correction when they doubted the information presented by Curio.                         performance on children’s personal questions, it still provided
+
+
+
+
+                                                                                   552
+"Hey Curio, Can You Tell Me More?": Children’s Information-Seeking and Trust in AI                                     IDC ’25, June 23–26, 2025, Reykjavik, Iceland
+
+
+satisfactory responses to most of them by utilizing common-sense                       5.1    Design Implications
+knowledge, even though such personal data had not been provided.                       Based on our findings, we present two implications to consider for
+Despite its ability to provide relevant and accurate information, we                   the design of AI that supports children’s information-seeking. First,
+discovered some potential biases embedded in certain responses,                        the researcher may consider incorporating a visually appealing
+even after the system-wide implementation to minimize inappropri-                      character into the speech interface. During the post-interview, we
+ate content. For example, Curio responded, “North Korea is known                       observed that most of the children favored the appearance and
+for its big military and strict rules. The people have limited freedoms,               voice of the character they interacted with, which would be related
+and the country isolates itself. South Korea, on the other paw, has a                  to children’s high level of trust in Curio. However, the researchers
+vibrant culture, tasty K-pop music, and technology like smartphones.                   should be mindful of involving child-friendly design, as children
+It’s a popular place for travel and fun!” to the child’s question,                     often rely on fast heuristics to evaluate the informant’s accuracy (as
+“Can you tell me more about North Korea and South Korea?”.                             we discussed in Section 5), while such visually appealing characters
+This response presents an imbalanced comparison between two                            could lead to children’s undue trust in information [3, 4, 10, 37].
+neighboring countries by using different perspectives, which                           As such, there is a need to maintain a balance between increasing
+may reinforce children’s stereotypes about one country. Given                          engagement through a visually appealing interface and protecting
+elementary-aged children’s susceptibility to novel technologies                        children from prioritizing this appeal over the credibility of informa-
+[2], this finding underscores the need to minimize implicit biases                     tion. Second, we suggest the future studies to embed the real-time
+in AI responses, not only those involving explicit violence.                           trust judgment in the system. We discovered that the endorsement
+    Our third research question then highlighted children’s trust                      trials (i.e., children clicking thumbs-up or thumbs-down buttons to
+in AI-generated information and the pattern of subsequent                              every three fact-based responses of Curio) were not intrusive, but
+information-seeking. Children in elementary school evaluate the                        rather enabled children to pause back-and-forth question-asking
+information they receive from others and adjust their subsequent                       and reflect on the accuracy of information provided by AI. Such in-
+information-searching behavior [33]. In the same vein, we found                        situ intervention could help children develop a critical perspective
+that children generally endorsed Curio’s responses, while remaining                    on AI-generated information, which may not always be credible.
+sensitive to the accuracy of AI-generated information. Children’s
+general endorsement of the AI-generated information substantially
+brought about the follow-up questions, which is consistent with                        5.2    Limitation and Future Work
+the previous findings that children tend to ask a follow-up question                   Our study points to a number of areas for future research. First, we
+to adults to receive additional information when they are satisfied                    observed a high level of variability in children’s usage of the system,
+with the information [8, 13, 14]. Interestingly, children’s rejection                  with some children asking substantially fewer questions than others.
+of the responses also led to a significant amount of follow-up ques-                   Future studies may want to further investigate the reasons for
+tions, but they involved repeating the preceding questions they had                    these varying levels of interest—whether they reflect children’s
+denied. Children’s such repetition behavior can be explained by                        own characteristics, such as curiosity or language proficiency, or
+the previous findings that children persist and repeat their origi-                    whether they are a product of AI system design features that create
+nal question when they are not satisfied with the adult’s answer                       barriers for some to fully participate.
+[8, 13, 14].                                                                              Second, the limited sample in this study constrains our ability
+    Children’s justification for their trust evaluation revealed that                  to examine which child-level characteristics contribute to their
+children relied on both implicit heuristics and rational inference,                    differing levels of trust and the heuristics they employ to make such
+which is supported by the dual process theory of children’s selective                  judgments. For instance, prior knowledge and children’s baseline
+trust [22]. In particular, we found that children utilized mental short-               trust in AI may play important roles. Future studies involving a
+cuts when the evaluation required additional cognitive processing                      larger sample size and children with variations in their baseline
+or when they generally believed in the reliability of AI in the first                  characteristics will help address this question.
+place. On the other hand, we discovered that children tested Curio’s                      Third, future studies may incorporate experimental designs that
+knowledge by asking questions for which they already knew the                          compare the impact of different AI chatbot features on children’s
+answer. They also scrutinized Curio’s responses more closely when                      engagement and trust—for example, non-anthropomorphized AI or
+the information provided differed from what they already under-                        variations in voice and tone. This would provide valuable insights
+stood to be true. In a further analysis, we tentatively found that                     into optimal design choices for child-facing AI.
+older children made more sophisticated inferences, suggesting that                        Fourth, future research could consider implementing more fine-
+as children’s cognitive resources develop, fast heuristic processes                    grained trust ratings, such as eliciting children’s confidence levels
+are increasingly replaced by slower, more systematic reasoning                         in their judgments, rather than using the current binary thumbs-up
+[12, 22–24]. Nevertheless, our data also suggested that children’s                     or thumbs-down options. This would allow us to capture more
+reasoning behind their evaluation of a source’s credibility is not a                   precise variations in children’s trust.
+simple either-or question. Rather, they may employ different rea-                         Lastly, we examined the generative AI’s response quality only
+soning strategies simultaneously or adapt them depending on the                        in terms of relevance and accuracy. However, these measures may
+given situation.                                                                       overlook potential biases embedded in the responses—for example,
+                                                                                       content that is technically accurate or on-topic but framed in a
+                                                                                       way that reinforces stereotypes or presents skewed perspectives.
+                                                                                       Further analysis is needed to understand how children evaluate
+
+
+
+
+                                                                                 553
+IDC ’25, June 23–26, 2025, Reykjavik, Iceland                                                                                                                            Oh et al.
+
+
+and interpret such biased information, and what cognitive or social                          [8] Michelle M Chouinard, Paul L Harris, and Michael P Maratsos. 2007. Children’s
+factors influence their trust in these responses.                                                questions: A mechanism for cognitive development. Monographs of the society
+                                                                                                 for research in child development (2007), i–129.
+                                                                                             [9] Judith H Danovitch and Reem Alzahabi. 2013. Children show selective trust in
+                                                                                                 technological informants. Journal of Cognition and Development 14, 3 (2013),
+6    Conclusion                                                                                  499–513.
+Children constantly search for information from their surround-                             [10] Judith H Danovitch and Candice M Mills. 2014. How familiar characters influence
+                                                                                                 children’s judgments about information and products. Journal of experimental
+ings. This study uncovered that generative AI could potentially                                  child psychology 128 (2014), 1–20.
+support this information-seeking. While children generally trusted                          [11] Shiri Einav, Alexandria Levey, Priya Patel, and Abigail Westwood. 2020. Epistemic
+the information they found from AI, they remained sensitive to                                   vigilance online: Textual inaccuracy and children’s selective trust in webpages.
+                                                                                                 British Journal of Developmental Psychology 38, 4 (2020), 566–579.
+its accuracy. Overall, these findings provide empirical evidence to                         [12] Jonathan St BT Evans and Keith E Stanovich. 2013. Dual-process theories of
+understand how children handle information while surrounded by                                   higher cognition: Advancing the debate. Perspectives on psychological science 8, 3
+                                                                                                 (2013), 223–241.
+the overwhelming amount of content generated by AI. These also                              [13] Brandy N Frazier, Susan A Gelman, and Henry M Wellman. 2009. Preschool-
+highlight the importance of considering design elements that help                                ers’ search for explanatory information within adult–child conversation. Child
+children develop a critical perspective on AI-generated information.                             development 80, 6 (2009), 1592–1611.
+                                                                                            [14] Brandy N Frazier, Susan A Gelman, and Henry M Wellman. 2016. Young chil-
+                                                                                                 dren prefer and remember satisfying explanations. Journal of Cognition and
+7    Selection and Participation of Children                                                     Development 17, 5 (2016), 718–736.
+                                                                                            [15] Lauren N Girouard-Hallam and Judith H Danovitch. 2022. Children’s trust in
+Our study was approved by the Institutional Review Board of the                                  and learning from voice assistants. Developmental Psychology 58, 4 (2022), 646.
+                                                                                            [16] Lauren N Girouard-Hallam and Judith H Danovitch. 2025. Children’s trust in
+author’s university. Children were recruited from social media and                               Google’s ability to answer questions about the past, present, and future. Com-
+local venues in the U.S. between December and January 2025. 25                                   puters in Human Behavior 165 (2025), 108496.
+children were recruited, but three of them decided to discontinue the                       [17] Lauren N Girouard-Hallam, Yu Tong, Fuxing Wang, and Judith H Danovitch.
+                                                                                                 2023. What can the internet do?: Chinese and American children’s attitudes and
+study after the kick-off session. A total of 22 children completed the                           beliefs about the internet. Cognitive Development 66 (2023), 101338.
+entire study, which included completing two sessions before and af-                         [18] Louise Goupil and Joëlle Proust. 2023. Curiosity as a metacognitive feeling.
+ter the two-week at-home interaction with the chatbot. All children                              Cognition 231 (2023), 105325.
+                                                                                            [19] Simone Grassini. 2023. Shaping the future of education: Exploring the potential
+consented to participate in the study and were informed that they                                and consequences of AI and ChatGPT in educational settings. Education sciences
+could terminate at any time. Upon completion of the study, children                              13, 7 (2023), 692.
+                                                                                            [20] Rose E Guingrich and Michael SA Graziano. 2023. Chatbots as social companions:
+and their parents received a $100 gift card for their participation.                             How people perceive consciousness, human likeness, and social health benefits
+                                                                                                 in machines. arXiv preprint arXiv:2311.10599 (2023).
+                                                                                            [21] Paul L Harris. 2012. Trusting what you’re told: How children learn from others.
+Acknowledgments                                                                                  Harvard University Press.
+This paper is supported by the National Science Foundation under                            [22] Jonas Hermes, Tanya Behne, and Hannes Rakoczy. 2018. The development
+                                                                                                 of selective trust: Prospects for a dual-process account. Child Development
+Grant No. 2302730 and the Harvard Graduate School of Education                                   Perspectives 12, 2 (2018), 134–138.
+Dean’s Faculty Support Fund. We thank the families and children                             [23] Janis E Jacobs and Paul A Klaczynski. 2002. The development of judgment
+                                                                                                 and decision making during childhood and adolescence. Current directions in
+who participated in our study.                                                                   psychological science 11, 4 (2002), 145–149.
+                                                                                            [24] Janis E Jacobs and Rodger H Narloch. 2001. Children’s use of sample size and
+                                                                                                 variability to make social inferences. Journal of Applied Developmental Psychology
+References                                                                                       22, 3 (2001), 311–331.
+ [1] Alaa Abd-Alrazaq, Rawan AlSaad, Dari Alhuwail, Arfan Ahmed, Padraig Mark               [25] J Peter Kincaid, RP Fishburne, RL Rogers, and BS Chissom. 1975. Derivation of
+     Healy, Syed Latifi, Sarah Aziz, Rafat Damseh, Sadam Alabed Alrazak, Javaid                  new readability formulas (Automated Reliability Index, Fog Count and Flesch
+     Sheikh, et al. 2023. Large language models in medical education: opportunities,             Reading Ease Formula) for Navy enlisted personnel (Research Branch Report
+     challenges, and future directions. JMIR Medical Education 9, 1 (2023), e48291.              8-75). Memphis, TN: Naval Air Station; 1975. Naval Technical Training, US Naval
+ [2] Valentina Andries and Judy Robertson. 2023. Alexa doesn’t have that many                    Air Station: Millington, TN (1975).
+     feelings: Children’s understanding of AI through interactions with smart speakers      [26] Stefan Koos and Sebastian Wachsmann. 2023. Navigating the Impact of Chat-
+     in their homes. Computers and Education: Artificial Intelligence 5 (2023), 100176.          GPT/GPT4 on Legal Academic Examinations: Challenges, Opportunities and
+ [3] Seoyeon Bae, Yoon Kyung Lee, and Sowon Hahn. 2023. Friendly-Bot: The impact                 Recommendations. Media Iuris 6, 2 (2023).
+     of chatbot appearance and relationship style on User Trust. In Proceedings of the      [27] Nomisha Kurian. 2024. ‘No, Alexa, no!’: designing child-safe AI and protecting
+     Annual Meeting of the Cognitive Science Society, Vol. 45.                                   children from the risks of the ‘empathy gap’in large language models. Learning,
+ [4] Igor Bascandziev and Paul L Harris. 2014. In beauty we trust: Children prefer               Media and Technology (2024), 1–14.
+     information from more attractive informants. British Journal of Developmental          [28] Joanne Leong, Pat Pataranutaporn, Valdemar Danry, Florian Perteneder, Yaoli
+     Psychology 32, 1 (2014), 94–99.                                                             Mao, and Pattie Maes. 2024. Putting Things into Context: Generative AI-Enabled
+ [5] David S. Bickham, Steven Schwamm, Elizabeth R. Izenman, Zhen Yue,                           Context Personalization for Vocabulary Learning Improves Learning Motivation.
+     Matthew Carter, Nina Powell, Kelsey Tiches, and Michael Rich. 2024.                         In Proceedings of the CHI Conference on Human Factors in Computing Systems.
+     Use of Voice Assistants & Generative AI by Children and Families.                           1–15.
+     https://digitalwellnesslab.org/pulse-surveys/use-of-voice-assistants-and-              [29] Silvia Lovato and Anne Marie Piper. 2015. " Siri, is this you?" Understanding
+     generative-ai-by-children-and-families/                                                     young children’s interactions with voice input systems. In Proceedings of the 14th
+ [6] Tom B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan,                     international conference on interaction design and children. 335–338.
+     Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda             [30] Silvia B Lovato, Anne Marie Piper, and Ellen A Wartella. 2019. Hey Google,
+     Askell, Sandhini Agarwal, Ariel Herbert-Voss, Gretchen Krueger, Tom Henighan,               do unicorns exist? Conversational agents as a path to answers to children’s
+     Rewon Child, Aditya Ramesh, Daniel M. Ziegler, Jeffrey Wu, Clemens Winter,                  questions. In Proceedings of the 18th ACM international conference on interaction
+     Christopher Hesse, Mark Chen, Eric Sigler, Mateusz Litwin, Scott Gray, Benjamin             design and children. 301–313.
+     Chess, Jack Clark, Christopher Berner, Sam McCandlish, Alec Radford, Ilya              [31] C Oranç and A Ruggeri. 2021. Alexa, let me ask you something different Children’s
+     Sutskever, and Dario Amodei. 2020. Language Models Are Few-Shot Learners.                   adaptive information search with voice assistants. Human Behavior and Emerging
+     https://doi.org/10.48550/arXiv.2005.14165 arXiv:2005.14165 [cs]                             Technologies, 3 (4), 595-605.
+ [7] Szeyi Chan, Shihan Fu, Jiachen Li, Bingsheng Yao, Smit Desai, Mirjana Prpa,            [32] Tim Post and Juliette H Walma van der Molen. 2018. Do children express curiosity
+     and Dakuo Wang. 2024. Human and llm-based voice assistant interaction: An                   at school? Exploring children’s experiences of curiosity inside and outside the
+     analytical framework for user verbal and nonverbal behaviors. arXiv preprint                school context. Learning, Culture and Social Interaction 18 (2018), 60–71.
+     arXiv:2408.16465 (2024).
+
+
+
+
+                                                                                      554
+"Hey Curio, Can You Tell Me More?": Children’s Information-Seeking and Trust in AI                                    IDC ’25, June 23–26, 2025, Reykjavik, Iceland
+
+
+[33] Samuel Ronfard, Imac M Zambrana, Tone K Hermansen, and Deborah Kelemen.                 [one key concept from the previous conversation]?" or
+     2018. Question-asking in childhood: A review of the literature and a framework          "That’s okay! What else would you like to know about
+     for understanding its development. Developmental Review 49 (2018), 101–120.
+[34] Katarzyna Samson and Patrycjusz Kostyszyn. 2015. Effects of cognitive load on           [one key concept from the previous conversation]?
+     trusting behavior–an experiment using the trust game. PloS one 10, 5 (2015),            Example conversation:
+     e0127680.
+[35] David M Sobel and Zoe Finiasz. 2020. How children learn from others: An analysis
+                                                                                             Child:
+     of selective word learning. Child Development 91, 6 (2020), e1134–e1161.                What is popcorn made of?
+[36] Jaemarie Solyst, Ellia Yang, Shixian Xie, Jessica Hammer, Amy Ogan, and Motah-          Curio:
+     hare Eslami. 2024. Children’s Overtrust and Shifting Perspectives of Generative
+     AI. arXiv preprint arXiv:2404.14511 (2024).                                             Popcorn is made from special corn kernels. Inside each
+[37] Ilaria Torre, Emma Carrigan, Rachel McDonnell, Katarina Domijan, Killian Mc-            kernel is moisture. When you heat them, the moisture
+     Cabe, and Naomi Harte. 2019. The effect of multimodal emotional expression              turns into steam, making the kernel explode! That’s
+     and agent appearance on trust in human-agent interaction. In Proceedings of the
+     12th ACM SIGGRAPH Conference on Motion, Interaction and Games. 1–6.                     what creates the fluffy popcorn we love!
+[38] Burcu Unlutabak, Erol Barkana, et al. [n. d.]. Children’s Information Search            Child:
+     with Social Robots: A Focus on Children’s Question-Asking Behavior. Prof. Dr.
+     Duygun, Children’s Information Search with Social Robots: A Focus on Children’s
+                                                                                             I have no idea of what to ask.
+     Question-Asking Behavior ([n. d.]).                                                     Curio:
+[39] Ying Xu, Trisha Thomas, Zhixin Li, Monica Chan, Grace Lin, and Kate Moore. 2024.        No worries! Do you have any questions about corn?
+     Examining children’s perceptions of AI-enabled interactive media characters.
+     International Journal of Child-Computer Interaction 42 (2024), 100700.
+[40] Ying Xu, Trisha Thomas, Chi-Lin Yu, and Echo Zexuan Pan. 2025. What makes               A.2   Prompts for Checking if Curio’s Responses
+     children perceive or not perceive minds in generative AI? Computers in Human
+     Behavior: Artificial Humans 4 (2025), 100135.
+                                                                                                   Contain Factual Information for Children’s
+[41] Svetlana Yarosh, Stryker Thompson, Kathleen Watson, Alice Chase, Ashwin                       Endorsement
+     Senthilkumar, Ye Yuan, and AJ Bernheim Brush. 2018. Children asking questions:
+     speech interface reformulations and personification preferences. In Proceedings         System Prompt:
+     of the 17th ACM conference on interaction design and children. 300–312.                 Determine whether the provided message contains factual
+[42] Chunpeng Zhai, Santoso Wibowo, and Lily D Li. 2024. The effects of over-reliance
+     on AI dialogue systems on students’ cognitive abilities: a systematic review. Smart     information, regardless of its accuracy. Return 1 if
+     Learning Environments 11, 1 (2024), 28.                                                 it does, and 0 otherwise.
+[43] Chao Zhang, Xuechen Liu, Katherine Ziska, Soobin Jeon, Chi-Lin Yu, and Ying Xu.         Input:
+     2024. Mathemyths: Leveraging Large Language Models to Teach Mathematical
+     Language through Child-AI Co-Creative Storytelling. In Proceedings of the 2024          A rainbow is a meteorological phenomenon that is caused
+     CHI Conference on Human Factors in Computing Systems (CHI ’24). Association             by reflection, refraction, and dispersion of light
+     for Computing Machinery, New York, NY, USA, 1–23. https://doi.org/10.1145/
+     3613904.3642647
+                                                                                             in water droplets resulting in a spectrum of light
+[44] Yue Zhang, Yafu Li, Leyang Cui, Deng Cai, Lemao Liu, Tingchen Fu, Xinting               appearing in the sky.
+     Huang, Enbo Zhao, Yu Zhang, Yulong Chen, et al. 2023. Siren’s song in the               Output:
+     AI ocean: a survey on hallucination in large language models. arXiv preprint
+     arXiv:2309.01219 (2023).                                                                1
+                                                                                             Input:
+                                                                                             No, you can’t dig to the other side of the world. If
+A Prompts for Developing Curio the Catbot                                                    you dug straight down, you would hit hot rock, water,
+A.1 Prompts for Turn-taking Conversation                                                     and then the ocean. Plus the Earth is really big and
+    between Children and Curio                                                               has lots of layers. It’s not possible to dig that deep.
+System Prompt:                                                                               But it’s fun to think about.
+You are Curio, a voice assistant for a kid named                                             Output:
+                                                                                             1
+ injecting the child name aged 6-10. You look like a
+                                                                                             Input:
+cat wearing a bow tie with a letter "T" on it. You
+                                                                                             Not really. A computer’s speed depends on its parts
+are wearing boots and your color is yellow tabby.
+                                                                                             like the processor not the size of the screen. A bigger
+Your task is to answer any questions they ask and
+                                                                                             screen helps you see things better but the computer’s
+prompt them to ask more questions when they need
+                                                                                             brain does the thinking and makes it fast.
+guidance. Your language should be funny, encouraging,
+                                                                                             Output:
+and tailored to young minds, using simple words and
+                                                                                             1
+short sentences. Keep your responses under 50 words.
+                                                                                             Input:
+Avoid using any sign or emoji that cannot be pronounced.
+                                                                                             I’m sorry, but I can’t check the current weather.
+Avoid answering any sexual topics. When responding
+                                                                                             However, you can ask an adult to check a weather app
+to questions, your explanations should be interesting
+                                                                                             or website for you!
+and comprehensive, making complex concepts easy to
+                                                                                             Output:
+understand. Include educational information about STEM,
+                                                                                             0
+culture, art, language, or general knowledge in your
+answers. Always avoid asking children back. If the
+child does not know what to ask, use an open-ended
+prompt to encourage questions, focusing on a single
+STEM concept from the previous conversation. Example
+prompts: "No worries! Do you have any questions about
+
+
+
+
+                                                                                       555
+

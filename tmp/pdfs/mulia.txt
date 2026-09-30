@@ -1,0 +1,856 @@
+               BOCAH: Borneo Early Childhood Education and Humanity Journal
+                                                    Volume 5 Nomor 2, July 2026
+                                                E-ISSN: 2807-7857, P-ISSN: 2807-9078
+
+
+      Pengembangan Asesmen Digital Berbasis Kecerdasan Jamak untuk
+            Mengidentifikasi Preferensi Belajar Anak Usia Dini
+                      Ratna Dewi Sartika1*, Nita Priyanti2, Chandra Apriansyah3
+                                    1,2,3
+                                            Universitas Panca Sakti Bekasi, Indonesia
+
+         Received: March 9th, 2026; Revised: May 17th, 2026; Accepted: June 21st, 2026; Published: July 2nd, 2026
+
+
+                                                          Abstrak
+Penelitian ini bertujuan untuk mengembangkan asesmen digital berbasis kecerdasan jamak guna
+mengidentifikasi preferensi belajar anak usia dini di Kota Tangerang Selatan. Pengembangan ini
+dilatarbelakangi oleh pentingnya pembelajaran yang berpusat pada anak dan sesuai dengan karakteristik
+serta potensi belajar anak. Penelitian ini menggunakan metode Research and Development (R&D)
+dengan model 4D, yaitu define, design, develop, dan disseminate, serta pendekatan kualitatif dan
+kuantitatif. Produk asesmen digital yang dikembangkan, yaitu MULIA (Multiple Intelligences
+Assessment), beserta instrumennya diuji melalui validasi ahli, uji validitas instrumen, reliabilitas inter-
+rater, dan uji kepraktisan penggunaan, dengan melibatkan tiga validator ahli, dua guru pada tahap
+analisis kebutuhan, sepuluh guru pada tahap uji coba penggunaan aplikasi, serta 60 anak usia 5–6 tahun.
+Hasil validasi ahli menunjukkan tingkat kelayakan sebesar 86,67%–95,56%, dengan rata-rata 91,11%,
+serta reliabilitas antar-rater sebesar 0,928. Dengan demikian, asesmen digital dinilai layak dan dapat
+diandalkan untuk mengidentifikasi preferensi belajar berbasis kecerdasan jamak. Berdasarkan persepsi
+pengguna, asesmen ini dinilai praktis karena mudah digunakan, menyajikan hasil dengan cepat dan
+berbasis data, serta membantu guru merancang pembelajaran sesuai dengan preferensi belajar anak.
+Dengan demikian, asesmen digital ini berpotensi mendukung pelaksanaan asesmen anak usia dini secara
+lebih sistematis, praktis, dan relevan dengan kebutuhan pembelajaran PAUD.
+Kata kunci: asesmen digital, kecerdasan jamak, preferensi belajar, anak usia dini, model 4D
+                                                         Abstract
+This study aims to develop a multiple intelligences-based digital assessment to identify early childhood
+learning preferences in South Tangerang City. The development of this assessment was motivated by
+the importance of child-centered learning that aligns with children’s characteristics and learning
+potential. This study employed a Research and Development (R&D) method using the 4D model,
+namely define, design, develop, and disseminate, with both qualitative and quantitative approaches. The
+developed digital assessment product, namely MULIA (Multiple Intelligences Assessment), along with
+its instrument, was tested through expert validation, instrument validity testing, inter-rater reliability
+testing, and practicality testing. The study involved three expert validators, two teachers in the needs
+analysis stage, ten teachers in the application trial stage, and 60 children aged 5–6 years. The expert
+validation results showed a feasibility level of 86.67%–95.56%, with an average of 91.11%, and an inter-
+rater reliability score of 0.928. Thus, the digital assessment was considered feasible and reliable for
+identifying learning preferences based on multiple intelligences. Based on user perceptions, the
+assessment was considered practical because it was easy to use, provided fast and data-based results,
+and helped teachers design learning activities according to children’s learning preferences. Therefore,
+this digital assessment has the potential to support the implementation of early childhood assessment in
+a more systematic, practical, and relevant manner in accordance with the needs of early childhood
+education.
+Keywords: digital assessment, multiple intelligences, learning preferences, early childhood, 4D model
+
+                                            Copyright (c) 2026 Ratna Dewi Sartika, Nita Priyanti, Chandra Apriansyah
+* Correspondence Address:
+Email Address: ratnadewisartika@pascasarjana-panca-sakti.ac.id
+
+
+BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026                           123
+                        Ratna Dewi Sartika, Nita Priyanti, Chandra Apriansyah
+
+
+A. Pendahuluan
+          Pendidikan Anak Usia Dini (PAUD) memiliki peran penting dalam membentuk dasar
+   perkembangan kognitif, sosial, dan emosional anak. Pada tahap ini, guru tidak hanya
+   berperan sebagai pengajar, tetapi juga sebagai pengamat perkembangan peserta didik
+   melalui proses asesmen. Asesmen membantu guru memahami karakteristik belajar anak
+   serta menjadi dasar dalam merancang pembelajaran yang sesuai dengan kebutuhan
+   perkembangan mereka. Sistem asesmen yang terstruktur juga membantu guru melakukan
+   evaluasi pembelajaran secara lebih sistematis (Suryani, 2023).
+          Dalam praktiknya, proses asesmen di beberapa lembaga TK di Tangerang Selatan
+   masih banyak dilakukan secara manual. Pengamatan perkembangan anak biasanya dicatat
+   melalui catatan observasi sederhana yang belum terintegrasi dengan instrumen penilaian
+   yang sistematis. Kondisi ini membuat pengolahan data perkembangan anak menjadi lebih
+   lambat dan sering kali bergantung pada interpretasi guru. Akibatnya, data perkembangan
+   anak belum selalu terdokumentasi secara terstruktur untuk dianalisis dalam jangka panjang.
+          Permasalahan tersebut juga berkaitan dengan kesenjangan kemampuan guru dalam
+   memanfaatkan teknologi digital dalam pembelajaran. Suryani (2021) menjelaskan bahwa
+   kesenjangan tersebut dipengaruhi oleh keterbatasan akses terhadap teknologi dan
+   kemampuan guru dalam menggunakan media digital. Kondisi ini menunjukkan bahwa
+   pemanfaatan teknologi dalam kegiatan asesmen pendidikan anak usia dini belum
+   dimanfaatkan secara optimal. Oleh karena itu, guru membutuhkan dukungan pelatihan dan
+   alat asesmen yang lebih sistematis.
+          Beberapa penelitian menunjukkan bahwa guru PAUD masih mengalami kesulitan
+   dalam mengidentifikasi preferensi belajar anak. Saodi et al. (2024) menjelaskan bahwa
+   sebagian guru belum memahami konsep gaya belajar secara komprehensif, sehingga proses
+   penilaian sering kali dilakukan berdasarkan pengamatan secara umum. Lestari (2020) juga
+   menemukan bahwa pemahaman guru sering kali masih terbatas pada tiga kategori utama,
+   yaitu visual, auditori, dan kinestetik. Kondisi ini menyebabkan variasi karakteristik belajar
+   anak belum sepenuhnya teridentifikasi.
+          Selain keterbatasan pemahaman konsep, proses pengamatan gaya belajar anak juga
+   sering dilakukan tanpa menggunakan instrumen yang terstandar. Wulandari (2019)
+   menjelaskan bahwa pengamatan terhadap gaya belajar biasanya dilakukan secara informal
+   melalui aktivitas belajar sehari-hari. Yusuf (2022) menemukan bahwa data hasil
+   pengamatan tersebut sering kali belum cukup kuat untuk dijadikan dasar dalam merancang
+   pembelajaran berdiferensiasi. Hal ini menunjukkan perlunya pengembangan instrumen
+   asesmen yang lebih sistematis.
+          Kajian internasional juga menunjukkan adanya perdebatan mengenai konsep gaya
+   belajar dalam pendidikan. Smith dan Taylor (2018) menjelaskan bahwa gaya belajar sering
+   dipahami sebagai preferensi belajar individu. Nguyen (2020) menilai bahwa perbedaan
+   antara preferensi belajar dan strategi belajar yang efektif masih sering tidak dipahami
+   dengan jelas. Pashler et al. (2008) menyatakan bahwa bukti empiris yang menunjukkan
+   efektivitas penyesuaian metode pengajaran dengan gaya belajar masih terbatas.
+          Berdasarkan kajian tersebut, penelitian ini tidak menggunakan konsep gaya belajar
+   sebagai kategori tetap yang menentukan keberhasilan belajar anak. Sebaliknya, penelitian
+   ini memandangnya sebagai preferensi belajar yang fleksibel dan dapat berkembang. Dalam
+   konteks ini, preferensi belajar dipahami sebagai kecenderungan anak dalam merespons
+   aktivitas belajar yang kemudian dihubungkan dengan potensi yang dimilikinya melalui
+   pendekatan kecerdasan jamak. Dengan demikian, penggunaan istilah preferensi belajar
+   dalam penelitian ini diharapkan lebih sesuai dengan perkembangan kajian pendidikan serta
+   tetap relevan dengan kebutuhan pembelajaran anak usia dini. Pendekatan kecerdasan jamak
+
+
+
+
+124       BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026
+ Pengembangan Asesmen Digital Berbasis Kecerdasan Jamak untuk Mengidentifikasi Preferensi Belajar Anak
+                                             Usia Dini
+
+    selanjutnya digunakan sebagai dasar untuk memahami keragaman potensi tersebut secara
+    lebih menyeluruh.
+           Dalam konteks tersebut, pendekatan kecerdasan jamak dapat digunakan sebagai
+    alternatif untuk memahami potensi belajar anak secara lebih luas. Asmawati (2017)
+    menjelaskan bahwa pendekatan kecerdasan jamak membantu guru mengidentifikasi
+    berbagai potensi yang dimiliki anak dalam proses belajar. Fitri et al. (2025) juga
+    menyatakan bahwa pemahaman terhadap keragaman kecerdasan anak membantu guru
+    merancang pembelajaran yang lebih variatif. Pendekatan ini memungkinkan kegiatan
+    belajar menjadi lebih menarik dan sesuai dengan karakteristik peserta didik.
+           Namun, penerapan pendekatan tersebut memerlukan dukungan instrumen asesmen
+    yang sesuai dengan karakteristik anak usia dini. Ahmadi et al. (2025) menjelaskan bahwa
+    keterbatasan instrumen penilaian merupakan salah satu kendala yang dihadapi guru dalam
+    mengidentifikasi karakteristik belajar anak. Hilmiah et al. (2025) menekankan pentingnya
+    alat asesmen yang mampu menggambarkan potensi belajar anak secara lebih komprehensif.
+    Susanti (2022) juga menunjukkan bahwa instrumen yang terstruktur membantu guru
+    memahami perkembangan belajar anak secara lebih menyeluruh.
+           Pengembangan asesmen berbasis kecerdasan jamak telah banyak digunakan untuk
+    membantu guru mengenali potensi anak secara lebih luas. Fitriani (2020) menjelaskan
+    bahwa pendekatan Multiple Intelligences membantu guru melihat keragaman kemampuan
+    anak dalam proses belajar. Aulia et al. (2022) menemukan bahwa asesmen berbasis
+    kecerdasan jamak membantu guru mengidentifikasi kekuatan dominan anak. Rahmawati
+    (2019) juga menunjukkan bahwa pendekatan ini memberikan perspektif yang lebih luas
+    dalam memahami kemampuan individu.
+           Perkembangan teknologi digital juga membuka peluang baru dalam proses asesmen
+    pendidikan. Putra et al. (2023) menjelaskan bahwa asesmen digital membantu guru
+    mengelola data penilaian secara lebih efisien. Zhang dan Chan (2019) menunjukkan bahwa
+    teknologi edukatif membantu pengumpulan data perkembangan anak secara lebih cepat
+    dan terorganisasi.
+           Meskipun berbagai penelitian telah membahas asesmen berbasis kecerdasan jamak
+    maupun pemanfaatan teknologi digital dalam pendidikan, sebagian besar masih dilakukan
+    secara terpisah dan belum dirancang secara terintegrasi dalam satu sistem asesmen yang
+    utuh. Selain itu, pengembangan instrumen yang secara khusus ditujukan untuk
+    mengidentifikasi preferensi belajar anak usia dini dengan mempertimbangkan kemudahan
+    penggunaan oleh guru masih terbatas. Oleh karena itu, penelitian ini menawarkan
+    pengembangan asesmen digital berbasis kecerdasan jamak yang dirancang tidak hanya
+    untuk mengidentifikasi preferensi belajar anak, tetapi juga menyajikan hasil secara cepat,
+    terstruktur, dan mudah digunakan dalam praktik pembelajaran.
+           Berdasarkan kondisi tersebut, penelitian ini mengembangkan asesmen digital
+    berbasis kecerdasan jamak untuk mengidentifikasi preferensi belajar anak usia dini melalui
+    aplikasi berbasis web yang memudahkan guru melakukan penilaian dan analisis
+    perkembangan belajar anak.
+
+B. Tinjauan Pustaka
+         Pengembangan model asesmen dalam pendidikan anak usia dini berangkat dari
+   kebutuhan untuk memahami karakteristik belajar setiap anak secara lebih mendalam.
+   Pembelajaran di PAUD menempatkan anak sebagai pusat kegiatan belajar, sehingga guru
+   perlu mengenali potensi dan kecenderungan belajar anak sejak dini. Salah satu cara yang
+   dapat dilakukan adalah melalui pemetaan preferensi belajar yang berkaitan dengan
+   kecenderungan kecerdasan yang berkembang pada anak (Sanjaya et al., 2023). Melalui
+
+
+
+
+BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026           125
+                         Ratna Dewi Sartika, Nita Priyanti, Chandra Apriansyah
+
+
+      asesmen yang tepat, guru dapat memperoleh informasi yang lebih jelas tentang cara anak
+      memahami pengalaman belajar.
+            Namun, dalam praktiknya, guru PAUD masih menghadapi kesulitan dalam
+      mengidentifikasi preferensi belajar anak secara sistematis. Pendekatan yang digunakan
+      sering kali masih berfokus pada klasifikasi visual, auditori, dan kinestetik, sehingga
+      cenderung menyederhanakan keragaman potensi anak. Pendekatan tersebut belum
+      sepenuhnya mampu menggambarkan variasi kemampuan yang muncul pada tahap
+      perkembangan anak usia dini (Pratiwi, 2025). Selain itu, instrumen asesmen yang
+      dirancang khusus untuk memetakan preferensi belajar anak usia dini masih terbatas,
+      sehingga guru sering kali mengandalkan pengamatan secara umum.
+            Keterbatasan tersebut juga berkaitan dengan pemanfaatan teknologi digital dalam
+      pembelajaran PAUD yang belum merata. Nurhayati dan Mulyanti (2025) menjelaskan
+      bahwa kesenjangan digital dipengaruhi oleh keterbatasan infrastruktur teknologi,
+      rendahnya keterampilan sumber daya manusia, keterbatasan konten berbahasa Indonesia,
+      serta pemanfaatan internet yang kurang optimal. Faktor-faktor tersebut memengaruhi
+      kemampuan guru dalam memanfaatkan teknologi sebagai alat bantu pembelajaran dan
+      asesmen. Kondisi ini menunjukkan bahwa integrasi teknologi dalam kegiatan asesmen
+      masih memerlukan dukungan pengembangan yang lebih sistematis.
+            Dalam kegiatan pembelajaran sehari-hari, asesmen perkembangan anak masih
+      banyak dilakukan melalui metode observasi manual. Metode ini membantu guru melihat
+      perilaku anak secara langsung, namun proses pencatatan dan pengolahan data sering kali
+      memerlukan waktu yang cukup lama. Selain itu, dokumentasi manual juga menyulitkan
+      guru dalam memantau perkembangan anak secara berkelanjutan. Pemanfaatan teknologi
+      digital dapat membantu proses pengumpulan dan penyimpanan data perkembangan anak
+      secara lebih terstruktur (Yusuf & Darmasnyah, 2025).
+            Penelitian sebelumnya juga menunjukkan bahwa hasil asesmen gaya belajar sering
+      kali belum dimanfaatkan secara optimal dalam perencanaan pembelajaran. Guru sering
+      kesulitan menggunakan data asesmen sebagai dasar untuk merancang strategi
+      pembelajaran berdiferensiasi. Instrumen yang tersedia juga belum sepenuhnya
+      menyesuaikan diri dengan karakteristik belajar anak usia dini yang membutuhkan
+      pendekatan bermain, visualisasi, dan aktivitas interaktif (Muslimin et al., 2025). Kondisi
+      ini menunjukkan adanya kebutuhan terhadap model asesmen yang tidak hanya
+      mengidentifikasi kemampuan anak, tetapi juga memberikan informasi yang dapat
+      digunakan secara praktis dalam pembelajaran.
+            Dalam kajian pendidikan anak usia dini, pendekatan kecerdasan jamak menjadi
+      salah satu kerangka yang banyak digunakan untuk memahami potensi belajar anak. Teori
+      ini menekankan bahwa kemampuan individu tidak hanya berkaitan dengan aspek
+      akademik, tetapi juga meliputi berbagai dimensi kecerdasan lain yang berkembang secara
+      berbeda pada setiap anak (Hasanah, 2017). Erviana (2018) juga menambahkan bahwa
+      pendekatan ini memberikan ruang bagi guru untuk melihat kemampuan anak dari
+      perspektif yang lebih luas. Dengan demikian, asesmen berbasis kecerdasan jamak
+      berpotensi memberikan gambaran yang lebih komprehensif tentang cara anak belajar.
+            Berdasarkan berbagai kajian tersebut, terlihat bahwa penelitian sebelumnya telah
+      banyak membahas asesmen preferensi belajar, pemanfaatan teknologi digital, serta
+      penerapan kecerdasan jamak dalam pembelajaran anak usia dini. Namun, ketiga aspek
+      tersebut umumnya masih dikaji secara terpisah dan belum terintegrasi dalam satu model
+      asesmen yang utuh. Selain itu, instrumen yang tersedia belum sepenuhnya dirancang untuk
+      membantu guru dalam mengidentifikasi preferensi belajar anak secara praktis dan
+      sistematis. Kondisi ini menunjukkan adanya kebutuhan pengembangan asesmen yang
+
+
+
+
+126        BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026
+ Pengembangan Asesmen Digital Berbasis Kecerdasan Jamak untuk Mengidentifikasi Preferensi Belajar Anak
+                                             Usia Dini
+
+    tidak hanya berbasis kecerdasan jamak, tetapi juga terintegrasi dengan teknologi digital
+    serta mampu memberikan hasil yang mudah dipahami dan digunakan dalam pembelajaran.
+          Pengembangan model asesmen dalam penelitian ini juga didasarkan pada teori
+    kecerdasan jamak yang dikemukakan oleh Howard Gardner. Teori tersebut menjelaskan
+    bahwa setiap individu memiliki berbagai jenis kecerdasan yang berkembang dengan
+    tingkat yang berbeda. (Irawati, 2021) menjelaskan bahwa kecerdasan naturalis membantu
+    individu memahami lingkungan hidup serta membangun kepekaan terhadap fenomena
+    alam sejak usia dini. Pemahaman terhadap berbagai bentuk kecerdasan ini membantu guru
+    mengenali potensi anak yang sering kali tidak terlihat melalui penilaian akademik semata.
+          Penerapan teori kecerdasan jamak dalam pembelajaran juga didukung oleh
+    pandangan Ardiana (2022) yang menjelaskan bahwa kecerdasan tidak dapat diwakili oleh
+    angka atau hasil tes standar, tetapi tercermin dari kebiasaan individu dalam menyelesaikan
+    masalah dan menghasilkan karya yang bernilai. Pandangan ini menunjukkan bahwa proses
+    belajar anak perlu dipahami melalui aktivitas nyata dalam kehidupan sehari-hari. Dengan
+    demikian, asesmen yang digunakan perlu memberikan ruang bagi anak untuk
+    menunjukkan kemampuan tersebut.
+          Dalam penelitian ini, konsep kecerdasan jamak tidak hanya digunakan sebagai
+    kerangka teoritis, tetapi juga menjadi dasar dalam penyusunan indikator asesmen. Setiap
+    jenis kecerdasan dihubungkan dengan perilaku yang dapat diamati pada anak usia dini
+    serta aktivitas pembelajaran yang relevan. Hal ini bertujuan agar asesmen yang
+    dikembangkan tidak hanya bersifat konseptual, tetapi juga mudah diterapkan dalam
+    praktik pembelajaran sehari-hari.
+    Tabel 1. Hubungan kecerdasan jamak, indikator perilaku anak, dan contoh aktivitas
+     Jenis Kecerdasan               Indikator Perilaku                     Contoh Aktivitas
+                             Mampu bercerita, memiliki                 Bercerita, membaca
+     Linguistik
+                             kosakata yang baik                        gambar
+                             Suka berhitung,
+     Logika-Matematis        mengelompokkan, memecahkan                Bermain angka, puzzle
+                             masalah sederhana
+                             Suka menggambar, memahami                 Menggambar, menyusun
+     Visual-Spasial
+                             bentuk dan visual                         balok
+                             Aktif bergerak, mengekspresikan           Bermain peran, aktivitas
+     Kinestetik
+                             diri melalui tubuh                        fisik
+                             Peka terhadap nada dan ritme,             Bernyanyi, bermain musik
+     Musikal
+                             suka bernyanyi                            sederhana
+                             Mudah berinteraksi, bekerja sama
+     Interpersonal                                                     Bermain kelompok
+                             dengan teman
+     Intrapersonal           Mandiri, mengenali perasaan diri          Bermain mandiri
+                             Tertarik pada lingkungan dan              Mengamati
+     Naturalis
+                             makhluk hidup                             tanaman/hewan
+
+          Pendekatan pembelajaran yang mengintegrasikan berbagai aktivitas juga terbukti
+    mendukung perkembangan bahasa dan interaksi anak. Budiarti (2024) menunjukkan
+    bahwa kegiatan yang melibatkan interaksi bahasa dapat membantu meningkatkan
+    kemampuan komunikasi pada anak usia dini. Aktivitas bermain juga berperan penting
+    dalam memperkuat keterampilan sosial anak. Kabanga et al. (2025) menemukan bahwa
+    kegiatan bermain dapat meningkatkan kemampuan interpersonal anak dalam berinteraksi
+    dengan lingkungan sekitarnya.
+
+
+
+BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026           127
+                         Ratna Dewi Sartika, Nita Priyanti, Chandra Apriansyah
+
+
+           Pengembangan kecerdasan anak juga berkaitan dengan berbagai bidang lain seperti
+      seni dan aktivitas fisik. Andari dan Wiguna (2023) menjelaskan bahwa kecerdasan
+      musikal berkaitan dengan kemampuan mengenali ritme, melodi, dan ekspresi musik yang
+      dapat memengaruhi perkembangan kemampuan kognitif. Penelitian lain menunjukkan
+      bahwa perkembangan kemampuan motorik merupakan bagian penting dari pertumbuhan
+      anak secara menyeluruh. Jf dan Mahrani (2025) menjelaskan bahwa keterampilan fisik
+      yang berkembang dengan baik dapat menjadi dasar bagi perkembangan anak secara
+      optimal.
+
+C. Metode
+         Penelitian ini bertujuan untuk menganalisis kebutuhan pengembangan asesmen
+   digital berbasis kecerdasan jamak, menggambarkan proses pengembangan asesmen
+   tersebut, menilai tingkat kelayakan produk yang dihasilkan, serta mengetahui reliabilitas
+   dan kepraktisan penggunaannya dalam mengidentifikasi preferensi belajar anak usia dini.
+   Asesmen digital yang dikembangkan diarahkan sebagai alat bantu bagi guru dalam
+   memetakan kecenderungan belajar anak berdasarkan indikator kecerdasan jamak,
+   sehingga hasil asesmen dapat digunakan sebagai dasar dalam merancang pembelajaran
+   yang lebih sesuai dengan karakteristik anak.
+         Penelitian dilaksanakan di dua lembaga PAUD, yaitu TK Lab School FIP UMJ dan
+   TK Islam Arrasyid, dan berlangsung selama delapan bulan, yaitu dari Mei hingga
+   Desember 2025. Sasaran penelitian adalah anak usia 5–6 tahun yang berada pada tingkat
+   TK B dengan jumlah peserta sebanyak 60 anak. Pemilihan subjek didasarkan pada
+   kesesuaian karakteristik peserta didik dengan tujuan penelitian, yaitu anak yang aktif
+   mengikuti kegiatan pembelajaran di kelas. Selain peserta didik, penelitian ini juga
+   melibatkan 2 orang guru PAUD pada tahap define untuk membantu proses analisis
+   kebutuhan melalui wawancara dan observasi awal terkait pelaksanaan asesmen di kelas.
+   Selanjutnya, pada tahap uji coba terbatas, penelitian ini juga melibatkan 10 guru PAUD
+   sebagai pengguna aplikasi untuk menilai pengalaman penggunaan dan kepraktisan sistem
+   asesmen digital. Lembaga yang dipilih juga memiliki kesiapan dasar dalam penggunaan
+   perangkat digital sehingga mendukung pelaksanaan asesmen berbasis aplikasi.
+         Penelitian ini telah memperoleh izin dari lembaga PAUD yang menjadi lokasi
+   penelitian. Persetujuan orang tua diperoleh sebelum pengambilan data pada anak. Identitas
+   peserta didik dijaga kerahasiaannya dengan tidak mencantumkan nama anak pada sistem
+   maupun dalam laporan penelitian. Data asesmen hanya digunakan untuk kepentingan
+   penelitian dan pengembangan pembelajaran.
+         Penelitian ini menggunakan metode penelitian dan pengembangan atau Research
+   and Development (R&D) yang bertujuan menghasilkan produk asesmen digital serta
+   menguji kelayakan, reliabilitas, validitas instrumen, dan kepraktisan penggunaannya
+   dalam konteks pendidikan anak usia dini. Metode ini dipilih karena memungkinkan
+   peneliti merancang instrumen asesmen, mengembangkan aplikasi berbasis web,
+   melakukan validasi ahli, serta melaksanakan uji coba terbatas sebelum produk digunakan
+   secara lebih luas. Dalam penelitian ini, model pengembangan yang digunakan adalah
+   model Four-D yang dikembangkan oleh Thiagarajan, Semmel, dan Semmel, yang terdiri
+   atas empat tahap utama, yaitu define, design, develop, dan disseminate (Thiagarajan et al.,
+   1974).
+         Tahap define atau pendefinisian bertujuan untuk mengidentifikasi kebutuhan dan
+   merumuskan dasar pengembangan produk. Pada tahap ini dilakukan analisis awal terhadap
+   praktik asesmen yang selama ini digunakan di lembaga PAUD serta kebutuhan guru
+   terhadap instrumen asesmen berbasis digital. Analisis karakteristik peserta didik juga
+   dilakukan melalui observasi untuk memahami minat, pengalaman belajar, serta bentuk
+
+
+128        BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026
+ Pengembangan Asesmen Digital Berbasis Kecerdasan Jamak untuk Mengidentifikasi Preferensi Belajar Anak
+                                             Usia Dini
+
+    aktivitas yang sering dilakukan anak dalam proses pembelajaran. Selain itu, dilakukan
+    analisis tugas untuk memetakan aktivitas asesmen yang merepresentasikan indikator
+    kecerdasan jamak serta analisis konsep yang mengkaji teori kecerdasan jamak sebagai
+    landasan penyusunan instrumen asesmen.
+          Tahap design atau perancangan bertujuan menyusun rancangan awal asesmen
+    digital. Pada tahap ini, peneliti menyusun indikator instrumen berdasarkan konsep
+    kecerdasan jamak yang disesuaikan dengan karakteristik perkembangan anak usia 5–6
+    tahun. Instrumen asesmen yang dikembangkan terdiri atas 10 butir pernyataan yang
+    merepresentasikan indikator perilaku dari delapan kecerdasan jamak. Instrumen ini
+    digunakan sebagai asesmen awal untuk mengidentifikasi kecenderungan preferensi belajar
+    anak, bukan sebagai diagnosis tunggal terhadap kecerdasan anak. Skala penilaian yang
+    digunakan adalah skala frekuensi 1–5 dengan kategori tidak pernah, kurang, cukup sering,
+    sering, dan sangat sering. Setiap butir dirancang agar dapat diamati oleh guru dalam
+    konteks aktivitas pembelajaran sehari-hari.
+          Selain itu, dirancang pula sistem aplikasi asesmen berbasis web yang dapat diakses
+    melalui perangkat gawai atau komputer dengan sistem login pengguna. Tampilan aplikasi
+    dirancang sederhana dan mudah digunakan sehingga guru maupun orang tua dapat
+    memahami hasil asesmen melalui grafik, tabel, dan deskripsi yang ditampilkan oleh
+    sistem.
+          Tahap develop merupakan tahap pengembangan produk berupa aplikasi asesmen
+    digital berbasis web. Produk yang telah dikembangkan kemudian melalui proses validasi
+    ahli untuk menilai kelayakan isi dan kelayakan teknis. Validasi dilakukan oleh tiga pakar
+    yang berasal dari bidang pendidikan anak usia dini, psikologi anak, dan teknologi
+    informasi. Proses validasi dilakukan dengan meminta para ahli memberikan penilaian
+    terhadap instrumen dan tampilan aplikasi menggunakan lembar validasi yang telah
+    disusun. Penilaian mencakup aspek kesesuaian isi dengan konsep kecerdasan jamak,
+    kejelasan bahasa, keterpakaian dalam konteks pembelajaran anak usia dini, serta
+    kelayakan teknis aplikasi. Hasil penilaian dianalisis menggunakan persentase kelayakan,
+    sedangkan masukan para ahli digunakan sebagai dasar untuk merevisi instrumen dan
+    tampilan aplikasi. Setelah proses validasi, produk diuji coba secara terbatas pada lembaga
+    PAUD yang telah dipilih untuk melihat penggunaan aplikasi oleh guru serta memperoleh
+    masukan terkait kemudahan penggunaan dan manfaat aplikasi dalam proses pembelajaran.
+          Tahap disseminate merupakan tahap penyebarluasan produk melalui kegiatan
+    sosialisasi kepada guru dan penyampaian informasi hasil asesmen kepada orang tua. Pada
+    tahap ini, guru diberi penjelasan mengenai konsep asesmen kecerdasan jamak, cara
+    menggunakan aplikasi, serta cara membaca hasil asesmen yang dihasilkan oleh sistem.
+    Pengumpulan data pada tahap ini dilakukan melalui wawancara, observasi, dan
+    penyebaran angket kepada guru sebagai pengguna utama aplikasi. Masukan dari guru
+    digunakan untuk menilai kepraktisan sistem dan memperbaiki aspek penggunaan aplikasi
+    agar lebih sesuai dengan kebutuhan pembelajaran PAUD.
+          Analisis data dilakukan secara kualitatif dan kuantitatif sesuai dengan tahapan
+    penelitian dalam model pengembangan 4D. Data kebutuhan pada tahap define dianalisis
+    secara deskriptif kualitatif, sedangkan data validasi ahli dan hasil uji coba dianalisis secara
+    kuantitatif dengan menghitung nilai rata-rata dan persentase tingkat kelayakan produk
+    menggunakan skala Likert, serta dilakukan analisis statistik menggunakan perangkat lunak
+    SPSS untuk menguji validitas dan reliabilitas instrumen.
+          Validitas instrumen dalam penelitian ini mencakup validitas isi melalui penilaian
+    ahli dan validitas butir melalui analisis statistik. Validitas isi produk dan instrumen dinilai
+    oleh tiga ahli, yaitu ahli pendidikan anak usia dini, psikolog anak, dan ahli teknologi
+    informasi, menggunakan lembar validasi yang kemudian dianalisis dalam bentuk
+
+
+BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026           129
+                         Ratna Dewi Sartika, Nita Priyanti, Chandra Apriansyah
+
+
+      persentase kelayakan. Validitas butir instrumen diuji dengan membandingkan nilai r
+      hitung dan r tabel. Uji reliabilitas dilakukan menggunakan inter-rater reliability (IRR)
+      melalui Intraclass Correlation Coefficient (ICC) untuk melihat tingkat konsistensi
+      penilaian antarpengamat. Penilaian kelayakan produk dilakukan dengan menghitung rata-
+      rata skor pada setiap aspek, kemudian dikonversi ke dalam persentase. Hasil persentase
+      tersebut diinterpretasikan dalam kategori kelayakan, yaitu 0%–54% (sangat tidak layak),
+      55%–64% (tidak layak), 65%–74% (cukup layak), 75%–89% (layak), dan 90%–100%
+      (sangat layak).
+
+D. Hasil dan Diskusi
+         Pada tahap define dilakukan analisis kebutuhan melalui wawancara dan observasi di
+   kedua lembaga. Hasil analisis menunjukkan bahwa asesmen yang digunakan sebelumnya
+   belum secara khusus mengidentifikasi preferensi belajar berdasarkan kecerdasan jamak dan
+   masih dilakukan secara manual. Berdasarkan hasil wawancara dengan dua guru di lembaga
+   penelitian, guru menyampaikan bahwa asesmen yang dilakukan selama ini masih
+   mengandalkan observasi harian, catatan anekdotal, dan wawancara sederhana, sehingga
+   proses pencatatan dan pengolahan data membutuhkan waktu yang cukup lama. Guru juga
+   menyampaikan bahwa belum tersedia instrumen yang mampu mengidentifikasi preferensi
+   belajar anak berbasis kecerdasan jamak secara sistematis.
+         Kondisi ini menyebabkan proses pencatatan dan pengolahan data memerlukan waktu
+   lebih lama serta membuka kemungkinan bias dalam interpretasi hasil. Selain itu,
+   pemahaman guru mengenai aktivitas diagnostik yang dapat menggambarkan kecerdasan
+   anak masih terbatas, sehingga perancangan pembelajaran belum sepenuhnya berbasis data
+   observasi. Oleh karena itu, diperlukan instrumen asesmen yang lebih sistematis, fleksibel,
+   dan terdigitalisasi.
+         Tahap design menghasilkan rancangan awal instrumen asesmen digital berbasis web
+   yang mencakup spesifikasi produk, rancangan instrumen asesmen, dan desain antarmuka
+   pengguna. Produk yang dikembangkan diberi nama “MULIA” (Multiple Intelligences
+   Assessment), yaitu asesmen digital berbasis web yang bertujuan membantu guru
+   mengidentifikasi preferensi belajar anak berdasarkan kecerdasan jamak. Sistem ini
+   dirancang untuk menampilkan akumulasi skor dalam bentuk laporan penilaian
+   komprehensif dengan mempertimbangkan visualisasi warna, orientasi, dan estetika grafik,
+   informasi skor, susunan data, rekomendasi pembelajaran, informasi administratif, serta
+   aksesibilitas hasil asesmen.
+         Instrumen disusun berdasarkan indikator delapan kecerdasan dalam teori kecerdasan
+   jamak, dengan total 10 butir pernyataan yang mewakili karakteristik preferensi belajar
+   anak. Penilaian menggunakan skala frekuensi 1–5 yang menggambarkan kemunculan
+   aktivitas anak dalam kegiatan sehari-hari. Sistem dirancang dengan alur penggunaan yang
+   sederhana, mulai dari login pengguna, pengisian identitas anak, pengisian instrumen,
+   hingga penyajian laporan hasil dalam bentuk grafik batang berwarna yang menunjukkan
+   kecerdasan dominan serta rekomendasi kegiatan pembelajaran.
+         Tahap develop mencakup proses validasi ahli, revisi instrumen, serta uji coba
+   terbatas. Validasi dilakukan oleh tiga validator yang terdiri atas ahli pendidikan anak usia
+   dini, psikolog anak, dan ahli teknologi informasi. Hasil validasi menunjukkan persentase
+   kelayakan sebesar 91,11% dari ahli PAUD, 95,56% dari psikolog anak, dan 86,67% dari
+   ahli teknologi informasi. Secara rata-rata, hasil validasi ahli menunjukkan tingkat
+   kelayakan sebesar 91,11% dan berada pada kategori sangat layak, meskipun aspek
+   teknologi informasi memperoleh skor 86,67% dan berada pada kategori layak. Hasil
+   tersebut menunjukkan bahwa asesmen digital “MULIA” dinilai layak hingga sangat layak
+
+
+
+
+130        BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026
+ Pengembangan Asesmen Digital Berbasis Kecerdasan Jamak untuk Mengidentifikasi Preferensi Belajar Anak
+                                             Usia Dini
+
+    untuk digunakan dalam uji coba terbatas setelah direvisi sesuai masukan validator.
+    Ringkasan hasil validasi oleh para ahli dapat dilihat pada tabel berikut.
+                               Tabel 2. Ringkasan Hasil Validasi Ahli
+        Validator        Persentase Kelayakan            Kategori              Saran Revisi
+                                                                         Penyederhanaan bahasa
+       Ahli PAUD                  91,11%               Sangat Layak
+                                                                         indikator
+                                                                         Penyesuaian indikator
+     Psikolog Anak                95,56%               Sangat Layak      sesuai tahap
+                                                                         perkembangan anak
+                                                                         Melengkapi format
+         Ahli IT                  86,67%                   Layak         multimedia sesuai
+                                                                         kebutuhan observasi
+
+          Validasi teknis aplikasi dilakukan oleh ahli teknologi informasi dengan skor rata-rata
+    86,67%. Penilaian menunjukkan bahwa aplikasi memiliki kompatibilitas perangkat yang
+    baik dan dapat diakses melalui berbagai perangkat seperti ponsel, tablet, dan komputer.
+    Aspek kesesuaian data dengan hasil asesmen dan aksesibilitas bagi orang tua memperoleh
+    skor 100%, yang menunjukkan bahwa laporan hasil tersebut mudah dipahami oleh
+    pengguna. Beberapa aspek teknis, seperti kecepatan akses, navigasi, dan keamanan data,
+    memperoleh skor 80%, sehingga direkomendasikan peningkatan kapasitas server dan
+    penyederhanaan istilah pada antarmuka pengguna. Penilaian teknis juga mencakup aspek
+    aksesibilitas sistem, stabilitas penggunaan pada berbagai perangkat, serta perlindungan
+    data anak melalui sistem login pengguna. Meskipun demikian, validator
+    merekomendasikan pengembangan lebih lanjut pada aspek interaktif dan visualisasi
+    aplikasi agar penggunaan sistem menjadi lebih menarik dan optimal, termasuk
+    pengembangan versi aplikasi mobile. Secara keseluruhan, hasil validasi menunjukkan
+    bahwa prototipe asesmen digital berada dalam kategori sangat layak untuk diuji coba.
+          Uji coba terbatas dilakukan pada 60 anak usia 5–6 tahun dengan melibatkan guru
+    sebagai pengamat. Penilaian pengalaman pengguna dilakukan melalui kuesioner yang diisi
+    oleh 10 guru. Hasil menunjukkan rata-rata skor 4,2 dari 5 atau 84%, sehingga sistem berada
+    pada kategori layak berdasarkan kategori kelayakan yang digunakan dalam penelitian ini.
+    Hasil uji validitas instrumen menunjukkan bahwa seluruh item memiliki nilai r-hitung lebih
+    tinggi dari r-tabel (0,254), sehingga seluruh butir dinyatakan valid. Ringkasan hasil uji
+    validitas instrumen dapat dilihat pada tabel berikut.
+                               Tabel 3. Hasil Uji Validitas Instrumen
+             Item                   r-hitung                      r-tabel             Keterangan
+     Item 1                           0,800                        0,254                 Valid
+     Item 2                           0,750                        0,254                 Valid
+     Item 3                           0,838                        0,254                 Valid
+     Item 4                           0,818                        0,254                 Valid
+     Item 5                           0,695                        0,254                 Valid
+     Item 6                           0,785                        0,254                 Valid
+     Item 7                           0,740                        0,254                 Valid
+     Item 8                           0,824                        0,254                 Valid
+     Item 9                           0,716                        0,254                 Valid
+     Item 10                          0,816                        0,254                 Valid
+
+
+
+
+BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026           131
+                          Ratna Dewi Sartika, Nita Priyanti, Chandra Apriansyah
+
+
+            Uji reliabilitas menggunakan pendekatan inter-rater reliability dianalisis melalui
+      Intraclass Correlation Coefficient (ICC) dengan bantuan SPSS versi 29, menghasilkan nilai
+      sebesar 0,928 yang tergolong dalam kategori sangat tinggi. Nilai tersebut menunjukkan
+      bahwa penilaian yang diberikan oleh para pengamat terhadap instrumen memiliki tingkat
+      konsistensi yang memadai.
+            Kepraktisan dan pengalaman pengguna terhadap model dianalisis melalui
+      perbandingan hasil pre-test dan post-test pada tahap uji coba yang ditampilkan pada tabel
+      berikut.
+                                Tabel 4. Rekapitulasi Hasil Uji Coba
+                                                       Pre-Test        Post-Test
+          Aspek              Sub Indikator             Rata-rata       Rata-rata   Peningkatan
+                                                         Skor            Skor
+                       Kemudahan dan
+                       konsistensi saat mengisi
+                       asesmen menggunakan                 3,80           4,10          7,9%
+                       asesmen digital berbasis
+                       web.
+                       Kebutuhan waktu dalam
+                                                           2,90           4,00         37,9%
+       Pengalaman      mengerjakan asesmen.
+       Pengguna        Memahami alur, tata letak
+       (User           dan fitur yang jelas saat
+                                                           3,00           3,90          30%
+       Experience)     menggunakan asesmen
+                       digital berbasis web ini.
+                       Frekuensi penggunaan
+                       asesmen digital berbasis            3,20           4,10         28,1%
+                       web.
+                       Percepatan waktu proses
+                                                           2,90           3,90         34,5%
+                       asesmen.
+                       Pemahaman bahasa yang
+                                                           3,60           4,10         13,9%
+                       digunakan.
+       Isi (Content)   Pemahaman indikator
+                       preferensi belajar berbasis         3,05           3,90         27,9%
+                       kecerdasan jamak.
+                       Hasil asesmen kecerdasan
+                       jamak yang ringkas dan              3,03           4,10         35,3%
+                       jelas.
+                       Hasil asesmen lebih cepat
+       Hasil
+                       dengan sistem ini daripada          3,45           4,10         18,8%
+       (Result)
+                       secara manual.
+                       Hasil asesmen untuk
+                       merancang pembelajaran              2,90           3,70         27,4%
+                       bagi anak.
+
+            Hasil menunjukkan peningkatan skor pada hampir seluruh indikator, terutama pada
+      aspek kebutuhan waktu asesmen (37,9%), percepatan proses asesmen (34,5%), dan
+      kejelasan hasil asesmen (35,3%). Analisis N-Gain menghasilkan skor sebesar 0,904, yang
+      menunjukkan peningkatan persepsi positif pengguna terhadap kepraktisan penggunaan
+      sistem asesmen digital. Hasil ini tidak dimaknai sebagai peningkatan kemampuan atau
+      perkembangan anak, melainkan sebagai peningkatan penilaian pengguna setelah
+
+
+132        BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026
+ Pengembangan Asesmen Digital Berbasis Kecerdasan Jamak untuk Mengidentifikasi Preferensi Belajar Anak
+                                             Usia Dini
+
+    menggunakan sistem. Pada tahap diseminasi, guru memberikan umpan balik positif karena
+    sistem dinilai memudahkan proses asesmen, membantu memahami indikator kecerdasan
+    anak, serta mendukung perencanaan stimulasi pembelajaran sesuai dengan hasil asesmen.
+          Temuan pada tahap define menunjukkan bahwa guru membutuhkan instrumen
+    asesmen yang mampu mengidentifikasi karakteristik belajar anak secara lebih spesifik.
+    Selama ini, proses asesmen yang dilakukan di lembaga PAUD cenderung berfokus pada
+    pencatatan perkembangan umum tanpa memetakan kecenderungan cara anak belajar.
+    Kondisi tersebut membuat guru kesulitan menyesuaikan strategi pembelajaran dengan
+    potensi individu anak. Dalam konteks pendidikan anak usia dini, kemampuan belajar anak
+    tidak dapat dipahami melalui satu bentuk kecerdasan saja, karena setiap anak memiliki
+    kombinasi kecerdasan yang berkembang melalui pengalaman belajar yang berbeda-beda.
+    Ariatman et al. (2024) menjelaskan bahwa kecerdasan manusia terdiri dari berbagai jenis
+    kemampuan yang bekerja secara relatif mandiri dan muncul melalui aktivitas yang beragam
+    dalam kehidupan sehari-hari. Oleh karena itu, asesmen yang hanya menilai kemampuan
+    akademik umum sering kali tidak cukup untuk menggambarkan potensi belajar anak secara
+    menyeluruh.
+          Hasil analisis kebutuhan juga menunjukkan bahwa guru memerlukan proses asesmen
+    yang lebih praktis dan efisien. Proses pencatatan manual yang selama ini digunakan
+    membutuhkan waktu cukup lama dan sering menimbulkan kesulitan dalam pengolahan
+    data. Akibatnya, hasil asesmen tidak selalu dapat segera dimanfaatkan untuk merancang
+    kegiatan pembelajaran berikutnya. Pemanfaatan teknologi digital dalam asesmen
+    pendidikan dapat membantu mengatasi keterbatasan tersebut karena sistem digital
+    memungkinkan proses pencatatan, pengolahan, dan penyajian data dilakukan secara
+    otomatis. Wati et al. (2026) menekankan bahwa penggunaan teknologi digital dalam
+    asesmen pendidikan dapat meningkatkan efisiensi pengelolaan data sekaligus
+    memudahkan guru dalam memahami hasil evaluasi pembelajaran. Dengan adanya sistem
+    asesmen digital berbasis web, guru dapat memperoleh gambaran perkembangan anak
+    secara lebih cepat dan lebih sistematis.
+          Pada tahap design, asesmen digital “MULIA” dirancang untuk mengintegrasikan
+    konsep kecerdasan jamak ke dalam sistem asesmen yang dapat digunakan secara praktis
+    oleh guru. Pengembangan instrumen dilakukan dengan menyusun indikator aktivitas yang
+    mewakili delapan jenis kecerdasan dalam teori kecerdasan jamak. Setiap indikator
+    dirumuskan dalam bentuk perilaku yang dapat diamati dalam kegiatan sehari-hari, sehingga
+    guru dapat melakukan asesmen melalui proses observasi secara alami. Pendekatan
+    kecerdasan jamak dalam pendidikan mendorong guru untuk mengenali potensi anak
+    melalui berbagai bentuk aktivitas belajar seperti gerak tubuh, bahasa, musik, maupun
+    interaksi sosial (Erviana, 2018). Pendekatan tersebut memungkinkan guru memahami
+    kecenderungan belajar anak melalui pengalaman belajar yang lebih kontekstual.
+          Selain pengembangan indikator asesmen, perancangan sistem juga menekankan
+    kemudahan interaksi pengguna dengan aplikasi. Desain sistem mencakup tahapan yang
+    jelas mulai dari pengisian identitas anak, pelaksanaan asesmen, pengolahan data, hingga
+    penyajian hasil dalam bentuk grafik yang menunjukkan kecenderungan kecerdasan
+    dominan. Tampilan visual tersebut dirancang agar hasil asesmen dapat dipahami dengan
+    cepat oleh guru maupun orang tua. Prinsip kemudahan penggunaan merupakan salah satu
+    faktor penting dalam keberhasilan penerapan teknologi pendidikan. Persepsi pengguna
+    terhadap kemudahan penggunaan suatu sistem sangat memengaruhi penerimaan dan
+    pemanfaatan teknologi tersebut dalam praktik sehari-hari (Rosyad & Harsono, 2021). Oleh
+    karena itu, penyederhanaan bahasa dan navigasi dalam aplikasi menjadi bagian penting dari
+    strategi perancangan sistem.
+
+
+
+
+BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026           133
+                          Ratna Dewi Sartika, Nita Priyanti, Chandra Apriansyah
+
+
+             Hasil validasi ahli menunjukkan bahwa asesmen digital “MULIA” memiliki tingkat
+      kelayakan yang sangat tinggi. Validasi yang dilakukan oleh pakar pendidikan anak usia
+      dini, psikolog anak, dan ahli teknologi informasi menunjukkan bahwa indikator instrumen
+      telah sesuai dengan karakteristik perkembangan anak serta mampu merepresentasikan
+      konsep kecerdasan jamak secara memadai. Proses validasi ahli merupakan tahap penting
+      dalam penelitian pengembangan karena bertujuan untuk memastikan bahwa produk yang
+      dihasilkan memiliki dasar teoritis dan teknis yang kuat sebelum digunakan dalam praktik
+      pendidikan. Model pengembangan yang dikemukakan oleh Thiagarajan et al. (1974)
+      menekankan bahwa tahap validasi ahli diperlukan untuk menilai kesesuaian isi produk
+      dengan tujuan pengembangan serta memastikan kelayakan penggunaannya di lapangan.
+             Selain kelayakan isi, hasil uji coba juga menunjukkan bahwa instrumen memiliki
+      tingkat reliabilitas yang tinggi. Reliabilitas yang tinggi menunjukkan bahwa hasil penilaian
+      relatif konsisten ketika digunakan oleh pengamat yang berbeda. Dalam asesmen
+      pendidikan anak usia dini, konsistensi penilaian menjadi aspek penting karena sebagian
+      besar data diperoleh melalui observasi terhadap perilaku anak dalam kegiatan belajar.
+      Instrumen observasi yang reliabel memungkinkan peneliti memperoleh data yang stabil
+      dan dapat dipercaya sehingga hasil penelitian dapat digunakan sebagai dasar pengambilan
+      keputusan dalam pembelajaran (Arbeni et al., 2025). Konsistensi tersebut menunjukkan
+      bahwa indikator asesmen yang digunakan dalam sistem telah dirumuskan dengan cukup
+      jelas.
+             Kepraktisan sistem juga terlihat dari kemampuan aplikasi dalam menyajikan hasil
+      asesmen dengan cepat dan mudah dipahami. Setelah guru menyelesaikan proses pengisian
+      instrumen, sistem secara otomatis mengolah data dan menampilkan hasilnya dalam bentuk
+      grafik yang menunjukkan kecenderungan kecerdasan anak. Penyajian hasil dalam bentuk
+      visual membantu pengguna memahami informasi perkembangan anak tanpa harus
+      melakukan analisis data secara manual. Oktavianus et al. (2023) menjelaskan bahwa sistem
+      asesmen digital yang mampu memberikan umpan balik secara cepat dapat meningkatkan
+      pemanfaatan hasil asesmen dalam proses pembelajaran. Dengan demikian, sistem tidak
+      hanya berfungsi sebagai alat evaluasi, tetapi juga sebagai sumber informasi yang
+      mendukung perencanaan pembelajaran.
+             Pada tahap disseminate, hasil penelitian menunjukkan bahwa asesmen digital
+      “MULIA” memperoleh respons positif dari guru dan orang tua sebagai pengguna sistem.
+      Sebagian besar responden menilai bahwa aplikasi mudah diakses melalui berbagai
+      perangkat dan memiliki tampilan yang jelas, sehingga proses asesmen dapat dilakukan
+      tanpa kesulitan yang berarti. Selain itu, laporan hasil yang disajikan dalam bentuk grafik
+      membantu pengguna memahami kecenderungan kecerdasan anak dengan lebih mudah.
+      Keterlibatan orang tua dalam memahami hasil asesmen juga menjadi aspek penting dalam
+      mendukung perkembangan anak. Dengan demikian, kolaborasi antara sekolah dan keluarga
+      merupakan salah satu faktor yang berpengaruh terhadap keberhasilan pendidikan anak
+      karena orang tua dapat memberikan dukungan belajar yang lebih tepat di lingkungan rumah
+      (Afia & Malik, 2024).
+             Penelitian ini masih memiliki keterbatasan dalam implementasi teknologi di lembaga
+      PAUD. Beberapa guru masih memerlukan pendampingan dalam penggunaan fitur digital,
+      sementara kesiapan perangkat dan kualitas jaringan internet di setiap lembaga belum
+      sepenuhnya merata. Selain itu, pengembangan aplikasi masih terbatas pada versi berbasis
+      web, sehingga diperlukan penyempurnaan tampilan interaktif dan pengembangan versi
+      aplikasi mobile agar penggunaan sistem menjadi lebih fleksibel.
+             Hasil penilaian menggunakan skala Likert menunjukkan bahwa asesmen digital
+      “MULIA” berada pada kategori layak digunakan berdasarkan pengalaman pengguna. Skor
+      tersebut menunjukkan bahwa sistem telah memenuhi kebutuhan guru dalam melakukan
+
+
+134        BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026
+ Pengembangan Asesmen Digital Berbasis Kecerdasan Jamak untuk Mengidentifikasi Preferensi Belajar Anak
+                                             Usia Dini
+
+    asesmen perkembangan anak secara lebih sistematis, terutama dalam aspek kemudahan
+    penggunaan, percepatan proses asesmen, dan kejelasan hasil yang ditampilkan. Integrasi
+    teknologi digital dalam asesmen pendidikan memungkinkan proses evaluasi dilakukan
+    secara lebih transparan dan berbasis data, sehingga hasilnya dapat digunakan sebagai dasar
+    pengambilan keputusan pembelajaran. Laporan OECD (2022) mengenai pemanfaatan
+    teknologi dalam pendidikan menunjukkan bahwa sistem asesmen digital dapat membantu
+    meningkatkan kualitas evaluasi pembelajaran karena mampu mengintegrasikan
+    pengumpulan data, analisis, dan pelaporan hasil secara lebih efisien. Temuan ini
+    memperkuat bahwa penggunaan teknologi dalam asesmen perkembangan anak berpotensi
+    mendukung praktik pendidikan anak usia dini yang lebih responsif terhadap kebutuhan
+    belajar masing-masing anak.
+
+E. Kesimpulan
+        Penelitian ini menunjukkan bahwa pengembangan asesmen digital berbasis
+   kecerdasan jamak melalui model R&D 4D (define, design, develop, disseminate) dapat
+   membantu memenuhi kebutuhan guru terhadap instrumen yang lebih sistematis untuk
+   mengidentifikasi preferensi belajar anak usia dini. Produk yang dikembangkan berupa
+   asesmen digital “MULIA” (Multiple Intelligences Assessment) berbasis web dengan alur
+   penggunaan yang sederhana serta penyajian hasil dalam bentuk grafik dan rekomendasi
+   pembelajaran yang mudah dipahami oleh guru dan orang tua. Hasil validasi ahli
+   menunjukkan tingkat kelayakan sebesar 86,67%–95,56%, dengan rata-rata 91,11%,
+   sedangkan reliabilitas antar-rater memperoleh nilai ICC sebesar 0,928. Hasil uji coba
+   pengguna menunjukkan bahwa sistem berada pada kategori layak dan dinilai praktis dalam
+   membantu proses pengolahan serta penyajian hasil asesmen anak. Dengan demikian,
+   asesmen digital berbasis web ini berpotensi mendukung pelaksanaan asesmen
+   perkembangan anak secara lebih praktis, sistematis, dan terstruktur di lembaga PAUD.
+   Pengembangan sistem selanjutnya dapat diarahkan pada pengembangan versi aplikasi
+   mobile, penyempurnaan tampilan interaktif, serta evaluasi berkala terhadap instrumen agar
+   penggunaan sistem menjadi lebih optimal.
+
+
+
+Referensi
+Afia, S., & Malik, L. R. (2024). Kolaborasi antara orang tua dan guru dalam model pengasuhan
+     berbasis pendidikan di PAUD. Educasia: Jurnal Pendidikan, Pengajaran, Dan
+     Pembelajaran, 9(1), 65–74. https://doi.org/10.21462/educasia.v9i1.267
+Ahmadi, A. M., Raihan, D., Alawiyah, H., Martines, M., & Kristian, A. (2025). Problematika
+   guru dalam melaksanakan evaluasi pembelajaran siswa di kelas IV sekolah dasar. Jurnal
+   Binagogik, 12(1), 33–40.
+Andari, I. A. M. Y., & Wiguna, I. B. A. A. (2023). Implementasi kurikulum merdeka dalam
+    menstimulasi kecerdasan musikal anak usia dini. Widya Sundaram: Jurnal Pendidikan
+    Seni Dan Budaya, 1(1), 55–70. https://doi.org/10.53977/jws.v1i1.1019
+Arbeni, W., Windiani, A., Sihotang, D. S. B., Anggraini, N., Wulandari, S., & Nugroho, A.
+    (2025). Test reliability analysis in educational evaluation: A quantitative approach to
+    consistency        and      validity.     Holistic       Science,     5(1),      59–64.
+    https://doi.org/10.56495/hs.v5i1.838
+Ardiana, R. (2022). Pembelajaran berbasis kecerdasan majemuk dalam pendidikan anak usia
+    dini.    Murhum:      Jurnal   Pendidikan     Anak    Usia   Dini,   3(1),   1–12.
+    https://doi.org/10.37985/murhum.v3i1.65
+
+
+BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026           135
+                          Ratna Dewi Sartika, Nita Priyanti, Chandra Apriansyah
+
+
+Ariatman, R., Arifin, S., & Musari, M. (2024). Mengembangkan kecerdasan majemuk: Strategi
+     memaksimalkan potensi siswa di era society 5.0. Journal of Classroom Action Research,
+     6(3), 608–616. https://doi.org/10.29303/jcar.v6i3.7680
+Asmawati, L. (2017). Peningkatan kreativitas anak usia dini melalui pembelajaran terpadu
+   berbasis kecerdasan jamak. JPUD-Jurnal Pendidikan Usia Dini, 11(1), 145–164.
+   https://doi.org/10.21009/JPUD.111.10
+Aulia, A., Fitri, N. L., Rahman, T. A., & Istiqomah, S. (2022). Implementasi model
+     pembelajaran sentra untuk mengoptimalkan kecerdasan majemuk. Al Hikmah Indonesian
+     Journal of Early Childhood Islamic Education, 6(2), 145–157.
+Budiarti, E. (2024). Implementasi kemampuan berbahasa melalui kegiatan bermain peran dalam
+    menumbuhkan karakter anak usia dini. Jambura Early Childhood Education Journal, 6(1),
+    142–153. https://doi.org/10.37411/jecej.v6i1.2937
+Erviana, Y. (2018). Centered learning approach sebagai media pengembangan kecerdasan
+     jamak anak usia dini: Studi kasus di TK Islam Plus Mutiara Yogyakarta. Jurnal
+     Paramurobi, 1(2), 120–133.
+Fitri, R. I., Safitri, I., Manullang, A. Z., Siregar, Z., Ritonga, A. N., & Nasution, F. (2025). Peran
+      guru dalam menstimulus kecerdasan majemuk anak usia dini di lingkungan. Jurnal
+      Multidisiplin Ilmu Akademik, 2(4), 128–135. https://doi.org/10.61722/jmia.v2i4.5155
+Fitriani, N. (2020). Penerapan multiple intelligences dalam pembelajaran anak usia dini. Jurnal
+      Pendidikan Anak, 8(2), 120–134.
+Hasanah, U. (2017). Pengembangan kecerdasan jamak pada anak usia dini. Thufula: Jurnal
+    Inovasi Pendidikan Guru Raudhatul Athfal, 4(1), 1–23.
+Hilmiah, H., Indalaillah, N., & Rukayah, I. (2025). Persepsi guru PAUD terhadap penerapan
+    asesmen autentik dalam pembelajaran. Jurnal Edueco, 8(1), 228–237.
+    https://doi.org/10.36277/edueco.v8i1.236
+Irawati, S. N. (2021). Sistem pembelajaran berbasis alam dalam mengembangkan kecerdasan
+    naturalis anak usia dini. Journal of Early Childhood Education Studies, 1(2), 218–263.
+    https://doi.org/10.54180/joeces.2021.1.2.218-263
+Jf, N. Z., & Mahrani, N. (2025). Strategi pengembangan motorik halus dan kasar anak usia dini
+     melalui kegiatan bermain terstruktur. Al-Ihsan: Jurnal Pendidikan Islam Anak Usia Dini,
+     6(1), 24–36. https://doi.org/10.69552/alihsan.v6i1.3177
+Kabanga, T., Tulak, T., Linggi, L. R. A., Maharani, Y., & Leke, R. B. (2025). Bermain dan
+    belajar: Program peningkatan keterampilan sosial anak SD melalui aktivitas edukatif.
+    Jurnal Abdimas Bina Bangsa, 6(1), 410–417. https://doi.org/10.46306/jabb.v6i1.1596
+Lestari, M. (2020). Pengaruh pemahaman gaya belajar guru terhadap diferensiasi pembelajaran
+     PAUD. Jurnal Pendidikan Dasar Dan Anak, 11(2), 66–80.
+Muslimin, M., Maya, E. R., Subroto, D. E., Nampira, A. A., Oktaviani, W., Samad, R., Pamuti,
+    P., Iswandi, L., Una, S., Mubarok, M. S., Rahmah, R., & Nurhasan, A. Q. (2025).
+    Pendidikan kreatif untuk anak usia dini: Menumbuhkan potensi sejak dini. PT Nawala
+    Gama Education.
+Nguyen, T. (2020). Misconceptions of learning styles in early childhood pedagogy. Journal of
+    Early Childhood Research, 18(1), 29–44.
+
+
+
+
+136       BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026
+ Pengembangan Asesmen Digital Berbasis Kecerdasan Jamak untuk Mengidentifikasi Preferensi Belajar Anak
+                                             Usia Dini
+
+Nurhayati, N., & Mulyanti, D. (2025). Strategi manajemen pendidikan di era digital:
+    Optimalisasi infrastruktur, SDM, dan pembelajaran berbasis teknologi. Jurnal Pelita
+    Nusantara, 2(4), 376–383. https://doi.org/10.59996/jurnalpelitanusantara.v2i4.698
+OECD. (2022). PISA 2022 results. OECD Publishing.
+Oktavianus, A. J. E., Naibaho, L., & Rantung, D. A. (2023). Pemanfaatan artificial intelligence
+    pada pembelajaran dan asesmen di era digitalisasi. Jurnal Kridatama Sains Dan Teknologi,
+    5(2), 473–486. https://doi.org/10.53863/kst.v5i02.975
+Pashler, H., McDaniel, M., Rohrer, D., & Bjork, R. (2008). Learning styles: Concepts and
+    evidence. Psychological Science in the Public Interest, 9(3), 105–119.
+Pratiwi, Y. I. (2025). Peran guru PAUD dalam meningkatkan keterampilan kognitif anak usia
+     dini di Kutai Kartanegara. Jurnal Riset Dan Inovasi Pembelajaran, 5(3), 1180–1193.
+     https://doi.org/10.51574/jrip.v5i3.3967
+Putra, A., Rahayu, L., & Septiani, D. (2023). Efisiensi asesmen digital PAUD di era literasi
+     digital. Jurnal Inovasi Edukasi Anak, 6(1), 44–59.
+Rahmawati, S. (2019). Model MI untuk pembelajaran inklusif. Jurnal Pendidikan Anak
+    Berkebutuhan Khusus, 3(1), 72–85.
+Rosyad, S., & Harsono, M. (2021). Pentingnya perceived usefulness dan perceived ease of use
+    dalam teknologi informasi. Jurnal Ilmiah Ilmu Terapan Universitas Jambi, 5(1), 86–92.
+    https://doi.org/10.22437/jiituj.v5i1.13723
+Sanjaya, M. S., Farantika, D., & Candra, D. (2023). Identifikasi gaya belajar anak usia dini.
+     Journal      Ashil:   Jurnal    Pendidikan  Anak       Usia    Dini,    3(1),    52–62.
+     https://doi.org/10.33367/piaud.v3i1.3641
+Saodi, S., Ahmad, M. I. S., Hajerah, H., & Hasmawaty, H. (2024). Penyusunan instrumen
+    asesmen minat dan gaya belajar anak di Kabupaten Majene. Kreasi: Jurnal Pengabdian
+    Masyarakat, 4(1), 1–7. https://doi.org/10.51529/kjpm.v4i1.479
+Smith, L., & Taylor, J. (2018). The myth of learning styles in preschool settings. Early Years
+    Journal, 39(4), 310–324.
+Suryani, L. (2021). Digital gap pada guru dalam pelaksaan pembelajaran jarak jauh. El Banar:
+    Jurnal Pendidikan Dan Pengajaran, 4(2), 87–96. https://doi.org/10.54125/elbanar.v4i2.91
+Suryani, L. (2023). Media pembelajaran digital untuk anak usia dini. Deepublish.
+Susanti, R. (2022). Kebutuhan pelatihan guru PAUD dalam asesmen anak. Jurnal Pelatihan,
+    3(1), 35–48.
+Thiagarajan, S., Semmel, D. S., & Semmel, M. I. (1974). Instructional development for training
+    teachers of exceptional children: A sourcebook. ERIC.
+Wati, V. W., Aulan, A., Ariyando, D., Syarifuddin, S., & Oktapiani, R. (2026). Asesmen digital:
+    Solusi inovatif untuk evaluasi pembelajaran yang lebih efisien. Jejak Digital: Jurnal
+    Ilmiah Multidisiplin, 2(2), 3380–3390. https://doi.org/10.63822/77syph64
+Wulandari. (2019). Observasi gaya belajar dalam pembelajaran PAUD. Jurnal Pendidikan
+    Dasar, 8(3), 118–132.
+Yusuf, H. (2022). Asesmen informal guru terhadap gaya belajar anak. Jurnal Evaluasi
+    Pendidikan Anak, 6(2), 97–110.
+
+
+
+
+BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026           137
+                        Ratna Dewi Sartika, Nita Priyanti, Chandra Apriansyah
+
+
+Yusuf, S., & Darmasnyah, D. (2025). Integrasi teknologi dalam pembelajaran anak usia dini.
+    Aulad:        Journal       on       Early     Childhood,     8(2),       1034–1040.
+    https://doi.org/10.31004/aulad.v8i2.1055
+Zhang, K., & Chan, Y. (2019). Adaptive digital tools for early learning assessment. Journal of
+    Childhood Innovation, 11(2), 150–164.
+
+
+
+
+138       BOCAH: Borneo Early Childhood Education and Humanity Journal, Volume 5 Nomor 2, July 2026
+

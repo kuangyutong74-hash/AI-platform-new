@@ -46,15 +46,17 @@
   z-index: -2;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(251, 249, 251, 0.26), rgba(239, 238, 247, 0.42)),
-    #d8e3f2 url("/assets/collections/works/watercolor-space-journey.png") 50% top/cover fixed;
-  background-blend-mode: screen, normal;
+    linear-gradient(180deg, rgba(21, 25, 67, 0.06), rgba(89, 65, 116, 0.18)),
+    #8b96cc url("/assets/collections/works/cinematic-showcase-world-v1.webp") 50% top/cover fixed;
+  background-blend-mode: multiply, normal;
 }
 .works-sky:after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 252, 246, 0.08), rgba(242, 239, 248, 0.2));
+  background:
+    radial-gradient(circle at 50% 8%, rgba(255, 240, 196, 0.16), transparent 32%),
+    linear-gradient(180deg, rgba(22, 25, 66, 0.05), rgba(39, 31, 76, 0.12));
   pointer-events: none;
 }
 .works-welcome {
@@ -79,12 +81,14 @@
   font-weight: 700;
   white-space: nowrap;
   text-wrap: balance;
-  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.72);
+  color: #fffaf0;
+  text-shadow: 0 3px 18px rgba(24, 24, 70, 0.62), 0 1px 0 rgba(49, 38, 91, 0.3);
 }
 .works-welcome p {
   margin: 7px 0 0;
-  color: #62586b;
+  color: rgba(255, 250, 235, 0.92);
   font-size: 14px;
+  text-shadow: 0 2px 12px rgba(29, 25, 70, 0.68);
 }
 .back-to-planet,
 .listen-action,
@@ -172,6 +176,7 @@
     0 14px 0 #a88ca0,
     0 30px 48px rgba(14, 17, 44, 0.34),
     inset 0 0 52px rgba(167, 122, 79, 0.1);
+  backdrop-filter: blur(2px);
   animation: book-arrive 0.72s cubic-bezier(0.18, 0.83, 0.31, 1);
 }
 .storybook-book:before {

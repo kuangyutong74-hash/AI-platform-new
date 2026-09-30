@@ -97,7 +97,7 @@ test("keeps the glowing growth star on the illustrated SVG trail", async () => {
 
   assert.match(growth, /getPointAtLength/);
   assert.match(growth, /--trail-angle/);
-  assert.match(growth, /className="traveler-star"/);
+  assert.match(growth, /className="trail-avatar-ring"/);
   assert.match(styles, /\.trail-paper-edge/);
   assert.match(styles, /\.trail-stitches/);
   assert.match(styles, /\.trail-progress-glow/);
@@ -147,17 +147,17 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
   assert.match(growth, /item\.metricValue/);
   assert.match(growth, /item\.firstUsedAt/);
   assert.match(growth, /最近一次完成/);
-  assert.match(growth, /从过程中看见/);
-  assert.match(growth, /最近的探索脚印/);
+  assert.match(growth, /孩子怎样做的/);
+  assert.match(growth, /前后变化的依据/);
   assert.match(growth, /今晚可以这样聊/);
   assert.match(growth, /下一站建议/);
-  assert.match(growth, /完成节奏、过程变化/);
+  assert.match(growth, /发生了什么、怎样完成、有什么变化/);
   assert.match(growth, /今天与长期以来/);
   assert.match(growth, /今天的足迹/);
   assert.match(growth, /长期以来的线索/);
   assert.match(growth, /不是固定标签/);
   assert.match(growth, /作品内容会在作品展柜里单独收藏/);
-  assert.match(growth, /看看高光作品/);
+  assert.match(growth, /查看关联作品/);
   assert.doesNotMatch(growth, /再次去探索/);
   assert.match(collectionHook, /explorerModuleName\(summary\.moduleId\)/);
   assert.doesNotMatch(collectionHook, /`\$\{summary\.moduleId\} 的完成小结`/);

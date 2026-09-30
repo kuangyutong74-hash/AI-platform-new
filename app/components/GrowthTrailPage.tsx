@@ -30,7 +30,7 @@ function formatDuration(seconds: number) {
 
 const reviewCopy = {
   registration: {
-    observations: ["从这一天开始，之后每一次完整探索都会成为一枚可回看的脚印。"],
+    observations: ["注册起点从这一天开始，之后每一次完整探索都会成为一枚可回看的脚印。"],
     question: "还记得第一次来到探索星球时，最想去哪里看看吗？",
     next: "选一座还没点亮的大陆，完成第一次探索。",
   },
@@ -389,17 +389,18 @@ function TrailDialog({
               <span><b>最近一次完成</b>{formatDate(item.lastUsedAt || item.occurredAt)}</span>
             </div>
           )}
-          <p className="memory-heading">这次看见的具体过程</p>
+          <p className="growth-role-note">这里只回顾孩子怎样完成、怎样调整；作品正文与完整成果留在作品展柜。</p>
+          <p className="memory-heading">发生了什么</p>
           <p className="memory-note">{item.detail}</p>
           <section className="memory-section memory-observations">
-            <p className="memory-heading">从过程中看见</p>
+            <p className="memory-heading">孩子怎样做的</p>
             <ul>
               {observations.map((observation) => <li key={observation}>{observation}</li>)}
             </ul>
           </section>
           {item.recentSessions.length > 0 && (
             <section className="memory-section memory-footprints">
-              <p className="memory-heading">最近的探索脚印</p>
+              <p className="memory-heading">前后变化的依据</p>
               <ol>
                 {item.recentSessions.map((session) => (
                   <li key={session.id}>
@@ -514,10 +515,10 @@ export default function GrowthTrailPage({
           <div className="growth-facts" aria-label="成长记录概览">
             <span><strong>{totalExplorations}</strong> 次完整探索</span>
             <span><strong>{usedModuleCount}</strong> 类活动</span>
-            <span><strong>{data.works.length}</strong> 条可回溯记录</span>
+            <span><strong>{data.growthOverview.activeDays}</strong> 个探索日</span>
           </div>
           <p className="growth-source">
-            {data.timelineIsDemo ? "示例记录 · " : ""}这里记录孩子真实经历过的过程与变化，不做能力排名。
+            {data.timelineIsDemo ? "示例记录 · " : ""}看见孩子如何尝试、调整，并在一次次探索中发生变化。
           </p>
         </div>
         <span className="growth-tape tape-one" aria-hidden="true" />
@@ -552,7 +553,7 @@ export default function GrowthTrailPage({
         <div className="growth-intro">
           <ExplorerIcon name="spark" />
           <p>
-            第一站，是{adult ? "孩子" : "你"}来到探索星球的那一天。往后每一站，都整理完成节奏、过程变化和下一次可以尝试的方向。
+            第一站，是{adult ? "孩子" : "你"}来到探索星球的那一天。往后每一站只记录发生了什么、怎样完成、有什么变化，以及下一步可以怎样尝试。
           </p>
         </div>
         <TrailLine avatarUrl={avatarUrl} />
@@ -581,7 +582,7 @@ export default function GrowthTrailPage({
                   <strong>{item.metricValue}</strong>
                 </p>}
                 <div className="milestone-actions">
-                  <button className="milestone-open" onClick={(event) => open(item, event.currentTarget)}>查看原始记录 <ExplorerIcon name="arrow" /></button>
+                  <button className="milestone-open" onClick={(event) => open(item, event.currentTarget)}>查看过程回顾 <ExplorerIcon name="arrow" /></button>
                   {data.works.find((work) => work.module === item.module) && <button className="milestone-work-link" onClick={() => onNavigate("works")}><ExplorerIcon name="book" size={16} />关联作品：《{data.works.find((work) => work.module === item.module)?.title}》</button>}
                 </div>
               </div>

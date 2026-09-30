@@ -1535,6 +1535,7 @@
 .trail-evidence-sheet { width: min(620px,100%); display: block; border-radius: 28px 23px 30px 25px; }
 .trail-evidence-sheet .memory-picture,.trail-evidence-sheet .memory-seam { display: none; }
 .trail-evidence-sheet > article { min-height: 480px; padding: 58px 54px 46px; }
+.growth-role-note { margin: 14px 0 22px; padding: 12px 15px; border: 1px solid rgba(240,203,112,.46); border-radius: 18px; background: rgba(240,203,112,.14); color: #5f5562; box-shadow: inset 4px 0 #f0cb70; font-size: 13px; line-height: 1.65; }
 .evidence-caution { margin: 18px 0 0; padding: 13px 15px; border: 1px solid rgba(240,203,112,.46); border-radius: 14px; background: rgba(240,203,112,.14); color: #786c76; font-size: 13px; line-height: 1.65; }
 .growth-continuation { padding-left: 320px; }
 .growth-continuation .growth-eyebrow { color: #9b6d4f; }
