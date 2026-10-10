@@ -152,10 +152,10 @@ test("keeps works as transparent highlight stickers and timeline as usage histor
   assert.match(growth, /今晚可以这样聊/);
   assert.match(growth, /下一站建议/);
   assert.match(growth, /发生了什么、怎样完成、有什么变化/);
-  assert.match(growth, /今天与长期以来/);
-  assert.match(growth, /今天的足迹/);
-  assert.match(growth, /长期以来的线索/);
-  assert.match(growth, /不是固定标签/);
+  assert.match(growth, /每一次探索，都留下了什么/);
+  assert.match(growth, /下次可以这样聊/);
+  assert.match(growth, /继续回看/);
+  assert.match(growth, /单次完成不代表固定能力/);
   assert.match(growth, /作品内容会在作品展柜里单独收藏/);
   assert.match(growth, /查看关联作品/);
   assert.doesNotMatch(growth, /再次去探索/);

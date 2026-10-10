@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ExplorerIcon from "./ExplorerIcon";
 import useExplorerCollection from "../hooks/useExplorerCollection";
-import type { ExplorerGrowthOverview, ExplorerItem, ExplorerModule } from "../lib/explorer-types";
+import type { ExplorerGrowthOverview, ExplorerItem, ExplorerModule, ExplorerSessionMoment } from "../lib/explorer-types";
 
 type Account = { display_name: string; age: number; created_at?: string; avatar_id?: string };
 type NavigationView = "planet" | "works" | "timeline" | "report";
@@ -26,6 +26,15 @@ function formatDuration(seconds: number) {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
   return rest ? `${hours} 小时 ${rest} 分钟` : `${hours} 小时`;
+}
+
+function formatShortDate(value: string) {
+  const date = new Date(value);
+  if (!value || Number.isNaN(date.valueOf())) return "";
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+  }).format(date);
 }
 
 const reviewCopy = {
@@ -192,6 +201,29 @@ const growthModuleNames: Record<Exclude<ExplorerModule, "registration">, string>
   chat: "倾听之洲",
 };
 
+const growthFollowups: Record<Exclude<ExplorerModule, "registration">, string> = {
+  story: "可以问问：故事里哪一处是你最想保留的？如果继续写，会怎么发展？",
+  deep_sea: "可以问问：哪一步需要重新调整？你当时先检查了什么？",
+  career: "可以问问：哪个工作环节最难？你后来怎样完成它？",
+  chat: "可以接着问：你为什么这样想？有没有一件具体的小事让你想到它？",
+};
+
+function selectOtherSessions(sessions: ExplorerSessionMoment[], latest: ExplorerSessionMoment) {
+  const selected: ExplorerSessionMoment[] = [];
+  const modules = new Set([latest.module]);
+  for (const session of sessions) {
+    if (session.id === latest.id || modules.has(session.module)) continue;
+    selected.push(session);
+    modules.add(session.module);
+    if (selected.length === 3) return selected;
+  }
+  for (const session of sessions) {
+    if (session.id !== latest.id && !selected.some(item => item.id === session.id)) selected.push(session);
+    if (selected.length === 3) break;
+  }
+  return selected;
+}
+
 function GrowthOverviewPanel({
   overview,
   adult,
@@ -201,85 +233,57 @@ function GrowthOverviewPanel({
   adult: boolean;
   isDemo: boolean;
 }) {
-  const todayLabel = new Intl.DateTimeFormat("zh-CN", {
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-  }).format(new Date());
   const person = adult ? "孩子" : "你";
+  const latest = overview.sessions[0] ?? overview.todaySessions[0];
+  const otherSessions = latest ? selectOtherSessions(overview.sessions, latest) : [];
+  const isToday = latest && overview.todaySessions.some(session => session.id === latest.id);
   return (
     <section className="growth-overview" aria-labelledby="growth-overview-title">
       <header>
         <div>
-          <p>{isDemo ? "示例观察面板" : "真实探索证据"}</p>
-          <h2 id="growth-overview-title">今天与长期以来</h2>
+          <p>{isDemo ? "示例探索记录" : "成长足迹 · 过程记录"}</p>
+          <h2 id="growth-overview-title">每一次探索，都留下了什么</h2>
         </div>
-        <span>把一次表现和反复出现的线索分开看</span>
+        <span>{overview.todayCompletedCount ? `今天新增 ${overview.todayCompletedCount} 次完成` : "今天暂无新完成"}</span>
       </header>
-      <div className="growth-overview-grid">
-        <article className="growth-today-card">
-          <div className="growth-card-heading">
-            <span className="growth-card-icon"><ExplorerIcon name="spark" /></span>
-            <div><small>{todayLabel}</small><h3>今天的足迹</h3></div>
-          </div>
-          {overview.todayCompletedCount > 0 ? (
-            <>
-              <div className="growth-stat-row">
-                <span><b>{overview.todayCompletedCount}</b><small>次完成</small></span>
-                <span><b>{overview.todayModules.length}</b><small>座大陆</small></span>
-                <span><b>{formatDuration(overview.todayDurationSeconds)}</b><small>今日投入</small></span>
+      <div className="growth-overview-stats" aria-label="探索记录概况">
+        <span><b>{overview.totalCompletedCount}</b>次完成的探索</span>
+        <span><b>{overview.activeDays}</b>个有记录的日子</span>
+        <span><b>{overview.exploredModuleCount}</b>类探索活动</span>
+      </div>
+      {latest ? (
+        <>
+          <article className="growth-featured-record">
+            <div className="growth-record-kicker">{isToday ? "今天的完成" : "最近一次完成"} · {formatShortDate(latest.occurredAt)}</div>
+            <div className="growth-featured-main">
+              <div>
+                <span className="growth-record-module">{growthModuleNames[latest.module!]}</span>
+                <h3>{latest.caption}</h3>
+                {latest.detail ? <p>{latest.detail}</p> : null}
               </div>
-              <ol className="growth-today-list">
-                {overview.todaySessions.slice(0, 3).map((session) => (
+              <aside><b>下次可以这样聊</b><span>{growthFollowups[latest.module!]}</span></aside>
+            </div>
+          </article>
+          {otherSessions.length ? (
+            <div className="growth-history-section">
+              <div className="growth-history-heading"><h3>继续回看</h3><span>先看不同活动中的最近记录，完整足迹在下方</span></div>
+              <ul className="growth-history-grid">
+                {otherSessions.map(session => (
                   <li key={session.id}>
-                    <i />
-                    <span><b>{growthModuleNames[session.module!]}</b>{session.caption}</span>
-                    {session.evidenceCount ? <small>{session.evidenceCount} 条过程记录</small> : null}
+                    <div className="growth-history-meta"><strong>{growthModuleNames[session.module!]}</strong><time>{formatShortDate(session.occurredAt)}</time></div>
+                    <h4>{session.caption}</h4>
+                    {session.detail ? <p>{session.detail}</p> : null}
                   </li>
                 ))}
-              </ol>
-            </>
-          ) : (
-            <div className="growth-overview-empty">
-              <ExplorerIcon name="compass" />
-              <p>今天还没有新的完成记录。下一次认真尝试，也会成为一枚新的脚印。</p>
+              </ul>
             </div>
-          )}
-        </article>
-
-        <article className="growth-long-card">
-          <div className="growth-card-heading">
-            <span className="growth-card-icon"><ExplorerIcon name="compass" /></span>
-            <div><small>{overview.firstCompletedAt ? `从 ${formatDate(overview.firstCompletedAt)} 开始` : "从第一次探索开始"}</small><h3>长期以来的线索</h3></div>
-          </div>
-          <div className="growth-stat-row">
-            <span><b>{overview.totalCompletedCount}</b><small>次完整探索</small></span>
-            <span><b>{overview.activeDays}</b><small>个探索日</small></span>
-            <span><b>{overview.exploredModuleCount}</b><small>类不同情境</small></span>
-          </div>
-          {overview.longTermSignals.length ? (
-            <div className="growth-signal-list">
-              {overview.longTermSignals.slice(0, 4).map((signal) => (
-                <div key={signal.key} className="growth-signal">
-                  <span><b>{signal.label}</b><em>{signal.status}</em></span>
-                  <p>{signal.observation}</p>
-                  <small>
-                    来自 {signal.evidenceCount} 条证据
-                    {signal.modules.length ? ` · ${signal.modules.map(module => growthModuleNames[module]).join("、")}` : ""}
-                  </small>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="growth-overview-empty compact">
-              <p>再完成几次不同情境的探索，反复出现的做法会在这里慢慢连成线。</p>
-            </div>
-          )}
-        </article>
-      </div>
+          ) : null}
+        </>
+      ) : (
+        <div className="growth-overview-empty"><ExplorerIcon name="compass" /><p>还没有完成的探索。完成一次活动后，这里会记录当时做了什么。</p></div>
+      )}
       <p className="growth-evidence-note">
-        <ExplorerIcon name="spark" size={15} />
-        这里呈现的是{person}在不同任务里的过程证据和变化，不是一次测验，也不是固定标签。
+        这里记录的是{person}在平台任务中做过的事。可以结合孩子自述和日常观察继续了解，单次完成不代表固定能力。
       </p>
     </section>
   );

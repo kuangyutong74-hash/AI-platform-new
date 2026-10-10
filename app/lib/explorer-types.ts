@@ -7,6 +7,7 @@ export type ExplorerSessionMoment={
   occurredAt:string;
   durationSeconds:number;
   caption:string;
+  detail?:string;
   evidenceCount?:number;
   artifactCount?:number;
   observations?:string[];
@@ -16,6 +17,8 @@ export type ExplorerGrowthSignal={
   key:string;
   label:string;
   evidenceCount:number;
+  sessionCount:number;
+  activeDayCount:number;
   moduleCount:number;
   modules:Array<Exclude<ExplorerModule,"registration">>;
   firstSeenAt:string;

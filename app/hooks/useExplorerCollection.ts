@@ -9,9 +9,9 @@ type Account={display_name:string;age:number;created_at?:string};
 type V1Comment={id:string;body:string;authorName:string;authorKind:string|null;createdAt:string};
 type V1Archive={title?:string;steps?:Array<{title?:string;text?:string}>;quote?:string};
 type V1Artifact={id:string;sessionId?:string|null;moduleId:string;type:string;title:string;summary:string;previewResourceId?:string|null;sourceResourceId?:string|null;createdAt:string;kind?:string;workType?:string;detail?:string;highlightReason?:string;archive?:V1Archive;comments?:V1Comment[]};
-type V1Session={id:string;moduleId:string;endedAt?:string;startedAt?:string;activeSeconds?:number;caption?:string;evidenceCount?:number;artifactCount?:number;observations?:string[]};
+type V1Session={id:string;moduleId:string;endedAt?:string;startedAt?:string;activeSeconds?:number;caption?:string;detail?:string;evidenceCount?:number;artifactCount?:number;observations?:string[]};
 type V1ModuleSummary={moduleId:string;completedCount:number;firstUsedAt:string;lastUsedAt:string;activeSeconds:number;evidenceCount:number;artifactCount:number;observations?:string[];recentSessions?:V1Session[]};
-type V1GrowthSignal={key:string;label:string;evidenceCount:number;moduleCount:number;modules:string[];firstSeenAt:string;lastSeenAt:string;observation:string;status:string};
+type V1GrowthSignal={key:string;label:string;evidenceCount:number;sessionCount:number;activeDayCount:number;moduleCount:number;modules:string[];firstSeenAt:string;lastSeenAt:string;observation:string;status:string};
 
 const number=(value:unknown)=>Number(value)||0;
 const artifactPresentation:Record<string,{status:string;metric_label:string;metric_value:string}>={
@@ -37,6 +37,7 @@ function collectionFromV1(account:Account,artifacts:V1Artifact[],summaries:V1Mod
     occurred_at:session.endedAt||session.startedAt||"",
     duration_seconds:number(session.activeSeconds),
     caption:session.caption||`完成一次${explorerModuleName(session.moduleId)}探索`,
+    detail:session.detail||"",
     evidence_count:number(session.evidenceCount),
     artifact_count:number(session.artifactCount),
     observations:Array.isArray(session.observations)?session.observations:[],

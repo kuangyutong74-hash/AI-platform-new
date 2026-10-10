@@ -266,6 +266,7 @@ function normalizeGrowthSession(session, index) {
     occurredAt: cleanText(session?.occurred_at ?? session?.occurredAt),
     durationSeconds: Number(session?.duration_seconds ?? session?.durationSeconds) || 0,
     caption: cleanText(session?.caption, `完成一次${MODULE_META[moduleKey].name}探索`),
+    detail: cleanText(session?.detail),
     evidenceCount: Number(session?.evidence_count ?? session?.evidenceCount) || 0,
     artifactCount: Number(session?.artifact_count ?? session?.artifactCount) || 0,
     observations: Array.isArray(session?.observations)
@@ -286,6 +287,8 @@ function normalizeGrowthOverview(value = {}) {
         key: cleanText(signal?.key, `growth-signal-${index}`),
         label: cleanText(signal?.label, "成长线索"),
         evidenceCount: Number(signal?.evidence_count ?? signal?.evidenceCount) || 0,
+        sessionCount: Number(signal?.session_count ?? signal?.sessionCount) || 0,
+        activeDayCount: Number(signal?.active_day_count ?? signal?.activeDayCount) || 0,
         moduleCount: Number(signal?.module_count ?? signal?.moduleCount) || 0,
         modules: Array.isArray(signal?.modules)
           ? signal.modules.map(module => canonicalExplorerModule(module)).filter(Boolean)
@@ -293,7 +296,7 @@ function normalizeGrowthOverview(value = {}) {
         firstSeenAt: cleanText(signal?.first_seen_at ?? signal?.firstSeenAt),
         lastSeenAt: cleanText(signal?.last_seen_at ?? signal?.lastSeenAt),
         observation: cleanText(signal?.observation, "这条线索正在从多次探索中慢慢积累。"),
-        status: cleanText(signal?.status, "正在积累"),
+        status: cleanText(signal?.status, "一次观察"),
       })).slice(0, 6)
     : [];
   return {
@@ -347,9 +350,9 @@ export function createDemoCollection(account = {}) {
     firstCompletedAt: milestones[1]?.firstUsedAt || milestones[1]?.occurredAt,
     lastCompletedAt: todaySessions[0]?.occurredAt,
     longTermSignals: [
-      {key:"problem_solving.planning",label:"规划",evidenceCount:6,moduleCount:2,modules:["deep_sea","career"],firstSeenAt:milestones[2]?.occurredAt,lastSeenAt:todaySessions[0]?.occurredAt,observation:"在基地重建和职业任务中，都能先想办法再行动。",status:"跨情境出现"},
-      {key:"creativity.narrative_expression",label:"叙事表达",evidenceCount:4,moduleCount:1,modules:["story"],firstSeenAt:milestones[1]?.occurredAt,lastSeenAt:todaySessions[0]?.occurredAt,observation:"多次继续补充情节，让故事从想法走向完整。",status:"反复出现"},
-      {key:"self_reflection.interest_expression",label:"兴趣表达",evidenceCount:3,moduleCount:1,modules:["chat"],firstSeenAt:milestones[4]?.occurredAt,lastSeenAt:milestones[4]?.occurredAt,observation:"愿意说出喜欢什么，也会补充自己的原因。",status:"反复出现"},
+      {key:"problem_solving.planning",label:"规划",evidenceCount:6,sessionCount:4,activeDayCount:3,moduleCount:2,modules:["deep_sea","career"],firstSeenAt:milestones[2]?.occurredAt,lastSeenAt:todaySessions[0]?.occurredAt,observation:"在基地重建和职业任务中，都能先想办法再行动。",status:"不同任务中出现"},
+      {key:"creativity.narrative_expression",label:"叙事表达",evidenceCount:4,sessionCount:3,activeDayCount:3,moduleCount:1,modules:["story"],firstSeenAt:milestones[1]?.occurredAt,lastSeenAt:todaySessions[0]?.occurredAt,observation:"多次继续补充情节，让故事从想法走向完整。",status:"不同日期出现"},
+      {key:"self_reflection.interest_expression",label:"兴趣表达",evidenceCount:3,sessionCount:2,activeDayCount:2,moduleCount:1,modules:["chat"],firstSeenAt:milestones[4]?.occurredAt,lastSeenAt:milestones[4]?.occurredAt,observation:"愿意说出喜欢什么，也会补充自己的原因。",status:"不同日期出现"},
     ],
   });
   return {

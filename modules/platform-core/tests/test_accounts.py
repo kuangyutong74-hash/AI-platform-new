@@ -22,6 +22,24 @@ def session_cookie(response: Response) -> str:
 
 
 class AccountTests(unittest.TestCase):
+    def test_timeline_detail_uses_saved_content_without_inventing_an_observation(self):
+        self.assertEqual(
+            main.timeline_session_detail("chat", {}, [{"childTurns": [{"text": "我想先问问朋友为什么难过"}]}]),
+            "孩子在对话中说：「我想先问问朋友为什么难过」。",
+        )
+        self.assertIn("海龟", main.timeline_session_detail("story", {"childIdeas": ["海龟沿着月光回家"]}, []))
+        self.assertIn("调整了 3 次", main.timeline_session_detail("deep_sea", {"levelTwoReview": {"rotateCount": 3}}, []))
+        self.assertIn("4/4 组生态配对", main.timeline_session_detail("deep_sea", {}, [{"level": 1, "successfulPairs": 4, "totalPairs": 4}]))
+        self.assertIn("调整了 14 次", main.timeline_session_detail("deep_sea", {}, [{"level": 2, "adjustmentCount": 14}]))
+        self.assertIn("调整方案 2 次", main.timeline_session_detail("career", {}, [{"attemptCount": 3, "adjustmentCount": 2}]))
+        self.assertEqual(main.timeline_session_detail("chat", {}, [{}]), "")
+
+    def test_growth_signal_levels_require_recurrence_across_time_and_context(self):
+        self.assertEqual(main.classify_growth_signal(1, 1, 1), "一次观察")
+        self.assertEqual(main.classify_growth_signal(1, 3, 2), "不同日期出现")
+        self.assertEqual(main.classify_growth_signal(2, 2, 2), "不同日期出现")
+        self.assertEqual(main.classify_growth_signal(2, 3, 2), "不同任务中出现")
+
     def test_highlight_reasons_are_specific_to_each_module_evidence(self):
         chat_reason = main.artifact_highlight_reason(
             "chat", "聊天记录",
@@ -433,6 +451,7 @@ class AccountTests(unittest.TestCase):
         timeline = main.timeline_v1(cookie)
         self.assertEqual(timeline["sessions"][0]["evidenceCount"], 1)
         self.assertIn("3/3 个阶段", timeline["sessions"][0]["caption"])
+        self.assertIn("尝试 2 次", timeline["sessions"][0]["detail"])
         self.assertEqual(timeline["moduleSummaries"][0]["completedCount"], 1)
         self.assertEqual(timeline["moduleSummaries"][0]["recentSessions"][0]["id"], context["sessionId"])
         self.assertTrue(timeline["moduleSummaries"][0]["observations"])
@@ -443,6 +462,9 @@ class AccountTests(unittest.TestCase):
         )
         self.assertEqual(planning_signal["label"], "规划")
         self.assertEqual(planning_signal["evidenceCount"], 1)
+        self.assertEqual(planning_signal["sessionCount"], 1)
+        self.assertEqual(planning_signal["activeDayCount"], 1)
+        self.assertEqual(planning_signal["status"], "一次观察")
         self.assertEqual(planning_signal["modules"], ["career"])
         self.assertTrue(timeline["moduleSummaries"][0]["firstUsedAt"])
         self.assertEqual(timeline["moduleSummaries"][0]["lastUsedAt"], main.read_assessment_session(context["sessionId"], cookie)["endedAt"])

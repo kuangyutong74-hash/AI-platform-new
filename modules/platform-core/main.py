@@ -31,7 +31,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from jsonschema import Draft202012Validator, FormatChecker
 
-from reports import ANALYSIS_VERSION, CHILD_FEEDBACK_BY_DIMENSION, DEEP_SEA_SESSION_EVENT, generate_internal_report
+from reports import ANALYSIS_VERSION, CAREER_NAMES, CAREER_STAGE_TITLES, CHILD_FEEDBACK_BY_DIMENSION, DEEP_SEA_SESSION_EVENT, generate_internal_report
 
 
 ROOT = Path(__file__).resolve().parent
@@ -1709,6 +1709,79 @@ def timeline_session_caption(module_id: str, summary: dict, evidence_count: int)
     return "完成一次探索，为成长星路添上一个新脚印"
 
 
+def timeline_session_detail(module_id: str, summary: dict, payloads: list[dict]) -> str:
+    """Only describe content actually saved with this completed session."""
+    if module_id == "chat":
+        turns = [
+            str(turn.get("text", "")).strip()
+            for payload in payloads
+            for turn in (payload.get("childTurns") if isinstance(payload.get("childTurns"), list) else [])
+            if isinstance(turn, dict) and str(turn.get("text", "")).strip()
+        ]
+        words = str(summary.get("childWords", "")).strip()
+        quote = _short_highlight_quote(words or max(turns, key=len, default=""), 82)
+        return f"孩子在对话中说：「{quote}」。" if quote else ""
+    if module_id == "story":
+        ideas = summary.get("childIdeas", [])
+        ideas = [str(idea).strip() for idea in ideas if str(idea).strip()] if isinstance(ideas, list) else []
+        quote = _short_highlight_quote(summary.get("childHighlight") or max(ideas, key=len, default=""), 82)
+        if quote:
+            return f"孩子为故事补充了：“{quote}”。"
+        synopsis = _short_highlight_quote(summary.get("storySynopsis") or summary.get("storyOutline"), 90)
+        if synopsis:
+            ending = "" if synopsis.endswith(("。", "！", "？", "…")) else "。"
+            return f"这次故事写到了：{synopsis}{ending}"
+        return ""
+    if module_id == "deep_sea":
+        details = []
+        first = summary.get("levelOneReview")
+        if isinstance(first, dict):
+            pairs = first.get("matchedRelationships", [])
+            pairs = [str(pair).strip() for pair in pairs if str(pair).strip()] if isinstance(pairs, list) else []
+            if pairs:
+                details.append(f"完成了{'、'.join(pairs[:2])}的生态配对")
+        if not details:
+            first_payload = next((payload for payload in payloads if payload.get("level") == 1), {})
+            successful = _nonnegative_int(first_payload.get("successfulPairs"))
+            total = _nonnegative_int(first_payload.get("totalPairs"))
+            if successful and total:
+                details.append(f"第一关完成 {successful}/{total} 组生态配对")
+        second = summary.get("levelTwoReview")
+        rotations = _nonnegative_int(second.get("rotateCount")) if isinstance(second, dict) else 0
+        if not rotations:
+            rotations = max((_nonnegative_int(payload.get("adjustmentCount")) for payload in payloads if payload.get("level") == 2), default=0)
+        if rotations:
+            details.append(f"在线路任务中调整了 {rotations} 次")
+        third = summary.get("levelThreeReview")
+        if isinstance(third, dict):
+            solution = _short_highlight_quote(third.get("solutionSummary"), 74)
+            if solution:
+                details.append(f"在议事厅提出“{solution}”")
+        return "；".join(details[:2]) + "。" if details else ""
+    if module_id == "career":
+        stages = summary.get("stageTitles", [])
+        stages = [str(stage).strip() for stage in stages if str(stage).strip()] if isinstance(stages, list) else []
+        task_key = next((str(payload.get("taskKey", "")) for payload in payloads if payload.get("taskKey")), "")
+        if not stages and _nonnegative_int(summary.get("completedStages")) == _nonnegative_int(summary.get("stageCount")) > 0:
+            stages = CAREER_STAGE_TITLES.get(task_key, [])
+        attempts = max((_nonnegative_int(payload.get("attemptCount")) for payload in payloads), default=0)
+        adjustments = max((_nonnegative_int(payload.get("adjustmentCount")) for payload in payloads), default=0)
+        actions = [part for part in (f"尝试 {attempts} 次" if attempts else "", f"调整方案 {adjustments} 次" if adjustments else "") if part]
+        details = [f"完成了{'、'.join(stages[:3])}等环节" if stages else "", f"孩子{'、'.join(actions)}" if actions else ""]
+        details = [detail for detail in details if detail]
+        return "；".join(details) + "。" if details else ""
+    return ""
+
+
+def classify_growth_signal(module_count: int, session_count: int, active_day_count: int) -> str:
+    """Use cautious recurrence levels instead of turning observations into ability labels."""
+    if module_count >= 2 and session_count >= 3 and active_day_count >= 2:
+        return "不同任务中出现"
+    if session_count >= 2 and active_day_count >= 2:
+        return "不同日期出现"
+    return "一次观察"
+
+
 @app.get("/api/v1/timeline")
 def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     viewer = require_account(ai_bole_session)
@@ -1723,7 +1796,7 @@ def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
                            ORDER BY COALESCE(s.ended_at,s.started_at,s.created_at) DESC""", (profile["id"],)).fetchall()
         observation_rows = db.execute(
             """SELECT s.id AS session_id,s.module_id,er.constructs_json,
-                      er.behavior_summary,se.occurred_at
+                      er.behavior_summary,se.occurred_at,se.payload_json
                FROM evidence_records er JOIN source_events se ON se.id=er.source_event_id
                JOIN assessment_sessions s ON s.id=se.session_id
                WHERE s.child_profile_id=? AND s.status='completed' AND TRIM(er.behavior_summary)<>''
@@ -1731,12 +1804,14 @@ def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
             (profile["id"],),
         ).fetchall()
     sessions = []
+    session_summaries: dict[str, dict] = {}
     for row in rows:
         try:
             summary = json.loads(row["summary_json"] or "{}")
         except json.JSONDecodeError:
             logger.warning("成长足迹跳过了无效会话摘要：%s", row["id"])
             summary = {}
+        session_summaries[row["id"]] = summary
         sessions.append({
             "id": row["id"], "moduleId": row["module_id"], "moduleVersion": row["module_version"],
             "status": row["status"], "startedAt": row["started_at"], "endedAt": row["ended_at"],
@@ -1746,6 +1821,7 @@ def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
         })
     module_observations: dict[str, list[str]] = {}
     session_observations: dict[str, list[str]] = {}
+    session_payloads: dict[str, list[dict]] = {}
     signal_stats: dict[str, dict] = {}
     construct_names = construct_display_name_map()
     for row in observation_rows:
@@ -1756,6 +1832,12 @@ def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
         session_items = session_observations.setdefault(row["session_id"], [])
         if text and text not in session_items and len(session_items) < 3:
             session_items.append(text)
+        try:
+            payload = json.loads(row["payload_json"] or "{}")
+        except (TypeError, json.JSONDecodeError):
+            payload = {}
+        if isinstance(payload, dict):
+            session_payloads.setdefault(row["session_id"], []).append(payload)
         try:
             constructs = json.loads(row["constructs_json"] or "[]")
         except (TypeError, json.JSONDecodeError):
@@ -1768,16 +1850,30 @@ def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
                 "label": construct_names[key],
                 "evidenceCount": 0,
                 "modules": set(),
+                "sessions": set(),
+                "activeDays": set(),
                 "firstSeenAt": row["occurred_at"],
                 "lastSeenAt": row["occurred_at"],
                 "observation": text,
             })
             signal["evidenceCount"] += 1
             signal["modules"].add(row["module_id"])
+            signal["sessions"].add(row["session_id"])
+            signal["activeDays"].add((row["occurred_at"] or "")[:10])
             signal["firstSeenAt"] = min(signal["firstSeenAt"], row["occurred_at"])
             signal["lastSeenAt"] = max(signal["lastSeenAt"], row["occurred_at"])
     for session in sessions:
         session["observations"] = session_observations.get(session["id"], [])
+        summary = session_summaries[session["id"]]
+        payloads = session_payloads.get(session["id"], [])
+        if session["moduleId"] == "career" and not summary.get("careerName"):
+            task_key = next((str(payload.get("taskKey", "")) for payload in payloads if payload.get("taskKey")), "")
+            if task_key in CAREER_NAMES:
+                summary = {**summary, "careerName": CAREER_NAMES[task_key]}
+                session["caption"] = timeline_session_caption(session["moduleId"], summary, session["evidenceCount"])
+        session["detail"] = timeline_session_detail(
+            session["moduleId"], summary, payloads
+        )
     grouped: dict[str, list[dict]] = {}
     for session in sessions:
         grouped.setdefault(session["moduleId"], []).append(session)
@@ -1788,23 +1884,23 @@ def timeline_v1(ai_bole_session: str | None = Cookie(default=None)) -> dict:
     long_term_signals = []
     for signal in signal_stats.values():
         modules = sorted(signal.pop("modules"))
+        signal_sessions = signal.pop("sessions")
+        active_days = {day for day in signal.pop("activeDays") if day}
         module_count = len(modules)
         evidence_count = signal["evidenceCount"]
-        status = (
-            "跨情境出现"
-            if module_count >= 2
-            else "反复出现"
-            if evidence_count >= 3
-            else "正在积累"
-        )
+        session_count = len(signal_sessions)
+        active_day_count = len(active_days)
+        status = classify_growth_signal(module_count, session_count, active_day_count)
         long_term_signals.append({
             **signal,
             "modules": modules,
             "moduleCount": module_count,
+            "sessionCount": session_count,
+            "activeDayCount": active_day_count,
             "status": status,
         })
     long_term_signals.sort(
-        key=lambda item: (item["moduleCount"], item["evidenceCount"], item["lastSeenAt"]),
+        key=lambda item: (item["moduleCount"], item["activeDayCount"], item["sessionCount"], item["evidenceCount"], item["lastSeenAt"]),
         reverse=True,
     )
     return {

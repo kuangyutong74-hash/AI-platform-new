@@ -132,7 +132,7 @@ test("normalizes today's evidence and long-term growth signals separately", () =
     works: [],
     milestones: [{ id: "registration", module: "registration", kind: "registration" }],
     growth_overview: {
-      sessions: [{ id: "session-1", module: "career", occurred_at: "2026-09-19T08:00:00Z", caption: "完成小医生体验", observations: ["先比较方案再作选择"] }],
+      sessions: [{ id: "session-1", module: "career", occurred_at: "2026-09-19T08:00:00Z", caption: "完成小医生体验", detail: "完成了问诊与治疗两个环节", observations: ["先比较方案再作选择"] }],
       today_sessions: [{ id: "session-1", module: "career", occurred_at: "2026-09-19T08:00:00Z", caption: "完成小医生体验", evidence_count: 2 }],
       today_completed_count: 1,
       today_evidence_count: 2,
@@ -140,13 +140,16 @@ test("normalizes today's evidence and long-term growth signals separately", () =
       total_completed_count: 5,
       active_days: 3,
       explored_module_count: 2,
-      long_term_signals: [{ key: "problem_solving.planning", label: "规划", evidence_count: 4, module_count: 2, modules: ["career", "deep_sea"], observation: "在不同任务里都先想办法再行动", status: "跨情境出现" }],
+      long_term_signals: [{ key: "problem_solving.planning", label: "规划", evidence_count: 4, session_count: 3, active_day_count: 2, module_count: 2, modules: ["career", "deep_sea"], observation: "在不同任务里都先想办法再行动", status: "不同任务中出现" }],
     },
   });
   assert.equal(result.growthOverview.todayCompletedCount, 1);
   assert.equal(result.growthOverview.todaySessions[0].evidenceCount, 2);
   assert.equal(result.growthOverview.sessions[0].observations[0], "先比较方案再作选择");
-  assert.equal(result.growthOverview.longTermSignals[0].status, "跨情境出现");
+  assert.equal(result.growthOverview.sessions[0].detail, "完成了问诊与治疗两个环节");
+  assert.equal(result.growthOverview.longTermSignals[0].status, "不同任务中出现");
+  assert.equal(result.growthOverview.longTermSignals[0].sessionCount, 3);
+  assert.equal(result.growthOverview.longTermSignals[0].activeDayCount, 2);
   assert.deepEqual(result.growthOverview.longTermSignals[0].modules, ["career", "deep_sea"]);
 });
 
