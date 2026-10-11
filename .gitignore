@@ -35,6 +35,10 @@
 **/.runtime/
 /outputs/
 /work/
+/tmp/
+/output/
+/docs/research/
+/scripts/build_systematic_child_ai_review_pdf.py
 
 # local and debug files
 .DS_Store
