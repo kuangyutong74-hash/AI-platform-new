@@ -334,7 +334,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   const sourceCareer=WD[cid]||WD.doctor;
   G.career={...sourceCareer,stages:sourceCareer.stages.slice(0,3)};
   document.documentElement.style.setProperty('--career-character','url("'+careerCharacterUrl()+'")');startProcessObservation();
-  initPinyinAssist();
   document.title=G.career.name+'的一天 — 职业体验模拟器';
   const parts=G.career.timeStart.split(':');
   G.clock={h:parseInt(parts[0]),m:parseInt(parts[1])||0};
@@ -392,10 +391,7 @@ const PINYIN_TEXT={
 };
 const PinyinAssist={enabled:false};
 function escapePinyinText(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
-function pinyinNode(tag,className,text){return '<'+tag+(className?' class="'+className+'"':'')+' data-pinyin="'+escapePinyinText(text)+'">'+escapePinyinText(text)+'</'+tag+'>'}
-function updatePinyinButton(){const button=document.getElementById('wd-pinyin-toggle');if(!button)return;button.setAttribute('aria-pressed',String(PinyinAssist.enabled));button.querySelector('b').textContent=PinyinAssist.enabled?'拼音开':'拼音'}
-function applyPinyinAssist(){document.querySelectorAll('[data-pinyin]').forEach(el=>{const text=el.dataset.pinyin||'';const pinyin=PINYIN_TEXT[text];el.classList.remove('pinyin-on');if(PinyinAssist.enabled&&pinyin){el.innerHTML='<span class="hanzi">'+escapePinyinText(text)+'</span><span class="pinyin-line" aria-hidden="true">'+pinyin+'</span>';el.classList.add('pinyin-on')}else el.textContent=text})}
-function initPinyinAssist(){try{PinyinAssist.enabled=localStorage.getItem('career-workday-pinyin')==='on'}catch(e){}const button=document.getElementById('wd-pinyin-toggle');if(!button)return;updatePinyinButton();button.addEventListener('click',()=>{PinyinAssist.enabled=!PinyinAssist.enabled;try{localStorage.setItem('career-workday-pinyin',PinyinAssist.enabled?'on':'off')}catch(e){}updatePinyinButton();applyPinyinAssist();setHint(PinyinAssist.enabled?'🔤 拼音辅助已开启：任务名称下方会显示读音。':'🔤 拼音辅助已关闭，你可以随时再打开它。')})}
+function pinyinNode(tag,className,text){return '<'+tag+(className?' class="'+className+'"':'')+'>'+escapePinyinText(text)+'</'+tag+'>'}
 function careerCharacterUrl(){return CAREER_CHARACTERS[G.careerId]||CAREER_CHARACTERS.doctor}
 function addStageArt(s){const key=Object.keys(WD).find(id=>WD[id]===G.career);const url=CAREER_ART[key],character=careerCharacterUrl();const host=document.querySelector('#wd-main > div');if(!url||!host)return;const art=document.createElement('div');art.className='wd-stage-art';art.style.backgroundImage='linear-gradient(90deg,rgba(72,53,38,.63),rgba(72,53,38,.05)),url('+url+')';art.innerHTML='<img src="'+character+'" alt="'+G.career.name+'任务小伙伴" class="wd-stage-character" loading="lazy"><div class="wd-stage-copy"><em>第 '+(G.stage+1)+' 关 · 职业日常</em><b>'+s.title+'</b><span>'+s.sub+'</span></div>';host.prepend(art)}
 
@@ -407,7 +403,7 @@ function renderStage(n){
   const total=G.career.stages.length,label=document.getElementById('wd-stage-label'),fill=document.getElementById('wd-stage-fill');if(label)label.textContent='第 '+(n+1)+' / '+total+' 关';if(fill)fill.style.width=((n+1)/total*100)+'%';
   updateCrumbs([G.career.name+'的一天',s.title]);
   setHint(s.type==='collect'?'🖱️ 依次<b>点击</b>每个卡片完成准备':(s.type==='sort'||s.type==='sequence'||s.type==='storyboard')?'🖱️ <b>拖拽</b>卡片调整顺序':s.type==='examine'?'🖱️ 先选<b>工具</b>再点<b>部位</b>检查':s.type==='route'?'🧭 点击格子，规划一条安全救援路线':s.type==='dialogue'?'💬 观察学生的表情和回应，再决定下一句话':s.type==='action'?'🖱️ <b>点击</b>你认为最合适的选择':s.type==='diagnose'?'🖱️ 先选<b>诊断</b>再<b>拖拽</b>药品到处方':'');
-  if(s.type==='collect')renderCollect(s);else if(s.type==='sort'||s.type==='sequence')renderSort(s);else if(s.type==='storyboard')renderStoryboard(s);else if(s.type==='examine')renderExamine(s);else if(s.type==='route')renderRoute(s);else if(s.type==='dialogue')renderDialogue(s);else if(s.type==='action')renderAction(s);else if(s.type==='diagnose')renderDiagnose(s);upgradeMissionIllustration(s);addStageArt(s);applyPinyinAssist();armDelayedGuide(s);
+  if(s.type==='collect')renderCollect(s);else if(s.type==='sort'||s.type==='sequence')renderSort(s);else if(s.type==='storyboard')renderStoryboard(s);else if(s.type==='examine')renderExamine(s);else if(s.type==='route')renderRoute(s);else if(s.type==='dialogue')renderDialogue(s);else if(s.type==='action')renderAction(s);else if(s.type==='diagnose')renderDiagnose(s);upgradeMissionIllustration(s);addStageArt(s);armDelayedGuide(s);
 }
 
 /* ---- COLLECT ---- */

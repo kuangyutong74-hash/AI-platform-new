@@ -3,15 +3,17 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}职业体验模拟器{% endblock %}</title>
 <script defer src="http://localhost:8020/sdk/module-sdk.js"></script>
-<link rel="stylesheet" href="/static/css/style.css?v=career-cinematic-v11"><link rel="stylesheet" href="/static/css/responsive.css?v=career-cinematic-v11">
+<link rel="stylesheet" href="/static/css/style.css?v=career-cinematic-v11"><link rel="stylesheet" href="/static/css/responsive.css?v=career-cinematic-v11"><link rel="stylesheet" href="/static/css/global-pinyin.css?v=global-pinyin-v1">
 {% block extra_head %}{% endblock %}</head>
 <body class="{% block body_class %}{% endblock %}">
 <a class="platform-return" href="http://localhost:4173/?from=career" aria-label="返回 AI 伯乐探索星球">← 返回探索星球</a>
 <div id="app-container">{% block content %}{% endblock %}</div><button id="replay-guide-btn" class="replay-guide-btn" type="button" title="重新查看新手引导">？<span>新手引导</span></button>
-<div id="font-size-control" class="font-size-control" role="group" aria-label="调节字体大小">
+<div id="font-size-control" class="font-size-control" role="group" aria-label="阅读辅助设置">
   <button id="font-smaller" class="font-size-btn" type="button" title="缩小字体" aria-label="缩小字体">A<sup>-</sup></button>
   <button id="font-default" class="font-size-btn font-size-active" type="button" title="默认字体" aria-label="默认字体">A</button>
   <button id="font-larger" class="font-size-btn" type="button" title="放大字体" aria-label="放大字体">A<sup>+</sup></button>
+  <span class="reading-control-divider" aria-hidden="true"></span>
+  <button id="career-pinyin-toggle" class="font-size-btn career-pinyin-toggle" type="button" aria-pressed="false" title="显示或隐藏全局拼音" aria-label="开启拼音辅助"><span aria-hidden="true">拼</span><b>拼音</b></button>
 </div>
 <script>
 (function(){
@@ -75,5 +77,7 @@
 })();
 </script>
 <script src="/static/js/app.js?v=career-cinematic-v10"></script>
+<script src="/static/vendor/pinyin-pro.js?v=3.28.2"></script>
+<script src="/static/js/global-pinyin.js?v=global-pinyin-v3"></script>
 {% block extra_js %}{% endblock %}</body>
 </html>

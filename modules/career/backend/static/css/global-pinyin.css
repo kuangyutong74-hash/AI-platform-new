@@ -1,0 +1,14 @@
+/* 职业模拟器全局阅读辅助：与字号控制共用入口，开启后为所有页面正文注音。 */
+.reading-control-divider{width:1px;height:24px;align-self:center;background:rgba(128,88,55,.18);margin:0 2px}
+.career-pinyin-toggle{width:auto;min-width:62px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:5px;border-radius:999px}
+.career-pinyin-toggle>span{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:#fff0c9;color:#b7653d;font-size:.76rem}
+.career-pinyin-toggle>b{font-size:.73rem;white-space:nowrap}
+.career-pinyin-toggle[aria-pressed="true"]{background:#f29b6a;color:#fff;box-shadow:0 2px 8px rgba(215,114,56,.28)}
+.career-pinyin-toggle[aria-pressed="true"]>span{background:rgba(255,255,255,.92);color:#b75531}
+.career-pinyin-ruby{ruby-position:over;ruby-align:center;line-height:1.72;text-decoration:none}
+.career-pinyin-ruby>rt{font-size:.52em;line-height:1;color:#a45f43;font-weight:700;letter-spacing:.02em;font-family:"Microsoft YaHei",sans-serif;user-select:none}
+.career-pinyin-toast{position:fixed;left:50%;bottom:82px;z-index:1000;transform:translate(-50%,12px);padding:9px 16px;border:1px solid rgba(226,169,92,.6);border-radius:999px;background:rgba(46,37,68,.94);color:#fff7e7;box-shadow:0 10px 30px rgba(31,22,50,.24);font:700 .82rem/1.35 "Microsoft YaHei",sans-serif;opacity:0;pointer-events:none;transition:.2s ease}
+.career-pinyin-toast.is-visible{opacity:1;transform:translate(-50%,0)}
+.page-careers .reading-control-divider{background:rgba(255,255,255,.24)}
+.page-careers .career-pinyin-toggle>span{background:rgba(255,255,255,.14);color:#ffe09a}
+@media(max-width:620px){.career-pinyin-toggle{min-width:34px;width:34px;padding:0}.career-pinyin-toggle>b{display:none}.reading-control-divider{height:20px;margin:0 1px}.career-pinyin-toast{bottom:68px;max-width:calc(100vw - 24px);white-space:nowrap}}
