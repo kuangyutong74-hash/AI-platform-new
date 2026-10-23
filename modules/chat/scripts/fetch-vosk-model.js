@@ -20,21 +20,28 @@ var MAX_RETRIES = 2;
 function download(url, dest, redirects) {
   return new Promise(function (resolve, reject) {
     var lib = url.startsWith('https:') ? https : http;
-    var req = lib.get(url, { headers: { 'User-Agent': 'fetch-vosk-model/1.0' } }, function (res) {
+    var tmp = dest + '.part';
+    var existing = fs.existsSync(tmp) ? fs.statSync(tmp).size : 0;
+    var headers = { 'User-Agent': 'fetch-vosk-model/1.0' };
+    if (existing) headers.Range = 'bytes=' + existing + '-';
+    var req = lib.get(url, { headers: headers }, function (res) {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
         if ((redirects || 0) > 5) { reject(new Error('too many redirects')); return; }
         download(new URL(res.headers.location, url).href, dest, (redirects || 0) + 1).then(resolve, reject);
         return;
       }
-      if (res.statusCode !== 200) {
+      if (res.statusCode !== 200 && res.statusCode !== 206) {
         res.resume();
         reject(new Error('HTTP ' + res.statusCode));
         return;
       }
-      var tmp = dest + '.part';
-      var file = fs.createWriteStream(tmp);
-      var received = 0;
+      var append = res.statusCode === 206 && existing > 0;
+      var file = fs.createWriteStream(tmp, { flags: append ? 'a' : 'w' });
+      var received = append ? existing : 0;
+      var expected = append
+        ? Number((res.headers['content-range'] || '').split('/')[1])
+        : Number(res.headers['content-length']);
       res.on('data', function (chunk) {
         received += chunk.length;
         if (received % (5 * 1024 * 1024) < chunk.length) {
@@ -44,12 +51,16 @@ function download(url, dest, redirects) {
       res.pipe(file);
       file.on('finish', function () {
         file.close(function () {
+          if (Number.isFinite(expected) && expected > 0 && fs.statSync(tmp).size !== expected) {
+            reject(new Error('incomplete download'));
+            return;
+          }
           fs.renameSync(tmp, dest);
           process.stdout.write('\r  已下载 ' + (received / 1024 / 1024).toFixed(1) + ' MB\n');
           resolve(dest);
         });
       });
-      file.on('error', function (err) { try { fs.unlinkSync(tmp); } catch (_) {} reject(err); });
+      file.on('error', reject);
     });
     req.on('error', reject);
     req.setTimeout(60000, function () { req.destroy(new Error('timeout')); });
