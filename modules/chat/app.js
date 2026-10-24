@@ -1874,8 +1874,9 @@ app.post('/api/quick-topics', async (req, res) => {
 
     var systemPrompt =
       '你是一个陪伴儿童聊天的角色"小新"的话题生成器。\n' +
-      '请根据当前对话上下文，生成3-4条适合孩子主动分享的简短话题，\n' +
-      '每条控制在10-15字以内，风格活泼自然，能引导孩子继续表达。\n' +
+      '请根据当前对话上下文，生成3-4条孩子自己会说的输入框开场白。\n' +
+      '每条必须以“我”开头，使用学生第一人称，能直接作为孩子发给小新的话。\n' +
+      '每条控制在10-20字；不要写小新对孩子的提问，不要用“你”称呼孩子，也不要替孩子编造经历或感受。\n' +
       '只返回JSON格式：{"topics": ["话题1", "话题2", "话题3"]}\n' +
       '不要有任何其他文字、解释或markdown标记。';
 
@@ -1909,7 +1910,7 @@ app.post('/api/quick-topics', async (req, res) => {
       var parsed = JSON.parse(cleaned);
       if (parsed && Array.isArray(parsed.topics)) {
         topics = parsed.topics
-          .filter(function (t) { return typeof t === 'string' && t.trim().length >= 3 && t.trim().length <= 30; })
+          .filter(function (t) { return typeof t === 'string' && /^我/.test(t.trim()) && t.trim().length >= 3 && t.trim().length <= 30; })
           .map(function (t) { return t.trim(); })
           .slice(0, 4);
       }
@@ -1918,7 +1919,7 @@ app.post('/api/quick-topics', async (req, res) => {
       var lines = rawText
         .split('\n')
         .map(function (l) { return l.replace(/^[\d\.\、\-\s]+/, '').trim(); })
-        .filter(function (l) { return l.length >= 3 && l.length <= 30; })
+        .filter(function (l) { return /^我/.test(l) && l.length >= 3 && l.length <= 30; })
         .slice(0, 4);
       if (lines.length >= 2) {
         topics = lines;

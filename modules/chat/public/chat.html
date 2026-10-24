@@ -308,7 +308,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
           <button class="compass-action" type="button" data-prompt="如果换一个角度，我还想到……"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-7a5 5 0 0 0-5 5v0M4 17h7a5 5 0 0 0 5-5v0"/><path d="m17 4 3 3-3 3M7 14l-3 3 3 3"/></svg><span><strong>换个角度</strong><small>看看另一种可能</small></span></button>
         </div>
         <section class="compass-suggestions" aria-labelledby="compassHintTitle">
-          <div class="compass-suggestions-title" id="compassHintTitle">小新想到的线索</div>
+          <div class="compass-suggestions-title" id="compassHintTitle">我想聊的话题</div>
           <div class="quick-replies compass-prompts" id="quickReplies"></div>
         </section>
       </aside>
@@ -444,7 +444,7 @@ function updateRoadmap(){var topic=document.getElementById('compassTopic');if(to
 
 // ===== WELCOME =====
 var WEATHER_ACK_MAP={sunny:'今天的心情像晴天，适合带着这份轻快出发。',cloudy:'今天有点像多云，小新会陪你慢一点。',storm:'今天心里像有阵雷雨，可以先从最想说的一小段开始。',rainbow:'今天的心情像彩虹，把这份开心带进聊天里吧。',breeze:'今天像一阵微风，我们轻轻松松地聊。',lightrain:'今天像有一点小雨，不急着说很多也没关系。',custom:'今天的感觉还说不清，我们可以边聊边发现。'};
-var ENTRY_CONFIG={story:{welcome:'我们把今天的一件小事变成故事吧。可以从真的发生过、脑海里想到的，或一个神奇物品开始。',chips:['今天真的发生过','我想编一个故事','从神奇物品开始']},deepsea:{welcome:'来做一个轻松的小挑战。可以聊你观察到的海洋生物、搭建时遇到的难题，或伙伴意见不同时的办法。',chips:['我发现了一个线索','有个搭建难题','伙伴意见不一样']},career:{welcome:'我们来认识一份职业。可以从你想帮助谁、想完成什么事情，或最近好奇的职业说起。',chips:['我想帮助别人','我想完成一件事','我好奇一种职业']},free:{welcome:'我们就随意聊聊。你可以说今天最想记住的一刻，也可以说一件让你在意的小事。',chips:['今天最想记住的事','有件事让我在意','我想换个轻松话题']}};
+var ENTRY_CONFIG={story:{welcome:'我们把今天的一件小事变成故事吧。可以从真的发生过、脑海里想到的，或一个神奇物品开始。',chips:['我想说说今天发生的事','我想编一个故事','我想从神奇物品开始']},deepsea:{welcome:'来做一个轻松的小挑战。可以聊你观察到的海洋生物、搭建时遇到的难题，或伙伴意见不同时的办法。',chips:['我发现了一个线索','我遇到了搭建难题','我想聊聊不同的意见']},career:{welcome:'我们来认识一份职业。可以从你想帮助谁、想完成什么事情，或最近好奇的职业说起。',chips:['我想帮助别人','我想完成一件事','我好奇一种职业']},free:{welcome:'我们就随意聊聊。你可以说今天最想记住的一刻，也可以说一件让你在意的小事。',chips:['我想说说今天的一件事','我有件在意的事','我想换个轻松话题']}};
 function escapeHTML(s){if(s==null)return'';var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
 // ===== DOM =====
@@ -482,7 +482,7 @@ function tryRestoreMessages(data){
 }
 
 // ===== 快捷话题静态池 — 必须在 IIFE 之前定义，否则同步分支中会读到 undefined =====
-var QUICK_REPLY_POOL=['放学路上的奇遇','今天最离谱的作业','最近超爱的一首歌','体育课上的搞笑瞬间','最近追的一部动画','家里宠物的迷惑行为','周末最想做的事','最近发现的新零食','今天食堂的菜怎么样','最近和同桌的趣事','有没有什么想吐槽的','如果明天放假你想干嘛'];
+var QUICK_REPLY_POOL=['我想说说放学路上的事','我想聊聊今天的作业','我想聊聊喜欢的歌','我想说说体育课的事','我想聊聊最近看的动画','我想聊聊家里的宠物','我想说说周末的计划','我想聊聊新零食','我想聊聊今天的午饭','我想说说和同桌的趣事','我想说说在意的一件事','我想聊聊放假的计划'];
 
 (async function(){
   // 分支 1：从历史记录链接进入（带 convId）→ 加载指定历史对话
@@ -655,7 +655,12 @@ weatherOverlay.addEventListener('click',function(e){if(e.target===weatherOverlay
 moodButton.addEventListener('click',function(){weatherOverlay.classList.remove('hidden')});
 
 // ===== Quick replies =====
-function normalizeTopicItem(item){if(typeof item==='string')return item;if(item&&typeof item==='object')return item.text||item.content||item.title||item.label||item.topic||'';return''}
+function normalizeTopicItem(item){
+  var text=typeof item==='string'?item:(item&&typeof item==='object'?(item.text||item.content||item.title||item.label||item.topic||''):'');
+  text=String(text).trim();
+  // 侧栏会把文字放进孩子的输入框；旧缓存和模型生成的“小新提问”不能直接成为孩子的话。
+  return /^我/.test(text)?text:'';
+}
 function showQuickReplies(topicList){
   quickReplies.classList.remove('recovery');
   // 话题永远不消失 — 无论刷新、新建聊天还是继续聊天
@@ -942,7 +947,10 @@ async function refreshQuickTopics(){
     cleanupRecognition();
   }
 
-  var MIC_BLOCKED_HELP='麦克风被浏览器阻止了。修复方法：点地址栏左侧的锁图标 → 网站设置 → 麦克风 改为「允许」→ 刷新页面 → 再点一次麦克风按钮。备选：地址栏输入 chrome://settings/content/microphone（Edge 为 edge://settings/content/microphone），把 localhost:3000 改为允许；若设置里没有麦克风选项，请检查 Windows 设置 → 隐私和安全性 → 麦克风 是否开启';
+  var MIC_BLOCKED_HELP='麦克风被浏览器阻止了。请在地址栏左侧的网站设置中允许当前站点使用麦克风，然后刷新页面重试；也请检查系统的麦克风权限。';
+  var MIC_INSECURE_HELP='当前页面通过 HTTP 公网地址访问，浏览器不会开放麦克风。请通过本站的 HTTPS 地址重新打开聊天页；本机调试可使用 localhost。';
+  var MIC_UNSUPPORTED_HELP='当前浏览器没有提供麦克风接口。请更新浏览器，或换用支持麦克风的 Chrome、Edge 等浏览器。';
+  function micUnavailableHelp(){return window.isSecureContext?MIC_UNSUPPORTED_HELP:MIC_INSECURE_HELP}
 
   // 统一入口：进入「正在听」状态并按可用方案启动识别（权限已同意后才调用）
   function startListening(){
@@ -959,7 +967,7 @@ async function refreshQuickTopics(){
     try{
       if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
         cleanupRecognition();
-        showStatus('当前访问地址无法使用麦克风：请用 http://localhost:3000 打开本页面');
+        showStatus(micUnavailableHelp());
         return;
       }
       // 用最宽松的音频参数申请（设备兼容性最好）；采样率由 AudioContext 统一转成 16k
@@ -1022,7 +1030,7 @@ async function refreshQuickTopics(){
       }else if(e&&e.name==='ModelLoadTimeout'){
         showStatus('语音包加载超时。请刷新页面后重试，首次使用需要加载约 44MB 离线语音包。');
       }else if(e&&e.name==='SecurityError'){
-        showStatus('当前访问地址无法使用麦克风：请用 http://localhost:3000 打开本页面');
+        showStatus(micUnavailableHelp());
       }else if(e&&e.isModelLoad&&e.noVosk){
         recognizing=true;btnMic.classList.add('listening');
         startSR(); // 识别库文件缺失，回退系统语音识别
@@ -1089,6 +1097,10 @@ async function refreshQuickTopics(){
 
   btnMic.addEventListener('click',function(){
     if(recognizing){stopRecognition();return}
+    if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      showStatus(micUnavailableHelp());
+      return;
+    }
     // 已同意过 → 直接语音输入，不再弹窗
     if(micConsented()){startListening();return}
     // 初次点击 → 弹窗询问是否允许；同时探测浏览器层权限，已被浏览器拒绝就直接切换为修复指引

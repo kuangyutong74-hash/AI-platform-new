@@ -191,6 +191,8 @@ npm run verify:workspace
 ECS_PUBLIC_ORIGIN=http://你的公网IP bash /opt/ai-bole/scripts/deploy-ecs-update.sh
 ```
 
+聊天观察的麦克风只能在 HTTPS 安全来源（或本机 `localhost`）使用。公网 HTTP IP 可以浏览和打字，但浏览器不会提供麦克风 API；启用线上语音前，需要为整个平台及聊天模块配置有效的 HTTPS 入口，并用该 HTTPS 来源部署。部署脚本会保留已有的离线中文语音模型；首次部署缺少模型时会在切换版本前下载，下载失败则停止部署。
+
 默认拉取 `master` 分支。私有仓库需先为服务器配置只读 Deploy Key；也可通过 `AI_BOLE_REPO_URL` 和 `AI_BOLE_DEPLOY_BRANCH` 覆盖仓库与分支。部署期间服务会短暂停止，生产数据和 `.env` 不应提交到 Git。
 
 #### 部署时务必确认数据目录被保留

@@ -10,3 +10,4 @@ node_modules/
 
 # 离线语音识别模型（44MB，不入库；npm run fetch-vosk-model 一键下载）
 /public/assets/vosk/*.zip
+/public/assets/vosk/*.zip.part

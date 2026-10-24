@@ -4,7 +4,7 @@ umask 022
 
 APP_DIR="/opt/ai-bole"
 SERVICE_USER="ai-bole"
-REPO_URL="${AI_BOLE_REPO_URL:-https://github.com/kuangyutong74-hash/AI-.git}"
+REPO_URL="${AI_BOLE_REPO_URL:-https://github.com/kuangyutong74-hash/AI-platform-new.git}"
 BRANCH="${AI_BOLE_DEPLOY_BRANCH:-master}"
 SOURCE_ARCHIVE="${AI_BOLE_SOURCE_ARCHIVE:-}"
 PUBLIC_ORIGIN="${ECS_PUBLIC_ORIGIN:-}"
@@ -66,6 +66,7 @@ fi
 cp -a "${APP_DIR}/.env" "${STAGING_DIR}/.env"
 copy_if_present "modules/platform-core/data"
 copy_if_present "modules/chat/data"
+copy_if_present "modules/chat/public/assets/vosk/vosk-model-small-cn-0.22.zip"
 copy_if_present "modules/story/story_cocreate.db"
 copy_if_present "modules/career/backend/career_sim.db"
 
@@ -81,6 +82,10 @@ for project in \
   "modules/talent-report"; do
   (cd "${STAGING_DIR}/${project}" && npm ci --no-audit --no-fund)
 done
+
+# 离线中文识别模型不入库。首次部署下载，之后从旧版本保留；缺失时提前失败，
+# 避免线上麦克风按钮退回依赖外网的系统语音识别。
+(cd "${STAGING_DIR}/modules/chat" && npm run fetch-vosk-model)
 
 echo "[5/7] 安装 Python 依赖"
 python_projects=(

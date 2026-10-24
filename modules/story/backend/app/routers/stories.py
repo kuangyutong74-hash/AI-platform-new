@@ -253,10 +253,11 @@ async def get_story_messages(
 async def create_writing_cards(
     story_id: int,
     req: WritingAssistRequest,
+    owner_id: str = Depends(require_platform_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     """Return editable inspiration cards without changing story history."""
-    story = await _get_story(story_id, db)
+    story = await _get_story(story_id, owner_id, db)
     if story.status != "active":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="这个故事已经结束啦！")
     if req.tool == "custom" and not req.custom_request:
