@@ -74,9 +74,10 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 TTS_DIR = STATIC_DIR / "tts"
 TTS_DIR.mkdir(parents=True, exist_ok=True)
 TTS_VOICES = {
-    "scene": ("zh-CN-XiaoxiaoNeural", "+0%"),
-    "mentor": ("zh-CN-XiaoyiNeural", "-8%"),
-    "lively": ("zh-CN-YunxiNeural", "+4%"),
+    # 晓晓的咬字和句间呼吸更适合儿童情境叙事；导师稍慢，但不再使用偏播报感的晓伊。
+    "scene": {"voice": "zh-CN-XiaoxiaoNeural", "rate": "-5%", "pitch": "+2Hz", "volume": "+0%"},
+    "mentor": {"voice": "zh-CN-XiaoxiaoNeural", "rate": "-10%", "pitch": "+0Hz", "volume": "-2%"},
+    "lively": {"voice": "zh-CN-YunxiNeural", "rate": "+2%", "pitch": "+2Hz", "volume": "+0%"},
 }
 
 @app.get("/api/tts")
@@ -88,16 +89,30 @@ async def api_tts(text: str, role: str = "scene"):
         raise HTTPException(400, detail="缺少朗读内容")
     if len(clean_text) > 500:
         clean_text = clean_text[:500]
-    voice, rate = TTS_VOICES.get(role, TTS_VOICES["scene"])
-    clip_id = hashlib.sha256(f"{voice}|{rate}|{clean_text}".encode("utf-8")).hexdigest()[:24]
+    profile = TTS_VOICES.get(role, TTS_VOICES["scene"])
+    voice, rate = profile["voice"], profile["rate"]
+    pitch, volume = profile["pitch"], profile["volume"]
+    clip_id = hashlib.sha256(f"{voice}|{rate}|{pitch}|{volume}|{clean_text}".encode("utf-8")).hexdigest()[:24]
     filename = f"{clip_id}.mp3"
     target = TTS_DIR / filename
+    if target.exists() and target.stat().st_size == 0:
+        target.unlink()
     if not target.exists():
+        pending = target.with_suffix(".pending.mp3")
         try:
-            await edge_tts.Communicate(clean_text, voice=voice, rate=rate).save(str(target))
+            await edge_tts.Communicate(
+                clean_text, voice=voice, rate=rate, pitch=pitch, volume=volume
+            ).save(str(pending))
+            if not pending.exists() or pending.stat().st_size == 0:
+                raise RuntimeError("语音服务返回了空音频")
+            pending.replace(target)
         except Exception as exc:
+            if pending.exists():
+                pending.unlink()
+            if target.exists() and target.stat().st_size == 0:
+                target.unlink()
             raise HTTPException(503, detail="神经语音暂时不可用") from exc
-    return {"url": f"/static/tts/{filename}", "voice": voice}
+    return {"url": f"/static/tts/{filename}", "voice": voice, "rate": rate, "pitch": pitch}
 
 # === PAGE ROUTES ===
 @app.get("/", response_class=HTMLResponse)

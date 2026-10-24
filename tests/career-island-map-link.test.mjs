@@ -21,5 +21,5 @@ test('the map link does not crowd either in-progress experience toolbar', () => 
 
 test('the career app asset version invalidates the pre-completion browser cache', () => {
   const html = fs.readFileSync(path.join(root, 'modules/career/backend/templates/base.html'), 'utf8');
-  assert.match(html, /\/static\/js\/app\.js\?v=career-completion-v1/);
+  assert.match(html, /\/static\/js\/app\.js\?v=career-voice-toggle-v3/);
 });

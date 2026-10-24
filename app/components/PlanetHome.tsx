@@ -32,7 +32,7 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
   const launchModule = useCallback(async (item:PlatformModule) => {
     try {
       await launchPlatformModule(item);
-    } catch (_) {
+    } catch {
       // Core 不可用时仍可直接体验模块，但不会写入孩子档案。
       window.name = "";
       window.location.assign(item.url);
@@ -47,7 +47,7 @@ export default function PlanetHome({onNavigate}:{onNavigate:(view:PlatformView)=
     <img className="planet-star-spirit" src={starSpiritImg} alt="" aria-hidden="true"/>
     <img className="planet-float stars" src={floatStarsImg} alt="" aria-hidden="true"/>
     <img className="planet-float cloud" src={floatCloudImg} alt="" aria-hidden="true"/>
-    <div className="hero-copy"><p className="kicker">MY EXPLORATION PLANET</p><h1>转动星球，发现不一样的自己</h1><p>拖动观察梦幻星球，点击贴合球面的大陆即可直接开始探索。</p></div>
+    <div className="hero-copy"><h1>转动星球，发现不一样的自己</h1><p>拖动观察梦幻星球，点击贴合球面的大陆即可直接开始探索。</p></div>
     <nav className="personal-landmarks" aria-label="个人探索功能">
       {cosmicNodes.map((node,index)=><button key={node.view} className={`personal-landmark personal-landmark-${index===0?"left":"right"}`} data-node-index={index} onClick={()=>onNavigate(node.view)}><i aria-hidden="true"/><span>{node.label}</span></button>)}
     </nav>

@@ -138,4 +138,26 @@ function StudentManager({session,onClose,onChanged}:{session:Session;onClose:()=
 
 function AdultEmptyState({session,onManageStudents}:{session:Session;onManageStudents:()=>void}){return <section className="adult-empty-state"><div><p className="kicker">家长 / 老师观察站</p><h1>欢迎，{session.account.display_name}</h1><p>这里还没有学生档案。添加学生后，报告、作品和成长足迹会立即出现在这里。</p><button className="empty-state-action" onClick={onManageStudents}>添加第一位学生</button><p className="auth-footnote">现在也可以通过右上角头像退出，或之后再回来添加。</p></div></section>}
 
-function Header({session,view,onNavigate,onLogout,onSelectStudent,onManageStudents,onEditIdentity}:{session:Session;view:View;onNavigate:(view:View)=>void;onLogout:()=>void;onSelectStudent:(id:string)=>void;onManageStudents:()=>void;onEditIdentity:()=>void}){const adult=session.account.role==="adult",nav:[View,string][]=adult?(session.selected_student?[["report","天赋报告"],["showcase","作品展柜"],["timeline","成长足迹"]]:[]):[["planet","探索星球"],["works","我的作品"],["treasure","天赋藏宝图"]];const identity=adult?session.selected_student:session.account,canEditIdentity=Boolean(identity),avatar=identity?.avatar_id?`http://localhost:3000/assets/avatars/student/${identity.avatar_id}.png`:null;return <header className={`topbar ${view!=="planet"?"personal-topbar":""} view-${view}`}><button className="brand" onClick={()=>onNavigate(adult?"report":"planet")}><span className="brand-mark"><img src="/assets/watercolor-brand-planet-v1.png" alt=""/></span><span className="brand-copy"><b>AI 伯乐</b><small><i/>{adult?"家长 / 老师观察站":"儿童天赋探索星球"}</small></span></button><nav>{nav.map(([id,label])=><button key={id} className={view===id?"active":""} onClick={()=>onNavigate(id)}>{label}</button>)}</nav><div className="topbar-actions">{adult&&session.students.length>0&&<label className="student-switcher"><span>正在查看</span><select value={session.selected_student?.id??""} onChange={e=>onSelectStudent(e.target.value)}>{session.students.map(student=><option key={student.id} value={student.id}>{student.display_name} · {student.username.toUpperCase()}</option>)}</select></label>}{adult&&<button className="manage-students-button" onClick={onManageStudents}>管理学生</button>}<details className="profile-menu"><summary aria-label={canEditIdentity?`打开账号菜单，当前形象是${identity?.display_name}`:"打开账号菜单"}>{avatar?<img className="profile-avatar-image" src={avatar} alt=""/>:<b>{session.account.display_name.slice(0,2)}</b>}<span>{session.account.display_name}</span></summary><div><strong>{identity?.display_name||session.account.display_name}</strong><small>{adult?"当前孩子的形象":`@${session.account.username.toUpperCase()}`}</small>{canEditIdentity&&<button onClick={onEditIdentity}>{adult?"修改当前孩子形象":"修改昵称和形象"}</button>}{adult&&<button onClick={onManageStudents}>管理学生</button>}<button onClick={onLogout}>退出登录</button></div></details></div></header>}
+function Header({session,view,onNavigate,onLogout,onSelectStudent,onManageStudents,onEditIdentity}:{session:Session;view:View;onNavigate:(view:View)=>void;onLogout:()=>void;onSelectStudent:(id:string)=>void;onManageStudents:()=>void;onEditIdentity:()=>void}){
+  const adult=session.account.role==="adult";
+  const nav:[View,string][]=adult?(session.selected_student?[["report","天赋报告"],["showcase","作品展柜"],["timeline","成长足迹"]]:[]):[["planet","探索星球"],["works","我的作品"],["treasure","天赋藏宝图"]];
+  const identity=adult?session.selected_student:session.account;
+  const canEditIdentity=Boolean(identity);
+  const avatar=identity?.avatar_id?`http://localhost:3000/assets/avatars/student/${identity.avatar_id}.png`:null;
+  return <header className={`topbar ${view!=="planet"?"personal-topbar":""} view-${view}`}>
+    <button className="brand" onClick={()=>onNavigate(adult?"report":"planet")}><span className="brand-mark"><img src="/assets/watercolor-brand-planet-v1.png" alt=""/></span><span className="brand-copy"><b>AI 伯乐</b><small><i/>{adult?"家长 / 老师观察站":"儿童天赋探索星球"}</small></span></button>
+    <nav>{nav.map(([id,label])=><button key={id} className={view===id?"active":""} onClick={()=>onNavigate(id)}>{label}</button>)}</nav>
+    <div className="topbar-actions">
+      {adult&&session.students.length>0&&<label className="student-switcher"><span>正在查看</span><select value={session.selected_student?.id??""} onChange={e=>onSelectStudent(e.target.value)}>{session.students.map(student=><option key={student.id} value={student.id}>{student.display_name} · {student.username.toUpperCase()}</option>)}</select></label>}
+      {adult&&<button className="manage-students-button" onClick={onManageStudents}>管理学生</button>}
+      <details className="profile-menu">
+        <summary aria-label={canEditIdentity?`打开账号菜单，当前形象是${identity?.display_name}`:"打开账号菜单"}>
+          {avatar?<img className="profile-avatar-image" src={avatar} alt=""/>:<b>{session.account.display_name.slice(0,2)}</b>}
+          <span className="profile-identity"><strong>{adult?"探索陪伴者":"小小探索家"}</strong><small>{session.account.display_name}</small></span>
+          <i className="profile-chevron" aria-hidden="true"/>
+        </summary>
+        <div><strong>{identity?.display_name||session.account.display_name}</strong><small>{adult?"当前孩子的形象":`@${session.account.username.toUpperCase()}`}</small>{canEditIdentity&&<button onClick={onEditIdentity}>{adult?"修改当前孩子形象":"修改昵称和形象"}</button>}{adult&&<button onClick={onManageStudents}>管理学生</button>}<button onClick={onLogout}>退出登录</button></div>
+      </details>
+    </div>
+  </header>
+}

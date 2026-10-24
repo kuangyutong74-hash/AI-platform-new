@@ -57,7 +57,7 @@ function showCurrentPageGuide(){
     this.sessionInfo=null;this.scenarioRecordId=null;this.previousContext=[];
     this.state='idle';this.currentDialogueIndex=0;this.isTyping=false;this.typewriterTimeout=null;
     this.decisionStartTime=null;this.selectedChoice=null;this.modificationCount=0;this.timerInterval=null;
-    this._choiceResult=null;this.voiceRecognition=null;this.isRecording=false;this.availableVoices=[];this.ttsAudio=null;this.speechToken=0;
+    this._choiceResult=null;this.voiceRecognition=null;this.isRecording=false;this.availableVoices=[];this.ttsAudio=null;this.ttsUtterance=null;this.speechToken=0;this.voicePlaybackState='idle';
     this.$sceneBg=document.getElementById('scene-bg');this.$sceneAtmosphere=document.getElementById('scene-atmosphere');
     this.$sceneLocation=document.getElementById('scene-location');this.$dialogueBox=document.getElementById('dialogue-box');
     this.$dialogueSpeaker=document.getElementById('dialogue-speaker');this.$dialogueText=document.getElementById('dialogue-text');
@@ -91,8 +91,8 @@ function showCurrentPageGuide(){
     this.$dialogueBox.onclick=()=>this.onDialogueClick();
   }
   bindVoiceControls(){
-    if(this.$voiceReadBtn)this.$voiceReadBtn.onclick=()=>this.readCurrentContent();
-    if(this.$voiceReadBtn){const label=this.$voiceReadBtn.querySelector('span');if(label)label.textContent='听一听';this.$voiceReadBtn.title='点击后朗读当前内容';}
+    if(this.$voiceReadBtn)this.$voiceReadBtn.onclick=()=>this.toggleCurrentNarration();
+    this.setVoicePlaybackState('idle');
     if(this.$mentorVoiceBtn)this.$mentorVoiceBtn.onclick=()=>this.startVoiceInput();
     const supported=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
     if(!supported&&this.$mentorVoiceBtn){this.$mentorVoiceBtn.disabled=true;this.$mentorVoiceBtn.title='\u8fd9\u4e2a\u6d4f\u89c8\u5668\u6682\u4e0d\u652f\u6301\u8bed\u97f3\u8f93\u5165';}
@@ -109,9 +109,10 @@ function showCurrentPageGuide(){
   }
   async speak(text,role='scene'){
     const clean=String(text||'').replace(/[🎯✨💡🔮🎙️]/g,'').replace(/\s+/g,' ').trim();if(!clean)return;
-    const token=++this.speechToken;if(this.ttsAudio){this.ttsAudio.pause();this.ttsAudio=null;}if('speechSynthesis' in window)window.speechSynthesis.cancel();
+    const token=++this.speechToken;if(this.ttsAudio){this.ttsAudio.pause();this.ttsAudio=null;}this.ttsUtterance=null;if('speechSynthesis' in window)window.speechSynthesis.cancel();
+    this.setVoicePlaybackState('loading');
     this.setVoiceStatus('🎧 星星导师正在准备更自然的声音…');
-    try{const data=await API.get('/api/tts?role='+encodeURIComponent(role)+'&text='+encodeURIComponent(clean));if(token!==this.speechToken)return;const audio=new Audio(data.url+'?v='+Date.now());this.ttsAudio=audio;audio.onplay=()=>this.setVoiceStatus('🎧 正在用神经语音朗读');audio.onended=()=>{if(token===this.speechToken)this.setVoiceStatus('');};audio.onerror=()=>this.fallbackSpeak(clean,token);await audio.play();}
+    try{const data=await API.get('/api/tts?role='+encodeURIComponent(role)+'&text='+encodeURIComponent(clean));if(token!==this.speechToken)return;const audio=new Audio(data.url+'?v='+Date.now());this.ttsAudio=audio;audio.onplay=()=>{this.setVoicePlaybackState('playing');this.setVoiceStatus('🎧 正在用神经语音朗读');};audio.onpause=()=>{if(!audio.ended&&token===this.speechToken)this.setVoicePlaybackState('paused');};audio.onended=()=>{if(token===this.speechToken){this.ttsAudio=null;this.setVoicePlaybackState('idle');this.setVoiceStatus('');}};audio.onerror=()=>this.fallbackSpeak(clean,token);await audio.play();}
     catch(e){this.fallbackSpeak(clean,token);}
   }
   renderChoiceTaskHeader(){
@@ -121,15 +122,34 @@ function showCurrentPageGuide(){
   }
   fallbackSpeak(text,token){
     if(token!==this.speechToken||!('speechSynthesis' in window)){this.setVoiceStatus('朗读暂时不可用，可以继续阅读文字。');return;}
-    this.setVoiceStatus('当前网络不可用，已切换为本机朗读。');const utterance=new SpeechSynthesisUtterance(text);utterance.lang='zh-CN';const voice=this.preferredChineseVoice();if(voice)utterance.voice=voice;utterance.rate=.86;utterance.pitch=1.04;utterance.volume=1;window.speechSynthesis.speak(utterance);
+    this.setVoiceStatus('当前网络不可用，已切换为本机朗读。');const utterance=new SpeechSynthesisUtterance(text);this.ttsUtterance=utterance;utterance.lang='zh-CN';const voice=this.preferredChineseVoice();if(voice)utterance.voice=voice;utterance.rate=.94;utterance.pitch=1.02;utterance.volume=1;utterance.onstart=()=>this.setVoicePlaybackState('playing');utterance.onpause=()=>this.setVoicePlaybackState('paused');utterance.onresume=()=>this.setVoicePlaybackState('playing');utterance.onend=()=>{if(token===this.speechToken){this.ttsUtterance=null;this.setVoicePlaybackState('idle');this.setVoiceStatus('');}};utterance.onerror=()=>{if(token===this.speechToken){this.ttsUtterance=null;this.setVoicePlaybackState('idle');this.setVoiceStatus('朗读暂时不可用，可以继续阅读文字。');}};window.speechSynthesis.speak(utterance);
+  }
+  toggleCurrentNarration(){
+    if(this.voicePlaybackState==='playing'){
+      if(this.ttsAudio&&!this.ttsAudio.paused)this.ttsAudio.pause();
+      else if('speechSynthesis' in window&&window.speechSynthesis.speaking)window.speechSynthesis.pause();
+      this.setVoicePlaybackState('paused');this.setVoiceStatus('⏸ 已暂停，再点一次继续朗读。');return;
+    }
+    if(this.voicePlaybackState==='paused'){
+      if(this.ttsAudio){this.ttsAudio.play().catch(()=>this.setVoiceStatus('继续播放失败，请重新点击朗读。'));}
+      else if('speechSynthesis' in window&&window.speechSynthesis.paused)window.speechSynthesis.resume();
+      this.setVoicePlaybackState('playing');this.setVoiceStatus('🔊 继续朗读中…');return;
+    }
+    if(this.voicePlaybackState==='loading'){
+      this.speechToken+=1;this.setVoicePlaybackState('idle');this.setVoiceStatus('已停止准备朗读，再点一次可重新播放。');return;
+    }
+    this.readCurrentContent();
   }
   readCurrentContent(){
     let text='';
-    if(this.state==='narrating'){const d=this.scenarioData?.dialogues?.[this.currentDialogueIndex];text=d?(d.speaker+'?'+d.text):'';}
-    else if(this.state==='choosing'){text=(this.scenarioData?.choice_prompt||'')+'?'+(this.scenarioData?.options||[]).map(o=>o.id+'?'+o.text).join('?');}
+    if(this.state==='narrating'){const d=this.scenarioData?.dialogues?.[this.currentDialogueIndex];text=d?(d.speaker+'说：'+d.text):'';}
+    else if(this.state==='choosing'){text=(this.scenarioData?.choice_prompt||'')+'。请听选项：'+(this.scenarioData?.options||[]).map(o=>'选项'+o.id+'，'+o.text).join('。')+'。';}
     else if(this.state==='mentor'){text=(this.$mentorQuestion?.textContent||'');}
     else{text=this.scenarioData?.scene?.atmosphere||'';}
     if(text)this.speak(text,this.state==='mentor'?'mentor':'scene');
+  }
+  setVoicePlaybackState(state){
+    this.voicePlaybackState=state;if(!this.$voiceReadBtn)return;const label=this.$voiceReadBtn.querySelector('span');const labels={idle:'听一听',loading:'停止',playing:'暂停',paused:'继续'};if(label)label.textContent=labels[state]||'听一听';this.$voiceReadBtn.title=state==='playing'?'点击暂停朗读':state==='paused'?'点击继续朗读':state==='loading'?'点击停止准备朗读':'点击朗读当前内容';this.$voiceReadBtn.setAttribute('aria-pressed',state==='playing'?'true':'false');this.$voiceReadBtn.dataset.playback=state;
   }
   setVoiceStatus(text){if(this.$voiceStatus)this.$voiceStatus.textContent=text;}
   startVoiceInput(){

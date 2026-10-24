@@ -5181,17 +5181,23 @@ html {
 .app-shell:has(.three-scene-page) .topbar nav button:hover{color:#fff4c9;transform:translateY(-1px)}
 .app-shell:has(.three-scene-page) .topbar nav button.active{color:#f4cb68;border:0;text-shadow:0 0 15px rgba(240,197,95,.28)}
 .app-shell:has(.three-scene-page) .topbar nav button.active:after{opacity:1;transform:scaleX(1)}
-.app-shell:has(.three-scene-page) .profile-menu summary{border:1px solid rgba(255,220,140,.4);background:rgba(255,248,232,.08);color:#fff8e8;box-shadow:inset 0 1px rgba(255,255,255,.08)}
-.app-shell:has(.three-scene-page) .profile-menu summary:hover{background:rgba(255,239,192,.13)}
+.app-shell:has(.three-scene-page) .profile-menu summary{min-width:224px;min-height:54px;justify-content:flex-start;gap:11px;padding:5px 13px 5px 6px;border:1px solid rgba(255,220,140,.62);border-radius:999px;background:rgba(25,25,75,.72);color:#fff8e8;box-shadow:inset 0 1px rgba(255,255,255,.1),0 8px 24px rgba(5,11,48,.2);transition:background .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.app-shell:has(.three-scene-page) .profile-menu summary:hover{border-color:rgba(255,222,145,.86);background:rgba(35,34,96,.82);box-shadow:inset 0 1px rgba(255,255,255,.12),0 10px 28px rgba(5,11,48,.28);transform:translateY(-1px)}
+.app-shell:has(.three-scene-page) .profile-menu summary:active{transform:scale(.98)}
+.app-shell:has(.three-scene-page) .profile-avatar-image{width:42px;height:42px;border:3px solid #fff6dc;background:#fff8e8;box-shadow:0 0 0 2px rgba(225,184,99,.82),0 4px 12px rgba(8,12,49,.24)}
+.app-shell:has(.three-scene-page) .profile-identity{min-width:0;display:grid;gap:1px;line-height:1.15;text-align:left}
+.app-shell:has(.three-scene-page) .profile-identity strong{overflow:hidden;color:#fff8e8;font-size:13px;white-space:nowrap;text-overflow:ellipsis}
+.app-shell:has(.three-scene-page) .profile-identity small{overflow:hidden;color:rgba(255,248,232,.72);font-size:11px;font-weight:500;white-space:nowrap;text-overflow:ellipsis}
+.app-shell:has(.three-scene-page) .profile-chevron{width:9px;height:9px;margin-left:auto;border-top:2px solid #f3cc6b;border-right:2px solid #f3cc6b;transform:rotate(45deg);transition:transform .2s ease}
+.app-shell:has(.three-scene-page) .profile-menu[open] .profile-chevron{transform:rotate(135deg) translate(-2px,-2px)}
 .app-shell:has(.three-scene-page) .topbar button:focus-visible,.three-scene-page button:focus-visible{outline:3px solid #ffe394;outline-offset:3px}
 
 .three-scene-page{min-height:calc(100dvh - 72px);padding-top:clamp(22px,3.2vh,38px);padding-bottom:max(22px,env(safe-area-inset-bottom))}
-.three-scene-page .hero-copy{max-width:min(920px,88vw);margin-inline:auto}
-.three-scene-page .hero-copy .kicker{margin-bottom:8px;color:#f5c85b;font-size:11px;letter-spacing:.17em;text-shadow:0 2px 10px rgba(37,20,52,.35)}
-.three-scene-page .hero-copy h1{position:relative;width:max-content;max-width:100%;margin:0 auto 9px;color:#fff9e7;font-size:clamp(32px,3.6vw,52px);line-height:1.12;letter-spacing:-.035em;text-wrap:balance;text-shadow:0 3px 0 rgba(91,55,53,.18),0 9px 24px rgba(35,20,55,.28)}
+.three-scene-page .hero-copy{max-width:min(1280px,91vw);margin-inline:auto}
+.three-scene-page .hero-copy h1{position:relative;width:max-content;max-width:100%;margin:0 auto 12px;color:#fff4d7;font-size:clamp(42px,4.6vw,74px);font-weight:700;line-height:1.08;letter-spacing:-.045em;white-space:nowrap;text-shadow:0 3px 0 rgba(69,48,88,.18),0 10px 28px rgba(21,22,70,.34)}
 .three-scene-page .hero-copy h1:before,.three-scene-page .hero-copy h1:after{position:absolute;top:50%;color:#f4c658;font-size:.48em;text-shadow:0 0 12px rgba(255,210,91,.72);transform:translateY(-54%)}
 .three-scene-page .hero-copy h1:before{content:"✦";left:-1.45em}.three-scene-page .hero-copy h1:after{content:"✧";right:-1.45em}
-.three-scene-page .hero-copy>p:last-child{color:rgba(255,248,232,.86);font-size:13px;text-shadow:0 2px 9px rgba(39,21,51,.34)}
+.three-scene-page .hero-copy>p:last-child{color:rgba(255,248,232,.9);font-size:clamp(13px,1.15vw,17px);font-weight:600;text-shadow:0 2px 10px rgba(27,25,70,.42)}
 .three-scene-page .drag-tip{border-color:rgba(154,102,54,.26);background:rgba(255,250,232,.94);color:#6a5b68;box-shadow:0 8px 18px rgba(57,36,54,.15)}
 .three-scene-page .drag-tip span{color:#a6789d}
 
@@ -5214,7 +5220,7 @@ html {
   .app-shell:has(.three-scene-page) .topbar nav button:after{right:24%;bottom:3px;left:24%;height:2px}
   .app-shell:has(.three-scene-page) .topbar nav button.active{background:rgba(255,233,166,.09)}
   .three-scene-page{min-height:calc(100dvh - 68px);padding-bottom:calc(78px + env(safe-area-inset-bottom))}
-  .three-scene-page .hero-copy h1{font-size:clamp(28px,6vw,39px)}
+  .three-scene-page .hero-copy h1{font-size:clamp(30px,5.3vw,44px)}
   .three-scene-page .hero-copy h1:before{left:-1.1em}.three-scene-page .hero-copy h1:after{right:-1.1em}
 }
 @media(max-width:520px){
@@ -5223,8 +5229,7 @@ html {
   .app-shell:has(.three-scene-page) .profile-menu summary>span{display:none}
   .three-scene-page{min-height:calc(100dvh - 60px);padding-top:18px;padding-inline:8px}
   .three-scene-page .hero-copy{max-width:96vw}
-  .three-scene-page .hero-copy .kicker{font-size:8px;margin-bottom:6px}
-  .three-scene-page .hero-copy h1{max-width:13em;font-size:clamp(25px,7.4vw,32px);line-height:1.2}
+  .three-scene-page .hero-copy h1{font-size:clamp(20px,6.15vw,29px);line-height:1.15;letter-spacing:-.055em}
   .three-scene-page .hero-copy h1:before,.three-scene-page .hero-copy h1:after{display:none}
   .three-scene-page .hero-copy>p:last-child{max-width:25em;margin:7px auto 0;font-size:10px;line-height:1.55}
   .three-scene-page .drag-tip{max-width:90vw;padding:7px 10px;font-size:9px;white-space:nowrap}
