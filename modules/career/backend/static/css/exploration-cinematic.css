@@ -1,0 +1,49 @@
+/* Exploration Center — cinematic sky observatory */
+.page-my-exploration{
+  min-height:100dvh;
+  color:#fff3d2;
+  background:#081b38 url('/static/images/generated/career-exploration-observatory-v1.png') center top/cover fixed no-repeat;
+}
+.page-my-exploration::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(6,19,44,.2),rgba(6,18,40,.56) 43%,rgba(5,15,34,.94) 100%);
+}
+.page-my-exploration #app-container{position:relative;z-index:1}
+.page-my-exploration ::selection{background:#f5c760;color:#33264d}
+.my-center-shell{width:min(1220px,calc(100% - 48px));padding:38px 0 90px}
+.my-center-hero{padding:0 0 22px}
+.my-center-back{display:inline-flex;min-height:42px;align-items:center;padding:7px 14px;border:1px solid rgba(255,216,128,.58);border-radius:13px;background:rgba(14,31,65,.88);box-shadow:0 10px 24px rgba(0,10,26,.3);color:#fff0c9;font-weight:800;text-decoration:none}
+.my-center-back:hover{transform:translateY(-2px);background:#243e70}
+.my-center-back:focus-visible,.page-my-exploration a:focus-visible,.page-my-exploration button:focus-visible{outline:3px solid #ffe28e;outline-offset:3px}
+.my-center-head{position:relative;min-height:188px;margin-top:18px;padding:34px 38px;overflow:hidden;border:1px solid rgba(255,217,134,.56);border-radius:24px;background:linear-gradient(105deg,rgba(21,34,71,.96),rgba(47,47,94,.91) 65%,rgba(91,58,91,.88));box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 22px 55px rgba(0,12,31,.38)}
+.my-center-head::after{content:"";position:absolute;right:175px;top:-75px;width:270px;height:270px;border:1px solid rgba(255,215,122,.18);border-radius:50%;box-shadow:0 0 0 32px rgba(255,215,122,.035),0 0 0 70px rgba(255,215,122,.025)}
+.my-center-head>div:first-child{position:relative;z-index:1;max-width:570px}
+.my-center-head p{color:#f4c35d;font-size:.82rem;letter-spacing:.11em}
+.my-center-head h1{margin:4px 0 8px;color:#fff6da;font-family:"LXGW WenKai","Noto Serif SC","Microsoft YaHei",serif;font-size:clamp(2.7rem,5vw,4.8rem);font-weight:900;line-height:1;letter-spacing:-.035em;text-shadow:0 4px 18px rgba(0,10,30,.42)}
+.my-center-head span{color:#e3dddc;font-size:.98rem}
+.observer-entry{position:absolute;z-index:2;right:128px;bottom:29px;display:grid;grid-template-columns:38px auto;align-items:center;column-gap:9px;padding:10px 14px;border:1px solid rgba(255,218,140,.38);border-radius:14px;background:rgba(12,24,56,.66);color:#fff0cc;text-decoration:none}
+.observer-entry>span{grid-row:1/3;font-size:1.3rem}.observer-entry b{font-size:.8rem}.observer-entry small{color:#c7c7dc;font-size:.65rem}
+.my-avatar{position:relative;z-index:2;align-self:flex-start;border:1px solid rgba(255,218,140,.4);border-radius:16px;background:rgba(255,246,214,.95);color:#594266;box-shadow:0 12px 25px rgba(0,9,27,.24)}
+.my-avatar img{width:66px;height:66px}
+.my-progress-card{margin:0 0 18px;padding:17px 20px;border:1px solid rgba(255,214,126,.55);border-radius:16px;background:linear-gradient(100deg,rgba(18,42,75,.96),rgba(42,48,91,.94));box-shadow:0 15px 32px rgba(0,10,28,.28)}
+.my-progress-icon{border-radius:13px;background:#f3c75f;color:#392e55}.my-progress-card b{color:#fff0cc}.my-progress-card b span{color:#ffd26d}.my-progress-card small{color:#c8d4df}.my-progress-card a,.next-quest-card>a,.archive-heading>a,.feed-heading>a{min-height:42px;display:inline-flex;align-items:center;padding:8px 15px;border:0;border-radius:999px;background:#f2b955;color:#342846;box-shadow:0 8px 17px rgba(2,12,31,.25);font-weight:900;text-decoration:none}
+.next-quest-card{margin:0 0 16px;padding:17px 20px;border:1px solid rgba(255,220,148,.55);border-radius:16px;background:linear-gradient(110deg,rgba(255,248,222,.98),rgba(243,217,172,.96));box-shadow:0 15px 32px rgba(0,10,28,.25)}
+.next-quest-mascot{border:0;border-radius:15px;background:#fff7dc;transform:none}.next-quest-mascot img{transform:none}.next-quest-copy p{color:#9b5b40}.next-quest-copy h2{color:#463550}.next-quest-copy span{color:#705f66}
+.my-exploration-badges{gap:12px;margin:0 0 22px}.my-exploration-badges article{padding:13px 16px;border:1px solid rgba(255,216,129,.38);border-radius:15px;background:rgba(17,33,69,.9);box-shadow:0 12px 26px rgba(0,10,28,.25)}.my-exploration-badges article>span{border-radius:11px;background:#f2c75f;color:#392d50}.my-exploration-badges b{color:#ffd36f}.my-exploration-badges small{color:#d3d9e7}
+.exploration-map-section{margin:0 0 22px;padding:28px;border:1px solid rgba(255,218,137,.55);border-radius:24px;background:linear-gradient(145deg,rgba(16,31,67,.97),rgba(43,41,81,.95));box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 24px 55px rgba(0,10,29,.36)}
+.map-section-heading p,.archive-heading p,.feed-heading p{color:#f4c45e}.map-section-heading h2,.archive-heading h2,.feed-heading h2{color:#fff2cf}.map-section-heading span,.archive-heading span,.feed-heading span{color:#cbd4e2}.map-progress-badge{border:1px solid rgba(255,218,137,.6);border-radius:13px;background:rgba(255,246,212,.95);color:#66546c}.map-progress-badge b{color:#c66c46}
+.exploration-map{height:430px;border:1px solid rgba(255,220,142,.44);border-radius:19px;background:linear-gradient(rgba(11,27,60,.25),rgba(11,27,60,.7)),url('/static/images/generated/career-exploration-observatory-v1.png') center 42%/cover no-repeat;box-shadow:inset 0 0 60px rgba(1,10,27,.55)}
+.exploration-map::before{background:radial-gradient(circle at 15% 20%,rgba(255,224,140,.72) 0 2px,transparent 3px),radial-gradient(circle at 78% 25%,rgba(255,255,255,.72) 0 2px,transparent 3px);background-size:140px 100px;opacity:.8}
+.map-path{border-color:rgba(255,215,113,.55)}
+.career-map-island{border-color:#f7df9d;background:linear-gradient(145deg,#8aa3bf,#566f92);box-shadow:inset 0 -10px 0 rgba(18,37,67,.25),0 10px 25px rgba(0,8,24,.38);color:#fff0ca}
+.career-map-island:not(.explored):not(.in-progress){filter:saturate(.55) brightness(.78)}
+.career-map-island.explored{border-color:#ffe07d;background:linear-gradient(145deg,#72d39a,#3a9b70);box-shadow:inset 0 -10px 0 rgba(25,113,78,.28),0 0 0 5px rgba(255,219,109,.24),0 0 36px rgba(255,200,78,.65)}
+.career-map-island i{background:#21375e;color:#fff0ca}.career-map-island.explored i{background:#c96e47}.map-compass{border-color:#f6d875;background:#20365f;color:#ffd66f;box-shadow:0 10px 24px rgba(0,9,27,.4)}.map-compass span{color:#fff0c8}.map-tip{color:#c4ccdb}
+.my-center-note{max-width:none;margin:0 0 22px;border:1px solid rgba(255,216,130,.36);border-radius:15px;background:rgba(14,29,61,.86);color:#d4d9e5}.my-center-note b{color:#ffe099}
+.island-archive-section,.exploration-feed-section{margin:0 0 22px;padding:25px 27px;border:1px solid rgba(255,217,135,.46);border-radius:20px;background:rgba(14,29,62,.94);box-shadow:0 19px 42px rgba(0,10,28,.32)}
+.archive-empty,.feed-empty{border-radius:14px;background:rgba(255,246,216,.94);color:#5f5260}.island-archive-card{border:1px solid rgba(255,217,133,.55);border-radius:14px;background:#fff5d7;box-shadow:0 8px 18px rgba(0,9,26,.2)}.island-archive-card b{color:#4c3b50}.island-archive-card small{color:#806f70}.exploration-feed-list,.experience-history{color:#d8ddea}.feed-item{border-color:rgba(255,219,142,.2)}.feed-dot{background:#f2c55d;color:#49344e}.feed-meta{color:#ffe09a}.feed-meta time,.feed-item p,.history-row small{color:#bdc7d8}.history-row{border-color:rgba(255,219,142,.18);color:#f3e7cc}
+.page-my-exploration .platform-return,.page-my-exploration .font-size-control,.page-my-exploration .replay-guide-btn{border-color:rgba(255,216,128,.52);background:rgba(12,29,61,.94);color:#fff0c9;box-shadow:0 10px 25px rgba(0,9,25,.34)}
+@media(max-width:760px){
+  .page-my-exploration{background-position:45% top;background-attachment:scroll}.my-center-shell{width:min(100% - 24px,1220px);padding-top:78px}.my-center-head{min-height:0;padding:25px 22px}.my-center-head::after,.observer-entry{display:none}.my-center-head h1{font-size:2.65rem}.my-avatar{display:none}.my-progress-card{align-items:center;flex-wrap:wrap}.my-progress-card a{width:100%;margin-left:0;justify-content:center}.next-quest-card{align-items:flex-start;flex-wrap:wrap}.next-quest-card>a{width:100%;margin-left:0;justify-content:center}.my-exploration-badges{gap:7px}.exploration-map-section{padding:20px 13px}.map-section-heading{flex-direction:column}.exploration-map{height:540px}.island-archive-section,.exploration-feed-section{padding:21px 17px}
+}
+@media(prefers-reduced-motion:reduce){.page-my-exploration *{scroll-behavior:auto!important}.career-map-island,.my-center-back{transition:none}}

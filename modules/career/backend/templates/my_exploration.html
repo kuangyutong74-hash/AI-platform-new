@@ -1,6 +1,7 @@
 {% extends "base.html" %}{% block title %}我的探索中心{% endblock %}{% block body_class %}page-my-exploration{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/exploration-cinematic.css?v=observatory-v1">{% endblock %}
 {% block content %}<main class="my-center-shell">
-  <header class="my-center-hero"><a href="/" class="my-center-back">← 回到奇遇岛</a><div class="my-center-head"><div><p>我的成长手账</p><h1>探索中心</h1><span>这里收藏着你完成过的职业体验和每一座点亮的小岛。</span></div><a class="observer-entry" href="/observer" aria-label="进入教师和家长观察台"><span>👨‍👩‍👧</span><b>教师 / 家长观察</b><small>查看过程记录与证据线索 →</small></a><div class="my-avatar"><img src="/static/images/mascots/explorer-guide.png" alt="探索向导"><b>探索者</b></div></div></header>
+  <header class="my-center-hero"><a href="/" class="my-center-back">← 回到奇遇岛</a><div class="my-center-head"><div><p>我的成长手账</p><h1>探索中心</h1><span>这里收藏着你完成过的职业体验和每一座点亮的小岛。</span></div></div></header>
   <section class="my-progress-card"><div class="my-progress-icon">🧭</div><div><b><span id="explored-career-count">0</span> 座职业小岛已点亮</b><small id="my-map-message">从第一座感兴趣的小岛开始吧！</small></div><a href="/careers">去探索新职业 →</a></section>
   <section class="next-quest-card" aria-labelledby="next-quest-title">
     <div class="next-quest-mascot" aria-hidden="true"><img src="/static/images/mascots/explorer-guide.png" alt=""></div>
@@ -16,20 +17,13 @@
     <div class="exploration-map" id="exploration-map"><div class="map-path path-a" aria-hidden="true"></div><div class="map-path path-b" aria-hidden="true"></div><div class="map-path path-c" aria-hidden="true"></div>
       <a class="career-map-island island-doctor" data-career-id="doctor" href="/careers" aria-label="医生岛，尚未点亮"><img src="/static/images/roles/doctor-character-v1.png" alt=""><span class="island-glow">✦</span><b>医生岛</b><small>诊疗守护者</small><i>未探索</i></a><a class="career-map-island island-firefighter" data-career-id="firefighter" href="/careers" aria-label="消防员岛，尚未点亮"><img src="/static/images/roles/firefighter-character-v1.png" alt=""><span class="island-glow">✦</span><b>消防员岛</b><small>勇气行动派</small><i>未探索</i></a><a class="career-map-island island-teacher" data-career-id="teacher" href="/careers" aria-label="教师岛，尚未点亮"><img src="/static/images/roles/teacher-character-v1.png" alt=""><span class="island-glow">✦</span><b>教师岛</b><small>成长引路人</small><i>未探索</i></a><a class="career-map-island island-chef" data-career-id="chef" href="/careers" aria-label="厨师岛，尚未点亮"><img src="/static/images/roles/chef-character-v1.png" alt=""><span class="island-glow">✦</span><b>厨师岛</b><small>美味创造家</small><i>未探索</i></a><a class="career-map-island island-journalist" data-career-id="journalist" href="/careers" aria-label="记者岛，尚未点亮"><img src="/static/images/roles/journalist-character-v1.png" alt=""><span class="island-glow">✦</span><b>记者岛</b><small>故事发现者</small><i>未探索</i></a><a class="career-map-island island-animal" data-career-id="animal_caretaker" href="/careers" aria-label="动物保护员岛，尚未点亮"><img src="/static/images/roles/animal_caretaker-character-v1.png" alt=""><span class="island-glow">✦</span><b>动物保护员岛</b><small>自然守护者</small><i>未探索</i></a><div class="map-compass" aria-hidden="true">✦<span>探索地图</span></div>
     </div><p class="map-tip">点亮记录的是一次认真完成的体验，不是职业推荐，也不代表能力高低。</p></section>
-  <section class="my-center-note"><span>💛</span><p><b>每一座岛都值得慢慢探索。</b>体验中的选择、想法和过程记录会继续保存，供观察台使用。</p></section>
+  <section class="my-center-note"><span>💛</span><p><b>每一座岛都值得慢慢探索。</b>体验中的选择、想法和过程记录会继续保存，并在天赋星图和魔法书报告中整理呈现。</p></section>
   <section class="island-archive-section" aria-labelledby="island-archive-title">
     <div class="archive-heading"><div><p>我的收藏册</p><h2 id="island-archive-title">小岛探索档案</h2><span>每完成一次体验，就会收进一张属于你的探索卡。</span></div><a href="/careers">发现新小岛 →</a></div>
     <div id="island-archive-empty" class="archive-empty"><span>📮</span><p>你的第一张小岛探索卡，正等着被收进这里。</p></div>
     <div id="island-archive-list" class="island-archive-list" hidden></div>
   </section>
   <div id="island-dossier" class="island-dossier" hidden><div class="island-dossier-card"><button type="button" class="dossier-close" aria-label="关闭">×</button><div id="island-dossier-content"></div></div></div>
-  <section class="exploration-feed-section" aria-labelledby="exploration-feed-title">
-    <div class="feed-heading"><div><p>我的探索动态</p><h2 id="exploration-feed-title">成长足迹</h2><span>记录每一次认真完成的体验；它不是排名，也不会给职业下结论。</span></div><a href="/careers">继续探索 →</a></div>
-    <div id="exploration-feed-empty" class="feed-empty"><span>🌱</span><p>完成第一段职业情境后，这里会留下你的第一条探索足迹。</p></div>
-    <ol id="exploration-feed-list" class="exploration-feed-list" hidden></ol>
-    <details id="experience-history" class="experience-history" hidden><summary>查看我的全部体验记录</summary><div id="experience-history-list"></div></details>
-  </section>
-
 {% if false %}<!-- 综合成长报告已停用，保留模板片段仅用于兼容旧部署 -->
 <details class="cross-career-discovery" id="cross-career-discovery">
   <summary><span>🔎</span><b>想看看跨职业的成长线索吗？</b><small>展开后可回看不同体验中的观察记录</small></summary>
@@ -74,18 +68,11 @@
       <div class="ai-summary-card" id="ai-summary-card"></div>
     </div>
 
-    <!-- 教师/家长观察（可切换） -->
-    <div class="cross-career-teacher" id="cross-career-teacher" style="display:none">
-      <button type="button" class="teacher-toggle-btn" id="teacher-toggle-btn" onclick="toggleTeacherView()">📖 查看教师/家长观察记录</button>
-      <div class="teacher-evidence-list" id="cross-teacher-list" style="display:none"></div>
-    </div>
   </div>
 </section>
 </details>{% endif %}
 </main>{% endblock %}{% block extra_js %}<script>
 // ===== 综合成长报告 =====
-var teacherChainsData = [];
-
 function identityFetch(url, options){
   options = options || {};
   var token = localStorage.getItem('career-student-token-v1') || '';
@@ -167,6 +154,7 @@ function loadExplorationFeed(){
     var activities = data.activities || [];
     var records = data.career_history || [];
     renderExplorationDashboard(activities, records, data.career_count || 0, data.experience_count || 0, data.active_careers || []);
+    if (!empty || !list || !history || !historyList) return;
     if (!activities.length) {
       empty.hidden = false; list.hidden = true; history.hidden = true; return;
     }
@@ -186,7 +174,7 @@ function loadExplorationFeed(){
     } else history.hidden = true;
   }).catch(function(){
     renderExplorationDashboard([], [], 0, 0, []);
-    empty.hidden = false; list.hidden = true; history.hidden = true;
+    if (empty && list && history) { empty.hidden = false; list.hidden = true; history.hidden = true; }
   });
 }
 
@@ -213,12 +201,10 @@ function loadCrossCareerReport(){
       if (empty) empty.style.display = 'none';
       if (content) content.style.display = 'block';
 
-      teacherChainsData = d.teacher_chains || [];
       renderOverview(d);
       renderWarning(d);
       renderDimensionGrid(d);
       renderAISummary(d);
-      renderTeacherToggle(d);
     })
     .catch(function(){ showEmpty('报告数据暂时无法加载，请稍后再试。'); });
 }
@@ -287,7 +273,7 @@ function renderDimensionGrid(d){
           '<div class="cc-trace-actions">'+bestTrace.actions.map(function(a){return '<span>· '+escHtml(a)+'</span>';}).join('')+'</div>'+
         '</div>'+
         (s.total_traces && s.total_traces > 1
-          ? '<div class="cc-trace-more">… 另有 '+(s.total_traces-1)+' 条相关证据（可在教师观察中查看）</div>'
+          ? '<div class="cc-trace-more">… 另有 '+(s.total_traces-1)+' 条相关记录（将在统一报告中整理呈现）</div>'
           : '')+
       '</div>';
     } else {

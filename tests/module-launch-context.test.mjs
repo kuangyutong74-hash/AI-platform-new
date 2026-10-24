@@ -43,14 +43,14 @@ test("chat connects on entry and only marks completion after platform sync", asy
   );
 });
 
-test("story and career keep works and timeline completion in the same successful flow", async () => {
+test("story and career keep report evidence and timeline completion in the successful flow", async () => {
   const story = await readFile(new URL("../modules/story/frontend/src/pages/StoryPlayPage.tsx", import.meta.url), "utf8");
-  const career = await readFile(new URL("../modules/career/backend/static/js/workday.js", import.meta.url), "utf8");
+  const careerWorkday = await readFile(new URL("../modules/career/backend/static/js/workday.js", import.meta.url), "utf8");
+  const careerScenario = await readFile(new URL("../modules/career/backend/static/js/app.js", import.meta.url), "utf8");
   assert.match(story, /syncCompletedStory[\s\S]*emitStoryCompleted[\s\S]*addStoryToMyWorks/);
-  assert.ok(
-    career.indexOf("await platformSdk.completeSession") < career.indexOf("sessionStorage.setItem(marker,'1')"),
-    "career must remain retryable until its artifact and timeline session are complete",
-  );
+  assert.match(careerWorkday, /emitEvidence[\s\S]*publishArtifact/);
+  assert.doesNotMatch(careerWorkday, /await platformSdk\.completeSession/);
+  assert.match(careerScenario, /emitEvidence[\s\S]*completeSession[\s\S]*sessionStorage\.setItem\(marker,'1'\)/);
 });
 
 test("career restores a missing launch context from the shared account session", async () => {

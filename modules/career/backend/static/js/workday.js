@@ -308,7 +308,8 @@ async function syncCareerCompletion(record){
     const stageTitles=(G.career?.stages||[]).map(stage=>stage.title).filter(Boolean);
     const reviewSummary=stageTitles.length?'体验了'+stageTitles.join('、')+'。':'完成了这次职业日常体验。';
     await platformSdk.publishArtifact({schemaVersion:'1.0',artifactId:'career:'+G.runId,type:'other',title:record.career+'的一天',summary:reviewSummary,previewResourceId:snapshot&&snapshot.id,sourceResourceId:'career:'+G.runId,createdAt:new Date().toISOString()});
-    await platformSdk.completeSession({careerName:record.career,stageTitles:stageTitles,completedStages:record.completedStages||0,stageCount:record.stageCount||0});
+    // 职业日常只是完整职业体验的前半段；平台会话在情境体验完成后再结束，
+    // 这样两部分证据都能进入天赋星图和魔法书报告。
     sessionStorage.setItem(marker,'1');
   })();
   try{return await careerSyncPromise}finally{careerSyncPromise=null}

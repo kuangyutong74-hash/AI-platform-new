@@ -366,6 +366,10 @@ a{color:inherit;text-decoration:none}button{font-family:inherit;cursor:pointer;b
 }
 .platform-return:hover { transform: translateY(-1px); background: #fff; }
 
+/* 职业体验内的点亮地图入口：跟随任务栏，不遮挡台词、任务或阅读辅助工具。 */
+.experience-map-link{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:8px 14px;border:1px solid rgba(255,215,125,.52);border-radius:14px;background:linear-gradient(145deg,rgba(21,51,78,.97),rgba(35,39,78,.95));color:#fff0c9;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 10px 24px rgba(1,17,31,.36);font:800 .78rem/1.2 "Microsoft YaHei",sans-serif;text-decoration:none;white-space:nowrap;transition:transform 160ms cubic-bezier(.2,.8,.2,1),border-color 160ms ease,background 160ms ease}.experience-map-link svg{width:19px;height:19px;overflow:visible;fill:#ffd36f;stroke:#fff0c9;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}.experience-map-link:hover{transform:translateY(-2px);border-color:#ffd36f;background:linear-gradient(145deg,#244d72,#363d78)}.experience-map-link:focus-visible{outline:3px solid #ffe28e;outline-offset:3px}.page-careers .career-map-overview-link{position:fixed;z-index:10001;top:18px;left:300px}
+@media(max-width:720px){.page-careers .career-map-overview-link{top:70px;left:130px;min-height:40px;padding:7px 11px;font-size:.72rem}}
+
 /* Cinematic career-islands cover */
 .page-landing{background:#082f48;color:#fff}
 .landing-container{width:100%;max-width:none;margin:0;padding:0}

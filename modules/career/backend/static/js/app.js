@@ -15,6 +15,28 @@ const API={
   async postForm(url,fd){return this.request(url,{method:'POST',body:fd})}
 };
 
+let scenarioPlatformSdk=null,scenarioPlatformPromise=null;
+async function connectScenarioPlatform(){
+  if(scenarioPlatformSdk?.connected())return {connected:true};
+  if(!scenarioPlatformSdk&&window.AIBoleModuleSDK)scenarioPlatformSdk=window.AIBoleModuleSDK.create({moduleId:'career'});
+  if(!scenarioPlatformSdk)return {notConnected:true,standalone:true};
+  if(!scenarioPlatformPromise)scenarioPlatformPromise=scenarioPlatformSdk.connectOptional().catch(error=>{scenarioPlatformPromise=null;throw error});
+  return scenarioPlatformPromise;
+}
+async function syncScenarioCompletion(engine){
+  const marker='ai-bole-career-scenario-evidence-'+engine.sessionId;
+  if(sessionStorage.getItem(marker))return;
+  const connection=await connectScenarioPlatform();
+  if(connection.notConnected)return;
+  const careerId=String(engine.sessionInfo?.career_id||engine.progress?.career_id||'career');
+  const careerName=String(engine.progress?.career_name||engine.sessionInfo?.career_name||'职业体验');
+  const total=Math.max(1,Number(engine.progress?.total||1));
+  const key=engine.sessionId+':scenario-completed';
+  await scenarioPlatformSdk.emitEvidence(scenarioPlatformSdk.makeEvent('career.task-completed.v1',{taskKey:careerId+':scenario',attemptCount:total,hintCount:0,completionSeconds:Math.max(1,Math.round((Date.now()-engine.experienceStartedAt)/1000)),adjustmentCount:Math.max(0,Number(engine.modificationCount||0))},key));
+  await scenarioPlatformSdk.completeSession({careerName:careerName,experienceParts:['职业日常','情境体验'],completedScenarios:total,totalScenarios:total});
+  sessionStorage.setItem(marker,'1');
+}
+
 function showCoachTip(key,target,message,title='新手小提示',force=false){
   if(!target||(!force&&localStorage.getItem(key)))return;
   target.classList.add('coach-target');
@@ -31,7 +53,7 @@ function showCurrentPageGuide(){
   if(body.classList.contains('page-workday'))return showCoachTip('career-workday-replay-guide-v1',document.getElementById('wd-main'),'跟着阶段任务完成操作；遇到困难可以查看提示，完成后可继续进入同职业的情境体验。','这样体验职业日常',true);
 }class VisualNovelEngine{
   constructor(){
-    this.sessionId=null;this.scenarioIndex=0;this.scenarioData=null;this.progress=null;
+    this.sessionId=null;this.scenarioIndex=0;this.scenarioData=null;this.progress=null;this.experienceStartedAt=Date.now();
     this.sessionInfo=null;this.scenarioRecordId=null;this.previousContext=[];
     this.state='idle';this.currentDialogueIndex=0;this.isTyping=false;this.typewriterTimeout=null;
     this.decisionStartTime=null;this.selectedChoice=null;this.modificationCount=0;this.timerInterval=null;
@@ -263,7 +285,17 @@ function showCurrentPageGuide(){
     this.$transitionOverlay.style.display='flex';
     setTimeout(()=>{window.location.href='/scenario/'+this.sessionId+'/'+ni},1500);
   }
-  showCompletion(){
+  async showCompletion(){
+    if(this.state==='complete'||this.state==='completing')return;
+    this.state='completing';
+    try{
+      await API.request(`/api/session/${this.sessionId}/complete`,{method:'POST'});
+      await syncScenarioCompletion(this);
+    }catch(ex){
+      console.error('保存职业体验完成状态失败',ex);
+      this.showError('完成记录保存失败，请检查网络后刷新页面重试。');
+      return;
+    }
     this.state='complete';this.$completionScreen.style.display='flex';
     this.$completionMessage.textContent='你完成了「'+this.progress.career_name+'」的全部'+this.progress.total+'个情境体验！';
     this.$reportLink.href='/my-exploration';

@@ -111,6 +111,23 @@ class AccountTests(unittest.TestCase):
             main.register_account(payload, Response())
         self.assertEqual(duplicate.exception.status_code, 409)
 
+        # 大小写和首尾空格必须落到同一个规范账号，不能绕过唯一性检查。
+        alias = main.AccountRegistrationIn(
+            username="  MOON_CHILD  ",
+            display_name="另一个小月",
+            age=9,
+            password="planet88",
+        )
+        with self.assertRaises(HTTPException) as normalized_duplicate:
+            main.register_account(alias, Response())
+        self.assertEqual(normalized_duplicate.exception.status_code, 409)
+
+        with main.connect() as db:
+            count = db.execute(
+                "SELECT COUNT(*) AS total FROM accounts WHERE username=?", ("moon_child",)
+            ).fetchone()["total"]
+        self.assertEqual(count, 1)
+
         with self.assertRaises(HTTPException) as wrong_password:
             main.create_session(
                 main.AccountCredentialsIn(username="moon_child", password="wrong999"),
@@ -210,6 +227,12 @@ class AccountTests(unittest.TestCase):
             role="student",
         ), padded_response)["account"]
         self.assertEqual(padded["username"], "s20260007")
+        with self.assertRaises(HTTPException) as generated_alias_duplicate:
+            main.register_account(main.AccountRegistrationIn(
+                username="s2026-007", display_name="重复小七", age=8, password="before88",
+                role="student",
+            ), Response())
+        self.assertEqual(generated_alias_duplicate.exception.status_code, 409)
         logged_in = main.create_session(
             main.AccountCredentialsIn(username="S2026007", password="before77", expected_role="student"),
             Response(),

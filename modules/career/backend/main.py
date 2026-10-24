@@ -121,8 +121,8 @@ async def page_my_exploration(request: Request):
 
 @app.get("/observer", response_class=HTMLResponse)
 async def page_observer_dashboard(request: Request):
-    """独立的教师/家长观察台；儿童探索中心仅保留入口。"""
-    return templates.TemplateResponse("observer_dashboard.html", {"request": request})
+    """旧观察台入口统一回到平台报告，避免形成第二套成人报告。"""
+    return RedirectResponse(url="http://localhost:4173/?view=report", status_code=302)
 
 @app.get("/scenario/{session_id}/{scenario_index}", response_class=HTMLResponse)
 async def page_scenario(request: Request, session_id: str, scenario_index: int):
@@ -640,6 +640,49 @@ async def api_submit_follow_up(session_id:str, scenario_index:int,
                 "请先找一位可信任的大人。此次内容不会进入能力评价；之后可由大人陪伴，从新的轻松任务开始。"
                 if safety_paused else ("内容已被保护，不会存入能力证据；修改后可以继续体验。" if action != "continue" else "")
             )}
+
+
+@app.post("/api/session/{session_id}/complete")
+async def api_complete_session(
+    session_id: str,
+    platform_student: dict = Depends(get_platform_student),
+):
+    """Persist a finished experience, including scenarios whose mentor step was skipped."""
+    async with async_session() as db:
+        session = require_owned_session(
+            await db.get(Session, session_id), str(platform_student["id"])
+        )
+        if session.status == "safety_paused":
+            raise HTTPException(409, detail="当前体验已进入关怀暂停状态")
+
+        total = len(SCENARIOS.get(session.career_id, []))
+        records = (await db.execute(
+            select(ScenarioRecord)
+            .options(selectinload(ScenarioRecord.choice_records))
+            .where(ScenarioRecord.session_id == session_id)
+        )).scalars().all()
+        completed_indices = {
+            record.scenario_index for record in records if record.choice_records
+        }
+        if total == 0 or len(completed_indices) != total or completed_indices != set(range(total)):
+            raise HTTPException(409, detail="职业体验尚未完成全部情境")
+
+        completed_at = datetime.now(timezone.utc)
+        for record in records:
+            if record.completed_at is None:
+                record.completed_at = completed_at
+        session.status = "completed"
+        if session.completed_at is None:
+            session.completed_at = completed_at
+        session.current_scenario_index = max(0, total - 1)
+        await db.commit()
+        return {
+            "success": True,
+            "session_id": session.id,
+            "status": session.status,
+            "completed_scenarios": len(completed_indices),
+            "total_scenarios": total,
+        }
 
 
 @app.get("/api/session/{session_id}/safety-status")
