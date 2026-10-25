@@ -36,6 +36,14 @@ test('侧栏提示始终是孩子可以输入的第一人称开场白', () => {
   const pool = html.match(/var QUICK_REPLY_POOL=(\[[^\n]+\]);/);
   assert.ok(pool);
   for (const item of JSON.parse(pool[1].replaceAll("'", '"'))) assert.match(item, /^我/);
+  const entryChips = [...html.matchAll(/chips:(\[[^\]]+\])/g)];
+  assert.equal(entryChips.length, 4);
+  for (const [, chips] of entryChips) {
+    for (const item of JSON.parse(chips.replaceAll("'", '"'))) assert.match(item, /^我/);
+  }
+  const compassPrompts = [...html.matchAll(/class="compass-action"[^>]*data-prompt="([^"]+)"/g)];
+  assert.equal(compassPrompts.length, 4);
+  for (const [, prompt] of compassPrompts) assert.match(prompt, /^我/);
   assert.match(extractFunction('normalizeTopicItem'), /\^我/);
   assert.match(server, /每条必须以“我”开头/);
   assert.match(server, /\^我.*test\(t\.trim\(\)\)/);
